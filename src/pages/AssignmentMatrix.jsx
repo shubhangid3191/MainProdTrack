@@ -1,136 +1,40 @@
 import { useState } from "react";
 import {
   Alert,
-  Box,
-  Snackbar,
-  Typography,
   Avatar,
+  Box,
   Button,
   Paper,
+  Snackbar,
+  Tooltip,
+  Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
-import CorePageShell, {
-  CoreTable,
-  Person,
-} from "../components/CorePageShell.jsx";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-const rowsCoreTeam = [
-  [
-    <Person initials="PS" name="Priya Sharma" />,
-    "INDEXER",
-    "●",
-    "●",
-    "●",
-    "○",
-    "○",
-  ],
-  [
-    <Person initials="AR" name="Aditya Rao" />,
-    "INDEXER",
-    "○",
-    "●",
-    "○",
-    "○",
-    "○",
-  ],
-  [
-    <Person initials="SI" name="Sneha Iyer" />,
-    "INDEXER",
-    "○",
-    "○",
-    "●",
-    "○",
-    "○",
-  ],
-  [
-    <Person initials="RM" name="Rohan Mehta" />,
-    "TEAM LEAD",
-    "●",
-    "●",
-    "●",
-    "●",
-    "○",
-  ],
-  [
-    <Person initials="MN" name="Meera Nair" />,
-    "CORE TEAM",
-    "●",
-    "●",
-    "●",
-    "●",
-    "●",
-  ],
-];
-function AssignmentMatrixCoreTeam() {
-  const [saved, setSaved] = useState(false);
-  const [matrix, setMatrix] = useState(rowsCoreTeam);
-  const toggleCell = (rowIndex, cellIndex) =>
-    setMatrix((current) =>
-      current.map((row, index) =>
-        index === rowIndex
-          ? row.map((cell, position) =>
-              position === cellIndex ? (cell === "●" ? "○" : "●") : cell,
-            )
-          : row,
-      ),
-    );
-  return (
-    <>
-      <CorePageShell
-        title="Project assignment matrix"
-        description="Controls project visibility. Indexers see only assigned projects; core & admin see all."
-        actionLabel="Save changes"
-        actionHandler={() => setSaved(true)}
-      >
-        <Box
-          sx={{
-            bgcolor: "#eaf1ff",
-            border: "1px solid #c8d9ff",
-            borderRadius: 1.5,
-            p: 1.5,
-            mb: 2,
-            color: "#2458c7",
-          }}
-        >
-          <Typography
-            sx={{
-              fontSize: 12,
-            }}
-          >
-            ⓘ &nbsp; Toggle a cell to grant or revoke a user's access to a
-            project.
-          </Typography>
-        </Box>
-        <CoreTable
-          columns={["USER", "ROLE", "ABC", "ORTHO", "SPINE", "CARDIO", "NEURO"]}
-          rows={matrix}
-          actionLabel={null}
-          onCellAction={toggleCell}
-        />
-      </CorePageShell>
-      <Snackbar
-        open={saved}
-        autoHideDuration={2600}
-        onClose={() => setSaved(false)}
-        anchorOrigin={{
-          vertical: "bottom",
-          horizontal: "right",
-        }}
-      >
-        <Alert
-          severity="success"
-          variant="filled"
-          onClose={() => setSaved(false)}
-        >
-          Changes saved successfully
-        </Alert>
-      </Snackbar>
-    </>
-  );
-}
-// ─── Data ────────────────────────────────────────────────────────────────────
+import InfoRoundedIcon from "@mui/icons-material/InfoRounded";
+import SaveRoundedIcon from "@mui/icons-material/SaveRounded";
 
-const PROJECTSAdministrator = ["ABC", "ORTHO", "SPINE", "CARDIO", "NEURO"];
-const ROLE_STYLEAdministrator = {
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const FONT =
+  '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+const CARD_SHADOW =
+  "0 1px 3px rgba(16,30,54,.07), 0 4px 16px rgba(16,30,54,.06)";
+const LINE = "#dfe4ec";
+const LINE2 = "#e8ecf3";
+const MUTED = "#6a7585";
+const HEAD = "#1a2434";
+
+// ─── Static data ──────────────────────────────────────────────────────────────
+
+const PROJECTS = [
+  { key: "abc", label: "ABC Medical" },
+  { key: "ortho", label: "Ortho Kids" },
+  { key: "spine", label: "Spine Index" },
+  { key: "cardio", label: "Cardio Rec." },
+  { key: "neuro", label: "Neuro Scan" },
+];
+
+const ROLE_STYLE = {
   Indexer: {
     label: "INDEXER",
     bg: "#eaf1ff",
@@ -139,32 +43,29 @@ const ROLE_STYLEAdministrator = {
   },
   "Team Lead": {
     label: "TEAM LEAD",
-    bg: "#e9f7ef",
-    color: "#15803d",
-    border: "#a7d7bc",
+    bg: "#eaf1ff",
+    color: "#2458c7",
+    border: "#bcd2ff",
   },
   "Core Team": {
     label: "CORE TEAM",
-    bg: "#f3e8ff",
-    color: "#7c3aed",
-    border: "#d3b4fd",
+    bg: "#eaf1ff",
+    color: "#2458c7",
+    border: "#bcd2ff",
   },
   Administrator: {
     label: "ADMIN",
-    bg: "#fff0e0",
-    color: "#b45309",
-    border: "#f5c480",
+    bg: "#eaf1ff",
+    color: "#2458c7",
+    border: "#bcd2ff",
   },
 };
-const AVATAR_COLORSAdministrator = [
-  "#5b5ce2",
-  "#0ea5e9",
-  "#8b5cf6",
-  "#3b82f6",
-  "#10b981",
-  "#5b5ce2",
+
+const AVATAR_COLORS = [
+  "#4f73e3",
 ];
-const initialUsersAdministrator = [
+
+const INITIAL_USERS = [
   {
     initials: "PS",
     name: "Priya Sharma",
@@ -203,52 +104,23 @@ const initialUsersAdministrator = [
   },
 ];
 
-// ─── Dot toggle ──────────────────────────────────────────────────────────────
-
-function AccessDotAdministrator({ on, locked, onClick }) {
-  return (
-    <Box
-      component="button"
-      type="button"
-      aria-label={on ? "Revoke access" : "Grant access"}
-      onClick={locked ? undefined : onClick}
-      sx={{
-        width: 14,
-        height: 14,
-        p: 0,
-        border: on ? "1.5px solid #15966a" : "1.5px solid #cbd5e1",
-        borderRadius: "50%",
-        bgcolor: on ? "#15966a" : "transparent",
-        cursor: locked ? "default" : "pointer",
-        display: "block",
-        mx: "auto",
-        transition: "transform .15s",
-        "&:hover": locked
-          ? {}
-          : {
-              transform: "scale(1.3)",
-            },
-      }}
-    />
-  );
-}
-
 // ─── Role chip ────────────────────────────────────────────────────────────────
 
-function RoleChipAdministrator({ role }) {
-  const s = ROLE_STYLEAdministrator[role] || ROLE_STYLEAdministrator.Indexer;
+function RoleChip({ role }) {
+  const s = ROLE_STYLE[role] ?? ROLE_STYLE.Indexer;
   return (
     <Box
       sx={{
         display: "inline-flex",
         alignItems: "center",
         px: 1.2,
-        py: 0.3,
+        py: "3px",
         borderRadius: "5px",
         bgcolor: s.bg,
         border: `1px solid ${s.border}`,
         color: s.color,
-        fontSize: 10,
+        fontFamily: FONT,
+        fontSize: 10.5,
         fontWeight: 800,
         letterSpacing: "0.04em",
         whiteSpace: "nowrap",
@@ -259,67 +131,172 @@ function RoleChipAdministrator({ role }) {
   );
 }
 
-// ─── Main component ──────────────────────────────────────────────────────────
+// ─── Access toggle dot ────────────────────────────────────────────────────────
 
-function AssignmentMatrixAdministrator() {
-  const [users, setUsers] = useState(initialUsersAdministrator);
+function AccessDot({ on, locked, onClick }) {
+  const dot = (
+    <Box
+      component="button"
+      type="button"
+      aria-label={on ? "Revoke access" : "Grant access"}
+      onClick={locked ? undefined : onClick}
+      sx={{
+        width: 8,
+        height: 8,
+        p: 0,
+        border: on ? "1.5px solid #15966a" : `1.5px solid ${LINE}`,
+        borderRadius: "50%",
+        bgcolor: on ? "#15966a" : "transparent",
+        cursor: locked ? "default" : "pointer",
+        display: "block",
+        mx: "auto",
+        transition: "transform .15s, background-color .15s",
+        "&:hover": locked ? {} : { transform: "scale(1.35)" },
+      }}
+    />
+  );
+
+  return locked ? (
+    <Tooltip title="All projects assigned" placement="top" arrow>
+      <span style={{ display: "flex", justifyContent: "center" }}>{dot}</span>
+    </Tooltip>
+  ) : (
+    <Box sx={{ display: "flex", justifyContent: "center" }}>{dot}</Box>
+  );
+}
+
+// ─── Mobile card view ─────────────────────────────────────────────────────────
+
+function MobileUserCard({ user, userIdx, locked, onToggle, avatarColor }) {
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        border: `1px solid ${LINE}`,
+        borderRadius: "10px",
+        p: 2,
+        bgcolor: "#fff",
+      }}
+    >
+      {/* header */}
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1.5 }}>
+        <Avatar
+          sx={{
+            width: 36,
+            height: 36,
+            bgcolor: avatarColor,
+            fontSize: 13,
+            fontWeight: 700,
+            fontFamily: FONT,
+          }}
+        >
+          {user.initials}
+        </Avatar>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography
+            sx={{
+              fontFamily: FONT,
+              fontSize: 13,
+              fontWeight: 600,
+              color: HEAD,
+            }}
+          >
+            {user.name}
+          </Typography>
+          <Box sx={{ mt: 0.4 }}>
+            <RoleChip role={user.role} />
+          </Box>
+        </Box>
+      </Box>
+
+      {/* project toggles */}
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "repeat(5, 1fr)",
+          gap: 1,
+        }}
+      >
+        {PROJECTS.map((proj, pi) => (
+          <Box key={proj.key} sx={{ textAlign: "center" }}>
+            <Typography
+              sx={{
+                fontFamily: FONT,
+                fontSize: 10,
+                fontWeight: 700,
+                color: MUTED,
+                mb: 0.75,
+                letterSpacing: "0.03em",
+              }}
+            >
+              {proj.label.split(" ")[0]}
+            </Typography>
+            <AccessDot
+              on={user.access[pi]}
+              locked={locked}
+              onClick={() => onToggle(userIdx, pi)}
+            />
+          </Box>
+        ))}
+      </Box>
+    </Paper>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
+function AssignmentMatrixPage({ roleLabel = "Administrator" }) {
+  const [users, setUsers] = useState(INITIAL_USERS);
   const [saved, setSaved] = useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
   const isLocked = (role) => role === "Core Team" || role === "Administrator";
+
   function toggle(userIdx, projIdx) {
     setUsers((prev) =>
       prev.map((u, i) =>
         i === userIdx
-          ? {
-              ...u,
-              access: u.access.map((v, j) => (j === projIdx ? !v : v)),
-            }
+          ? { ...u, access: u.access.map((v, j) => (j === projIdx ? !v : v)) }
           : u,
       ),
     );
   }
+
   return (
-    <Box
-      sx={{
-        width: "100%",
-      }}
-    >
-      {/* ── PAGE HEADER ── */}
+    <Box sx={{ width: "100%", boxSizing: "border-box" }}>
+      {/* BREADCRUMB */}
       <Typography
-        sx={{
-          color: "#6b7b91",
-          fontSize: 12,
-          mb: 0.4,
-        }}
+        sx={{ fontFamily: FONT, fontSize: 12.5, color: MUTED, mb: 0.4 }}
       >
-        ProdTrack · Administrator
+        ProdTrack · {roleLabel}
       </Typography>
 
+      {/* TITLE ROW */}
       <Box
         sx={{
           display: "flex",
+          alignItems: { xs: "flex-start", sm: "center" },
+          flexDirection: { xs: "column", sm: "row" },
           justifyContent: "space-between",
-          alignItems: "flex-start",
-          flexWrap: "wrap",
-          gap: 2,
-          mb: 2,
+          gap: 1.5,
+          mb: 0.4,
         }}
       >
         <Box>
           <Typography
             sx={{
-              fontSize: 23,
+              fontFamily: FONT,
               fontWeight: 800,
-              color: "#17233a",
+              fontSize: 22,
+              letterSpacing: "-0.4px",
+              color: HEAD,
             }}
           >
             Project assignment matrix
           </Typography>
           <Typography
-            sx={{
-              color: "#718096",
-              fontSize: 12,
-              mt: 0.4,
-            }}
+            sx={{ fontFamily: FONT, fontSize: 13.5, color: MUTED, mt: 0.3 }}
           >
             Controls project visibility. Indexers see only assigned projects;
             core &amp; admin see all.
@@ -328,185 +305,188 @@ function AssignmentMatrixAdministrator() {
 
         <Button
           variant="contained"
+          //startIcon={<SaveRoundedIcon sx={{ fontSize: 17 }} />}
           onClick={() => setSaved(true)}
           sx={{
-            height: 36,
+            fontFamily: FONT,
+            fontSize: 13,
+            fontWeight: 600,
+            px: 2,
+            py: 0.875,
             borderRadius: "8px",
             textTransform: "none",
-            fontWeight: 700,
-            fontSize: 13,
+            bgcolor: "#2f6df0",
+            color: "#fff",
             boxShadow: "none",
-            "&:hover": {
-              boxShadow: "none",
-            },
+            flexShrink: 0,
+            "&:hover": { bgcolor: "#1f57c9", boxShadow: "none" },
           }}
         >
           Save changes
         </Button>
       </Box>
 
-      {/* ── INFO BANNER ── */}
+      {/* INFO BANNER */}
       <Box
         sx={{
           display: "flex",
-          alignItems: "center",
+          alignItems: "flex-start",
           gap: 1,
-          px: 1.5,
-          py: 1,
-          mb: 2,
-          bgcolor: "#eaf3ff",
-          border: "1px solid #bcd5ff",
-          borderRadius: "8px",
+          px: 1.75,
+          py: 1.25,
+          mb: 2.5,
+          mt: 1.5,
+          bgcolor: "#f0f7ff",
+          border: "1px solid #cfe0f7",
+          borderRadius: "6px",
         }}
       >
-        <InfoOutlinedIcon
-          sx={{
-            fontSize: 16,
-            color: "#2458c7",
-            flexShrink: 0,
-          }}
+        <InfoRoundedIcon
+          sx={{ fontSize: 16, color: "#2f6df0", flexShrink: 0, mt: "1px" }}
         />
         <Typography
           sx={{
-            fontSize: 12,
-            color: "#2458c7",
+            fontFamily: FONT,
+            fontSize: 12.5,
+            color: "#44566f",
+            lineHeight: 1.6,
           }}
         >
-          Toggle a cell to grant or revoke a user's access to a project. Team
-          Leads inherit their team's projects; Core Team and Admin always have
-          all projects.
+          Toggle a dot to grant or revoke a user's access to a project. Team
+          Leads inherit their team's projects. Core Team and Admin always have
+          full access.
         </Typography>
       </Box>
 
-      {/* ── MATRIX TABLE ── */}
-      <Paper
-        elevation={0}
-        sx={{
-          border: "1px solid #dce3ec",
-          borderRadius: "10px",
-          overflow: "auto",
-          bgcolor: "#fff",
-          boxShadow: "0 2px 8px rgba(15,23,42,.05)",
-        }}
-      >
-        <Box
+      {/* ── DESKTOP TABLE ── */}
+      {!isMobile && (
+        <Paper
+          elevation={0}
           sx={{
-            minWidth: 620,
+            border: `1px solid ${LINE}`,
+            borderRadius: "12px",
+            boxShadow: CARD_SHADOW,
+            bgcolor: "#fff",
+            overflow: "hidden",
           }}
         >
-          {/* Table header */}
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: "2fr 1.2fr repeat(5, 1fr)",
-              px: 2,
-              py: 1.2,
-              bgcolor: "#f8fafc",
-              borderBottom: "1px solid #e3e8ef",
-            }}
-          >
-            {["USER", "ROLE", ...PROJECTSAdministrator].map((col) => (
-              <Typography
-                key={col}
-                sx={{
-                  fontSize: 10,
-                  fontWeight: 800,
-                  color: "#64748b",
-                  textAlign:
-                    col === "USER" || col === "ROLE" ? "left" : "center",
-                }}
-              >
-                {col}
-              </Typography>
-            ))}
-          </Box>
-
-          {/* Table rows */}
-          {users.map((user, ui) => (
-            <Box
-              key={user.name}
-              sx={{
-                display: "grid",
-                gridTemplateColumns: "2fr 1.2fr repeat(5, 1fr)",
-                px: 2,
-                py: 1.3,
-                alignItems: "center",
-                borderTop: "1px solid #edf0f4",
-                "&:hover": {
-                  bgcolor: "#fafbfd",
-                },
-              }}
-            >
-              {/* User */}
+          <Box sx={{ overflowX: "auto" }}>
+            <Box sx={{ minWidth: 640 }}>
+              {/* header */}
               <Box
                 sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.2,
+                  display: "grid",
+                  gridTemplateColumns: "2fr 1.2fr repeat(5, 1fr)",
+                  px: 2.5,
+                  py: 1.25,
+                  bgcolor: "#f8fafc",
+                  borderBottom: `1px solid ${LINE2}`,
                 }}
               >
-                <Avatar
-                  sx={{
-                    width: 30,
-                    height: 30,
-                    fontSize: 11,
-                    fontWeight: 700,
-                    bgcolor:
-                      AVATAR_COLORSAdministrator[
-                        ui % AVATAR_COLORSAdministrator.length
-                      ],
-                    flexShrink: 0,
-                  }}
-                >
-                  {user.initials}
-                </Avatar>
-                <Typography
-                  sx={{
-                    fontSize: 13,
-                    color: "#17233a",
-                    fontWeight: 500,
-                  }}
-                >
-                  {user.name}
-                </Typography>
+                {["USER", "ROLE", ...PROJECTS.map((p) => p.label)].map(
+                  (col, i) => (
+                    <Typography
+                      key={col}
+                      sx={{
+                        fontFamily: FONT,
+                        fontSize: 11,
+                        fontWeight: 800,
+                        color: MUTED,
+                        letterSpacing: "0.4px",
+                        textAlign: i >= 2 ? "center" : "left",
+                      }}
+                    >
+                      {col}
+                    </Typography>
+                  ),
+                )}
               </Box>
 
-              {/* Role */}
-              <Box>
-                <RoleChipAdministrator role={user.role} />
-              </Box>
-
-              {/* Access dots */}
-              {user.access.map((on, pi) => (
+              {/* rows */}
+              {users.map((user, ui) => (
                 <Box
-                  key={pi}
+                  key={user.name}
                   sx={{
-                    display: "flex",
-                    justifyContent: "center",
+                    display: "grid",
+                    gridTemplateColumns: "2fr 1.2fr repeat(5, 1fr)",
+                    px: 2.5,
+                    py: 1.4,
                     alignItems: "center",
+                    borderTop: `1px solid ${LINE2}`,
+                    "&:hover": { bgcolor: "#fafbff" },
                   }}
                 >
-                  <AccessDotAdministrator
-                    on={on}
-                    locked={isLocked(user.role)}
-                    onClick={() => toggle(ui, pi)}
-                  />
+                  {/* user */}
+                  <Box
+                    sx={{ display: "flex", alignItems: "center", gap: 1.25 }}
+                  >
+                    <Avatar
+                      sx={{
+                        width: 32,
+                        height: 32,
+                        bgcolor: AVATAR_COLORS[ui % AVATAR_COLORS.length],
+                        fontSize: 12,
+                        fontWeight: 700,
+                        fontFamily: FONT,
+                      }}
+                    >
+                      {user.initials}
+                    </Avatar>
+                    <Typography
+                      sx={{
+                        fontFamily: FONT,
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: HEAD,
+                      }}
+                    >
+                      {user.name}
+                    </Typography>
+                  </Box>
+
+                  {/* role */}
+                  <Box>
+                    <RoleChip role={user.role} />
+                  </Box>
+
+                  {/* access dots */}
+                  {user.access.map((on, pi) => (
+                    <AccessDot
+                      key={pi}
+                      on={on}
+                      locked={isLocked(user.role)}
+                      onClick={() => toggle(ui, pi)}
+                    />
+                  ))}
                 </Box>
               ))}
             </Box>
+          </Box>
+        </Paper>
+      )}
+
+      {/* ── MOBILE CARDS ── */}
+      {isMobile && (
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+          {users.map((user, ui) => (
+            <MobileUserCard
+              key={user.name}
+              user={user}
+              userIdx={ui}
+              locked={isLocked(user.role)}
+              onToggle={toggle}
+              avatarColor={AVATAR_COLORS[ui % AVATAR_COLORS.length]}
+            />
           ))}
         </Box>
-      </Paper>
+      )}
 
-      {/* ── SUCCESS SNACKBAR ── */}
+      {/* SNACKBAR */}
       <Snackbar
         open={saved}
         autoHideDuration={2500}
         onClose={() => setSaved(false)}
-        anchorOrigin={{
-          vertical: "bottom",
-          horizontal: "right",
-        }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       >
         <Alert
           severity="success"
@@ -519,14 +499,18 @@ function AssignmentMatrixAdministrator() {
     </Box>
   );
 }
-void AssignmentMatrixAdministrator;
+
+// ─── Export ───────────────────────────────────────────────────────────────────
+
 export default function AssignmentMatrix(props) {
-  switch (props.roleKey) {
-    case "coreTeam":
-      return <AssignmentMatrixCoreTeam {...props} />;
-    case "administrator":
-      return <AssignmentMatrixCoreTeam {...props} />;
-    default:
-      return <AssignmentMatrixCoreTeam {...props} />;
-  }
+  const labelMap = {
+    administrator: "Administrator",
+    coreTeam: "Core Team",
+    teamLead: "Team Lead",
+  };
+  return (
+    <AssignmentMatrixPage
+      roleLabel={labelMap[props.roleKey] ?? "Administrator"}
+    />
+  );
 }
