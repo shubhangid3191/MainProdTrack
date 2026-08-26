@@ -475,23 +475,22 @@ const COL = "1.4fr 1.8fr 1fr 1fr 1.2fr 1fr";
 
 function GuideChip({ value }) {
   const done = value === "DONE";
-
   return (
     <Box
       sx={{
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        width: "60px",
+        width: 80,
         fontFamily: FONT,
-        fontSize: 10,
+        fontSize: 11,
         fontWeight: 800,
-        px: "4px",
-        py: "3px",
-        borderRadius: "5px",
-        letterSpacing: "0.2px",
+        py: "4px",
+        borderRadius: "6px",
+        letterSpacing: "0.4px",
         textTransform: "uppercase",
-        lineHeight: 1.2,
+        lineHeight: 1.4,
+        width: 80,
         border: done ? "1.5px solid #1f9d6b" : "1.5px solid #d9962b",
         color: done ? "#1f9d6b" : "#d9962b",
         bgcolor: "transparent",
@@ -503,34 +502,24 @@ function GuideChip({ value }) {
 }
 function StatusChip({ value }) {
   const present = value === "PRESENT";
-
   return (
     <Box
       sx={{
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        width: "60px",
+        width: 80,
         fontFamily: FONT,
-        fontSize: 10,
+        fontSize: 11,
         fontWeight: 800,
-        px: "4px",
-        py: "3px",
-        borderRadius: "5px",
-        letterSpacing: "0.2px",
+        py: "4px",
+        borderRadius: "6px",
+        letterSpacing: "0.4px",
         textTransform: "uppercase",
-        lineHeight: 1.2,
+        lineHeight: 1.4,
         ...(present
-          ? {
-              bgcolor: "#e4f6ee",
-              color: "#177a53",
-              border: "1.5px solid #b7e3cc",
-            }
-          : {
-              bgcolor: "#f3f4f6",
-              color: "#6a7585",
-              border: `1.5px solid ${LINE}`,
-            }),
+          ? { bgcolor: "#e4f6ee", color: "#177a53", border: "1.5px solid #b7e3cc" }
+          : { bgcolor: "#f3f4f6", color: "#6a7585", border: `1.5px solid ${LINE}` }),
       }}
     >
       {value}
