@@ -35,26 +35,27 @@ export default function GuideUpdateModal({ open, onClose }) {
 
   return (
     <Dialog
-  open={open}
-  onClose={handleClose}
-  maxWidth={false}
-  PaperProps={{
-    style: {
-      width: "280px",
-      maxWidth: "280px",
-      minWidth: "280px",
-      borderRadius: "16px",
-      overflow: "hidden",
-      boxShadow: "0 24px 70px rgba(15, 23, 42, 0.35)",
-    },
-  }}
-  BackdropProps={{
-    sx: {
-      backgroundColor: "rgba(15, 23, 42, 0.58)",
-      backdropFilter: "blur(5px)",
-    },
-  }}
->
+      open={open}
+      onClose={handleClose}
+      maxWidth={false}
+      sx={{
+        "& .MuiDialog-paper": {
+          width: "490px",
+          maxWidth: "92vw",
+          borderRadius: "16px",
+          overflow: "hidden",
+          boxShadow: "0 8px 28px rgba(15, 23, 42, 0.18)",
+        },
+      }}
+      slotProps={{
+        backdrop: {
+          sx: {
+            backgroundColor: "rgba(15, 23, 42, 0.35)",
+            backdropFilter: "blur(2px)",
+          },
+        },
+      }}
+    >
       {/* HEADER */}
 
       <DialogTitle
@@ -324,11 +325,9 @@ export default function GuideUpdateModal({ open, onClose }) {
             },
 
             "&.Mui-disabled": {
-              // Blue even when disabled
-              backgroundColor: "#2f6df6",
+              backgroundColor: "#2f6df0",
               color: "#ffffff",
-
-              opacity: 0.55,
+              opacity: 1,
             },
           }}
         >
