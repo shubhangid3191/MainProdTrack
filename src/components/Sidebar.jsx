@@ -11,7 +11,7 @@ import PowerSettingsNewOutlinedIcon from "@mui/icons-material/PowerSettingsNewOu
 
 import sidebarConfig from "../Config/sidebarConfig.js";
 
-export const DRAWER_WIDTH = 240;
+export const DRAWER_WIDTH = 260;
 
 
 // =========================================================
