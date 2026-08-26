@@ -126,7 +126,7 @@ function AttendanceCard({
             color: "#111827",
             fontSize: 25,
             lineHeight: 1.2,
-            fontWeight: 700,
+            fontWeight: 800,
           }}
         >
           {value}
@@ -185,8 +185,8 @@ export default function Attendance({ roleLabel = "Indexer" }) {
 
       <Typography
         sx={{
-          color: "#6b7280",
-          fontSize: 12,
+          color: "#6A7585",
+          fontSize: 12.5,
           mb: 0.7,
         }}
       >
@@ -211,12 +211,12 @@ export default function Attendance({ roleLabel = "Indexer" }) {
         <Box>
           <Typography
             sx={{
-              fontWeight: 700,
-              fontSize: 24,
+              fontWeight: 800,
+              fontSize: 22,
 
-              color: "#111827",
+              color: "#1A2434",
 
-              lineHeight: 1.3,
+              lineHeight: 1.5,
             }}
           >
             Leave & attendance
@@ -224,7 +224,7 @@ export default function Attendance({ roleLabel = "Indexer" }) {
 
           <Typography
             sx={{
-              color: "#6b7280",
+              color: "#6A7585",
               fontSize: 14,
               mt: 0.5,
             }}
@@ -386,7 +386,7 @@ export default function Attendance({ roleLabel = "Indexer" }) {
 
               fontWeight: 700,
 
-              color: "#111827",
+              color: "#1A2434",
             }}
           >
             This month
@@ -411,7 +411,7 @@ export default function Attendance({ roleLabel = "Indexer" }) {
                   sx={{
                     fontSize: 12,
                     fontWeight: 700,
-                    color: "#6b7280",
+                    color: "#6A7585",
                     py: 1.5,
                   }}
                 >
@@ -422,7 +422,7 @@ export default function Attendance({ roleLabel = "Indexer" }) {
                   sx={{
                     fontSize: 12,
                     fontWeight: 700,
-                    color: "#6b7280",
+                    color: "#6A7585",
                     py: 1.5,
                   }}
                 >
@@ -433,7 +433,7 @@ export default function Attendance({ roleLabel = "Indexer" }) {
                   sx={{
                     fontSize: 12,
                     fontWeight: 700,
-                    color: "#6b7280",
+                    color: "#6A7585",
                     py: 1.5,
                   }}
                 >
@@ -445,7 +445,7 @@ export default function Attendance({ roleLabel = "Indexer" }) {
                   sx={{
                     fontSize: 12,
                     fontWeight: 700,
-                    color: "#6b7280",
+                    color: "#6A7585",
                     py: 1.5,
                   }}
                 >
@@ -456,7 +456,7 @@ export default function Attendance({ roleLabel = "Indexer" }) {
                   sx={{
                     fontSize: 12,
                     fontWeight: 700,
-                    color: "#6b7280",
+                    color: "#6A7585",
                     py: 1.5,
                   }}
                 >
@@ -488,7 +488,7 @@ export default function Attendance({ roleLabel = "Indexer" }) {
                       sx={{
                         fontSize: 14,
 
-                        color: "#111827",
+                        color: "#1A2434",
 
                         fontWeight: 500,
 
@@ -504,7 +504,7 @@ export default function Attendance({ roleLabel = "Indexer" }) {
                       sx={{
                         fontSize: 14,
 
-                        color: "#6b7280",
+                        color: "#1A2434",
 
                         py: 1.8,
                       }}
@@ -537,12 +537,12 @@ export default function Attendance({ roleLabel = "Indexer" }) {
                           color:
                             statusStyle.color,
 
-                          fontSize: 12,
+                          fontSize: 10.5,
 
-                          fontWeight: 600,
+                          fontWeight: 800,
                         }}
                       >
-                        {row.status}
+                        {row.status.toUpperCase()}
                       </Box>
                     </TableCell>
 
@@ -553,7 +553,7 @@ export default function Attendance({ roleLabel = "Indexer" }) {
                       sx={{
                         fontSize: 14,
 
-                        color: "#111827",
+                        color: "#1A2434",
 
                         fontWeight: 600,
 
@@ -567,9 +567,9 @@ export default function Attendance({ roleLabel = "Indexer" }) {
 
                     <TableCell
                       sx={{
-                        fontSize: 14,
+                        fontSize: 13,
 
-                        color: "#6b7280",
+                        color: "#6A7585",
 
                         py: 1.8,
                       }}
