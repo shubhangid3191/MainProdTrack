@@ -58,6 +58,7 @@ export default function DashboardLayout({
             onLogout={onLogout}
             onNotifications={() => onNavigate("notifications")}
             onMenuClick={() => setMobileOpen(true)}
+            onProfileClick={() => onNavigate("my-profile")}
           />
         </Box>
 
