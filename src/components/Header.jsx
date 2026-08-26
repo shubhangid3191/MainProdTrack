@@ -20,6 +20,7 @@ export default function Header({
   onNotifications,
   onHelp,
   onMenuClick,
+  onProfileClick,
 }) {
   const initials = userName
     .split(" ")
@@ -219,6 +220,7 @@ export default function Header({
           {/* AVATAR */}
 
           <Avatar
+            onClick={onProfileClick}
             sx={{
               width: 42,
               height: 42,
@@ -227,6 +229,8 @@ export default function Header({
 
               fontSize: 13,
               fontWeight: 700,
+
+              cursor: "pointer",
             }}
           >
             {initials}
