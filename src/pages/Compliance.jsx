@@ -1,4 +1,111 @@
-import { Box, Typography } from '@mui/material';
-import CorePageShell, { CoreMetricCards, CoreTable, SectionCard, Person } from '../components/CorePageShell.jsx';
-const rows=[[<Person initials="PS" name="Priya Sharma"/>,'EMP-1042','ABC Medical Imaging','v2.3','PENDING'],[<Person initials="DM" name="Divya Menon"/>,'EMP-1155','ABC Medical Imaging','v2.3','PENDING'],[<Person initials="AR" name="Aditya Rao"/>,'EMP-1088','Ortho Kids','v1.7','READ']];
-export default function Compliance(){return <CorePageShell title="Update compliance" description="Guide acknowledgement status across employees and projects." actionLabel="Send reminders"><CoreMetricCards items={[['Overall compliance','91%'],['Pending acks.','9'],['Active guides','4'],['Reminders sent','23']]}/><Box sx={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:2,'@media (max-width:700px)':{gridTemplateColumns:'1fr'}}}><SectionCard title="Project-wise compliance">{['ABC Medical Imaging','Ortho Kids','Spine Indexing','Cardio Records'].map((name,index)=><Box key={name} sx={{display:'grid',gridTemplateColumns:'155px 1fr 45px',gap:1,alignItems:'center',px:2,py:.7}}><Typography sx={{fontSize:12}}>{name}</Typography><Box sx={{height:8,bgcolor:'#edf1f6',borderRadius:4}}><Box sx={{width:`${[72,65,98,100][index]}%`,height:'100%',bgcolor:'#7251d6',borderRadius:4}}/></Box><Typography sx={{fontSize:12}}>{[72,65,98,100][index]}%</Typography></Box>)}</SectionCard><SectionCard title="Guide version tracking"><CoreTable columns={['PROJECT','VERSION','ACKED']} rows={[['ABC Medical','v2.3','36 / 50'],['Ortho Kids','v1.7','26 / 40'],['Spine Indexing','v3.1','39 / 40'],['Cardio Records','v1.2','20 / 20']]} actionLabel={null}/></SectionCard></Box><SectionCard title="Pending acknowledgements"><CoreTable columns={['EMPLOYEE','EMP ID','PROJECT','GUIDE','STATUS']} rows={rows} actionLabel={null}/></SectionCard></CorePageShell>}
+import { Box, Typography } from "@mui/material";
+import CorePageShell, {
+  CoreMetricCards,
+  CoreTable,
+  SectionCard,
+  Person,
+} from "../components/CorePageShell.jsx";
+const rows = [
+  [
+    <Person initials="PS" name="Priya Sharma" />,
+    "EMP-1042",
+    "ABC Medical Imaging",
+    "v2.3",
+    "PENDING",
+  ],
+  [
+    <Person initials="DM" name="Divya Menon" />,
+    "EMP-1155",
+    "ABC Medical Imaging",
+    "v2.3",
+    "PENDING",
+  ],
+  [
+    <Person initials="AR" name="Aditya Rao" />,
+    "EMP-1088",
+    "Ortho Kids",
+    "v1.7",
+    "READ",
+  ],
+];
+export default function Compliance() {
+  return (
+    <CorePageShell
+      title="Update compliance"
+      description="Guide acknowledgement status across employees and projects."
+      actionLabel="Send reminders"
+    >
+      <CoreMetricCards
+        items={[
+          ["Overall compliance", "91%"],
+          ["Pending acks.", "9"],
+          ["Active guides", "4"],
+          ["Reminders sent", "23"],
+        ]}
+      />
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 2,
+          "@media (max-width:700px)": { gridTemplateColumns: "1fr" },
+        }}
+      >
+        <SectionCard title="Project-wise compliance">
+          {[
+            "ABC Medical Imaging",
+            "Ortho Kids",
+            "Spine Indexing",
+            "Cardio Records",
+          ].map((name, index) => (
+            <Box
+              key={name}
+              sx={{
+                display: "grid",
+                gridTemplateColumns: "155px 1fr 45px",
+                gap: 1,
+                alignItems: "center",
+                px: 2,
+                py: 0.7,
+              }}
+            >
+              <Typography sx={{ fontSize: 12 }}>{name}</Typography>
+              <Box sx={{ height: 8, bgcolor: "#edf1f6", borderRadius: 4 }}>
+                <Box
+                  sx={{
+                    width: `${[72, 65, 98, 100][index]}%`,
+                    height: "100%",
+                    bgcolor: "#7251d6",
+                    borderRadius: 4,
+                  }}
+                />
+              </Box>
+              <Typography sx={{ fontSize: 12 }}>
+                {[72, 65, 98, 100][index]}%
+              </Typography>
+            </Box>
+          ))}
+        </SectionCard>
+        <SectionCard title="Guide version tracking">
+          <CoreTable
+            columns={["PROJECT", "VERSION", "ACKED"]}
+            rows={[
+              ["ABC Medical", "v2.3", "36 / 50"],
+              ["Ortho Kids", "v1.7", "26 / 40"],
+              ["Spine Indexing", "v3.1", "39 / 40"],
+              ["Cardio Records", "v1.2", "20 / 20"],
+            ]}
+            actionLabel={null}
+          />
+        </SectionCard>
+      </Box>
+      <SectionCard title="Pending acknowledgements">
+        <CoreTable
+          columns={["EMPLOYEE", "EMP ID", "PROJECT", "GUIDE", "STATUS"]}
+          rows={rows}
+          actionLabel={null}
+        />
+      </SectionCard>
+    </CorePageShell>
+  );
+}

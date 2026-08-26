@@ -58,7 +58,7 @@ const rows = [
   ],
 ];
 
-const tabs = ["Activity", "Change history", "Login events"];
+const tabs = ["Activity", "Change History", "Login Events"];
 
 export default function AuditLog() {
   const [notice, setNotice] = useState(false);
@@ -148,7 +148,7 @@ export default function AuditLog() {
                     sx={{
                       color: "#526581",
                       fontSize: 11,
-                      fontWeight: 800,
+                      fontWeight: 700,
                       py: 1.4,
                     }}
                   >
@@ -162,7 +162,12 @@ export default function AuditLog() {
             {rows.map(([time, initials, name, action, entity, detail]) => (
               <TableRow key={`${time}-${name}`} hover>
                 <TableCell
-                  sx={{ color: "#526581", fontSize: 13, whiteSpace: "nowrap" }}
+                  sx={{
+                    color: "#526581",
+                    fontSize: 13,
+                    whiteSpace: "nowrap",
+                    fontWeight: 500,
+                  }}
                 >
                   {time}
                 </TableCell>
@@ -199,12 +204,12 @@ export default function AuditLog() {
                       bgcolor: "#eaf1ff",
                       border: "1px solid #bcd2ff",
                       fontSize: 10,
-                      fontWeight: 800,
+                      fontWeight: 700,
                     }}
                   />
                 </TableCell>
                 <TableCell
-                  sx={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}
+                  sx={{ fontSize: 13, fontWeight: 500, whiteSpace: "nowrap" }}
                 >
                   {entity}
                 </TableCell>

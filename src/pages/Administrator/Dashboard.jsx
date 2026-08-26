@@ -432,7 +432,7 @@ export default function Dashboard({ onNavigate }) {
 
           <Button
             variant="contained"
-            startIcon={<BarChartRoundedIcon sx={{ fontSize: 17 }} />}
+            //startIcon={<BarChartRoundedIcon sx={{ fontSize: 17 }} />}
             onClick={() => onNavigate("analytics-kpis")}
             sx={{
               fontFamily: FONT,

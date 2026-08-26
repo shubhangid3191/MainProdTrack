@@ -63,11 +63,7 @@ const theme = createTheme({
   // ======================================================
 
   typography: {
-    fontFamily: [
-      "Inter",
-      "Arial",
-      "sans-serif",
-    ].join(","),
+    fontFamily: ["Inter", "Arial", "sans-serif"].join(","),
 
     // Default MUI = 14px
     // We use approx. 12.2px
