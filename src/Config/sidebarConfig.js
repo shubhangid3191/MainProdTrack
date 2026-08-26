@@ -45,11 +45,21 @@ export const sidebarConfig = {
     { label: 'Assignment Matrix', icon: '🔗', page: 'assignment-matrix' },
     { label: 'Guide Manager', icon: '📘', page: 'guide-manager' },
     { label: 'Locking Rules', icon: '🔒', page: 'locking-rules' },
-    { label: 'Corrections', icon: '✅', page: 'corrections' },
+    {
+      label: "Corrections",
+      icon: "✅",
+      page: "corrections",
+      badge: {
+        text: "6",
+        color: "error",
+        dot: true,
+      },
+    },
+
     { label: 'Analytics & KPIs', icon: '📈', page: 'analytics-kpis' },
     { label: 'Audit Log', icon: '📜', page: 'audit-log' },
     { label: 'Settings', icon: '⚙️', page: 'settings' },
-    ...common,
+    ...common.filter((item) => item.page !== "corrections"),
   ],
 };
 
