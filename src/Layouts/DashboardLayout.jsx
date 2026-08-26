@@ -12,6 +12,7 @@ export default function DashboardLayout({
   children,
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+
   return (
     <Box
       sx={{
@@ -38,20 +39,13 @@ export default function DashboardLayout({
           flex: 1,
           minWidth: 0,
           height: "100dvh",
-
           display: "flex",
           flexDirection: "column",
-
           overflow: "hidden",
         }}
       >
-        {/* HEADER - DOES NOT SCROLL */}
-        <Box
-          sx={{
-            flex: "0 0 auto",
-            width: "100%",
-          }}
-        >
+        {/* HEADER */}
+        <Box sx={{ flex: "0 0 auto", width: "100%" }}>
           <Header
             userName={user.name}
             role={user.role}
@@ -62,44 +56,30 @@ export default function DashboardLayout({
           />
         </Box>
 
-        {/* WHITE AREA WRAPPER */}
+        {/* SCROLLABLE CONTENT AREA */}
         <Box
           sx={{
             flex: "1 1 auto",
             minHeight: 0,
             minWidth: 0,
-
             position: "relative",
-
             bgcolor: "#eef2f7",
-
             overflow: "hidden",
           }}
         >
-          {/* ACTUAL SCROLL AREA */}
           <Box
             component="main"
             sx={{
               position: "absolute",
-
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-
+              top: 0, left: 0, right: 0, bottom: 0,
               p: { xs: 1.5, sm: 2, md: 3 },
-
               overflowY: "auto",
               overflowX: "auto",
-
               bgcolor: "#eef2f7",
-
               scrollbarGutter: { md: "stable" },
             }}
           >
             {children}
-
-            {/* bottom space so last card can scroll fully */}
             <Box sx={{ height: 24 }} />
           </Box>
         </Box>

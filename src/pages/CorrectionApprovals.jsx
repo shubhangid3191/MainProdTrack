@@ -353,7 +353,7 @@ function ApprovalsTeamLead() {
       </Typography>
       <Typography
         sx={{
-          fontSize: 24,
+          fontSize: 18,
           fontWeight: 800,
         }}
       >
@@ -495,36 +495,36 @@ function CorrectionsCoreTeam({ roleLabel = "Team Lead" }) {
     "Audit log update",
   ];
 
-const metrics = [
-  {
-    icon: <PendingActionsRoundedIcon />,
-    label: "Awaiting review",
-    value: rows.filter((row) => row[5] === "PENDING").length,
-    background: "#fff3dc",
-    iconColor: "#a66b00",
-  },
-  {
-    icon: <CheckCircleRoundedIcon />,
-    label: "Approved (mo.)",
-    value: "41",
-    background: "#e2f6ec",
-    iconColor: "#087a4d",
-  },
-  {
-    icon: <CancelRoundedIcon />,
-    label: "Rejected (mo.)",
-    value: "5",
-    background: "#fde8e8",
-    iconColor: "#b42318",
-  },
-  {
-    icon: <AccessTimeRoundedIcon />,
-    label: "Avg. turnaround",
-    value: "4h",
-    background: "#eaf1ff",
-    iconColor: "#2f6df6",
-  },
-];
+  const metrics = [
+    {
+      icon: <PendingActionsRoundedIcon />,
+      label: "Awaiting review",
+      value: rows.filter((row) => row[5] === "PENDING").length,
+      background: "#fff3dc",
+      iconColor: "#a66b00",
+    },
+    {
+      icon: <CheckCircleRoundedIcon />,
+      label: "Approved (mo.)",
+      value: "41",
+      background: "#e2f6ec",
+      iconColor: "#087a4d",
+    },
+    {
+      icon: <CancelRoundedIcon />,
+      label: "Rejected (mo.)",
+      value: "5",
+      background: "#fde8e8",
+      iconColor: "#b42318",
+    },
+    {
+      icon: <AccessTimeRoundedIcon />,
+      label: "Avg. turnaround",
+      value: "4h",
+      background: "#eaf1ff",
+      iconColor: "#2f6df6",
+    },
+  ];
 
   const statusColors = {
     PENDING: {
@@ -629,19 +629,19 @@ const metrics = [
             }}
           >
             <Box
-  sx={{
-    width: 46,
-    height: 46,
-    flexShrink: 0,
-    display: "grid",
-    placeItems: "center",
-    borderRadius: "12px",
-    backgroundColor: metric.background,
-    color: metric.iconColor,
-  }}
->
-  {metric.icon}
-</Box>
+              sx={{
+                width: 46,
+                height: 46,
+                flexShrink: 0,
+                display: "grid",
+                placeItems: "center",
+                borderRadius: "12px",
+                backgroundColor: metric.background,
+                color: metric.iconColor,
+              }}
+            >
+              {metric.icon}
+            </Box>
 
             <Box>
               <Typography
