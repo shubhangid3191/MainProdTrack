@@ -362,7 +362,7 @@ function IndexerDailyEntryIndexer() {
             borderRadius: "11px",
 
             "& .MuiChip-label": {
-              color: "#000",
+              color: "#fff",
             },
           }}
         />
@@ -370,7 +370,7 @@ function IndexerDailyEntryIndexer() {
         <Typography
           sx={{
             color: "#94a3b8",
-            fontSize: 12,
+            fontSize: 18,
           }}
         >
           →
