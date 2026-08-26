@@ -1,10 +1,10 @@
 import { Box, Paper, Typography } from '@mui/material';
 
 const notifications = [
-	['●', '#dc3545', 'Missing daily entry', "You haven't submitted an entry for Spine Indexing today.", '2h ago'],
-	['▣', '#3478ed', 'Guide update', 'ABC Medical Imaging Guide v2.3 needs acknowledgement.', '5h ago'],
-	['✓', '#20a36b', 'Correction approved', 'Your correction on ABC-...-11 was approved by Rohan Mehta.', '1d ago'],
-	['▰', '#8060d9', 'Backlog alert', 'Pending volume for Ortho Kids increased by 12%.', '1d ago'],
+	['🔴', '#dc3545', 'Missing daily entry', "You haven't submitted an entry for Spine Indexing today.", '2h ago'],
+	['📘', '#3478ed', 'Guide update', 'ABC Medical Imaging Guide v2.3 needs acknowledgement.', '5h ago'],
+	['✅', '#20a36b', 'Correction approved', 'Your correction on ABC-...-11 was approved by Rohan Mehta.', '1d ago'],
+	['📈', '#8060d9', 'Backlog alert', 'Pending volume for Ortho Kids increased by 12%.', '1d ago'],
 	['🔒', '#f59e0b', 'Entry lock reminder', 'Entries for 18 May lock at 6:00 PM today.', '2d ago'],
 ];
 

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Box, Button, Paper, Typography } from "@mui/material";
 import InfoRoundedIcon from "@mui/icons-material/InfoRounded";
 
@@ -15,7 +16,7 @@ const CHIP_BG    = ["#e4f6ee", "#fbf1dc", "#efe9fb", "#e6efff"];
 const CHIP_COLOR = ["#177a53", "#a9741a", "#603bb3", "#285fb8"];
 
 // ─── Field: label above, plain read-only input box below ─────────────────────
-function Field({ label, value }) {
+function Field({ label, name, value, onChange }) {
   return (
     <Box>
       <Typography
@@ -29,40 +30,102 @@ function Field({ label, value }) {
       >
         {label}
       </Typography>
-      <Box
+
+      <TextField
+        name={name}
+        value={value}
+        onChange={onChange}
+        fullWidth
+        size="small"
         sx={{
-          width: "100%",
-          boxSizing: "border-box",
-          px: 1.5,
-          py: 1,
-          bgcolor: "#f8fafc",
-          border: `1px solid ${LINE}`,
-          borderRadius: "8px",
-          fontFamily: FONT,
-          fontSize: 13,
-          color: HEAD,
-          lineHeight: "22px",
-          minHeight: 38,
-          userSelect: "text",
+          "& .MuiOutlinedInput-root": {
+            minHeight: 40,
+            borderRadius: "8px",
+            backgroundColor: "#f8fafc",
+            fontFamily: FONT,
+            fontSize: 13,
+            color: HEAD,
+
+            "& fieldset": {
+              borderColor: LINE,
+            },
+
+            "&:hover fieldset": {
+              borderColor: "#b9c3d1",
+            },
+
+            "&.Mui-focused fieldset": {
+              borderColor: "#2f6df0",
+              borderWidth: "1px",
+            },
+          },
+
+          "& .MuiInputBase-input": {
+            px: 1.5,
+            py: 1,
+          },
         }}
-      >
-        {value || <span style={{ color: MUTED }}>—</span>}
-      </Box>
+      />
     </Box>
   );
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function MyProfile({ user }) {
-  const email = `${(user.username || "user").replace(".", "")}@company.com`;
+  const defaultEmail = `${(user.username || "user").replace(
+    ".",
+    ""
+  )}@company.com`;
+
+  const [formData, setFormData] = useState({
+    emp: user.emp || "EMP-1042",
+    name: user.name || "",
+    email: defaultEmail,
+    dept: user.dept || "Indexing Ops",
+    role: user.role || "",
+    lead: user.lead || "Rohan Mehta",
+  });
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+
+    setFormData((currentData) => ({
+      ...currentData,
+      [name]: value,
+    }));
+  };
 
   const fields = [
-    ["Employee ID",       user.emp  || "EMP-1042"],
-    ["Full name",         user.name || "—"],
-    ["Email",             email],
-    ["Department",        user.dept || "Indexing Ops"],
-    ["Designation / Role",user.role || "—"],
-    ["Team lead",         user.lead || "Rohan Mehta"],
+    {
+      name: "emp",
+      label: "Employee ID",
+      value: formData.emp,
+    },
+    {
+      name: "name",
+      label: "Full name",
+      value: formData.name,
+    },
+    {
+      name: "email",
+      label: "Email",
+      value: formData.email,
+    },
+    {
+      name: "dept",
+      label: "Department",
+      value: formData.dept,
+    },
+    {
+      name: "role",
+      label: "Designation / Role",
+      value: formData.role,
+    },
+    {
+      name: "lead",
+      label: "Team lead",
+      value: formData.lead,
+    },
   ];
 
   return (
@@ -152,8 +215,14 @@ export default function MyProfile({ user }) {
               gap: 2,
             }}
           >
-            {fields.map(([label, value]) => (
-              <Field key={label} label={label} value={value} />
+          {fields.map((field) => (
+              <Field
+                key={field.name}
+                name={field.name}
+                label={field.label}
+                value={field.value}
+                onChange={handleChange}
+              />
             ))}
           </Box>
         </Paper>
