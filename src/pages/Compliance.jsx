@@ -28,12 +28,13 @@ const rows = [
     "READ",
   ],
 ];
-export default function Compliance() {
+export default function Compliance({ roleLabel }) {
   return (
     <CorePageShell
       title="Update compliance"
       description="Guide acknowledgement status across employees and projects."
       actionLabel="Send reminders"
+      breadcrumb={roleLabel}
     >
       <CoreMetricCards
         items={[

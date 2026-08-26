@@ -265,7 +265,7 @@ export default function CorePageShell({
 
   return (
     <Box sx={{ width: "100%" }}>
-      <Typography sx={{ color: "#667085", fontSize: 12 }}>
+      <Typography sx={{ color: "#6A7585", fontSize: 12.5 }}>
         ProdTrack · {breadcrumb}
       </Typography>
       <Box
@@ -280,10 +280,10 @@ export default function CorePageShell({
         }}
       >
         <Box>
-          <Typography sx={{ fontSize: 24, fontWeight: 800 }}>
+          <Typography sx={{ fontSize: 22, fontWeight: 800, color:"#1A2434" }}>
             {title}
           </Typography>
-          <Typography sx={{ color: "#667085", fontSize: 13, mt: 0.4 }}>
+          <Typography sx={{ color: "#6A7585", fontSize: 13.5, mt: 0.4 }}>
             {description}
           </Typography>
         </Box>
