@@ -50,6 +50,9 @@ export default function SignIn({ onLogin }) {
 
         "@media (max-width: 900px)": {
           flexDirection: "column",
+          height: "auto",
+          overflowY: "auto",  
+          
         },
       }}
     >

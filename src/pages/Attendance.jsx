@@ -75,7 +75,7 @@ function AttendanceCard({
       sx={{
         border: "1px solid",
         borderColor: "#e5e7eb",
-        borderRadius: 3,
+        borderRadius: 1,
         p: 2.5,
 
         display: "flex",
@@ -95,7 +95,7 @@ function AttendanceCard({
           width: 46,
           height: 46,
 
-          borderRadius: 2,
+          borderRadius: 1,
 
           bgcolor: iconBg,
           color: iconColor,
@@ -243,7 +243,7 @@ export default function Attendance({ roleLabel = "Indexer" }) {
             px: 2,
             py: 1.15,
 
-            borderRadius: 2,
+            borderRadius: 1,
 
             textTransform: "none",
 
@@ -361,7 +361,7 @@ export default function Attendance({ roleLabel = "Indexer" }) {
 
           borderColor: "#e5e7eb",
 
-          borderRadius: 3,
+          borderRadius: 1,
 
           backgroundColor: "#fff",
 

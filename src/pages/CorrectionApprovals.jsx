@@ -255,8 +255,352 @@ function ApprovalsTeamLead() {
                 }} onClick={() => update(i, 'Rejected')}>Reject</Button></>}</TableCell></TableRow>)}</TableBody></Table></TableContainer></Box>;
 }
 const rowsCoreTeam = [['ABC Medical Imaging', '19 May', 'Implant Name', 'ABC Screw 5.0 → ABC Screw 5.5', 'Priya Sharma', 'PENDING'], ['Ortho Kids', '18 May', 'Lot Number', 'LT-441 → LT-4471', 'Aditya Rao', 'PENDING'], ['Spine Indexing', '17 May', 'Page Type', 'Op → OP Note', 'Sneha Iyer', 'APPROVED'], ['Cardio Records', '16 May', 'Manufacturer', 'ABC → ABC Medical', 'Divya Menon', 'REJECTED']];
-function CorrectionsCoreTeam() {
-  return <CorePageShell title="Corrections" description="Review and approve correction requests raised on locked entries." actionLabel="Review queue"><CoreMetricCards items={[['Awaiting review', '6'], ['Approved (mo.)', '41'], ['Rejected (mo.)', '5'], ['Avg. turnaround', '4h']]} /><CoreTable columns={['PROJECT', 'PROD. DATE', 'FIELD', 'OLD → NEW', 'REQUESTED BY', 'STATUS']} rows={rowsCoreTeam} actionLabel="Review" /></CorePageShell>;
+function CorrectionsCoreTeam({ roleLabel = "Team Lead" }) {
+  const [rows, setRows] = useState(rowsCoreTeam);
+
+  const updateStatus = (rowIndex, newStatus) => {
+    setRows((currentRows) =>
+      currentRows.map((row, index) =>
+        index === rowIndex
+          ? [...row.slice(0, 5), newStatus]
+          : row
+      )
+    );
+  };
+
+  const workflowSteps = [
+    "Indexer submits",
+    "Lead / Core review",
+    "Approve / Reject",
+    "Audit log update",
+  ];
+
+  const metrics = [
+    {
+      icon: "🕓",
+      label: "Awaiting review",
+      value: rows.filter((row) => row[5] === "PENDING").length,
+      background: "#fff3dc",
+    },
+    {
+      icon: "✅",
+      label: "Approved (mo.)",
+      value: "41",
+      background: "#e2f6ec",
+    },
+    {
+      icon: "❌",
+      label: "Rejected (mo.)",
+      value: "5",
+      background: "#fde8e8",
+    },
+    {
+      icon: "⏱️",
+      label: "Avg. turnaround",
+      value: "4h",
+      background: "#eaf1ff",
+    },
+  ];
+
+  const statusColors = {
+    PENDING: {
+      backgroundColor: "#fff3dc",
+      color: "#a66b00",
+      border: "1px solid #efd499",
+    },
+    APPROVED: {
+      backgroundColor: "#e2f6ec",
+      color: "#087a4d",
+      border: "1px solid #b9e5d0",
+    },
+    REJECTED: {
+      backgroundColor: "#fde8e8",
+      color: "#b42318",
+      border: "1px solid #f5c4c4",
+    },
+  };
+
+  return (
+    <CorePageShell
+      breadcrumb={roleLabel}
+      title="Correction requests"
+      description="Review and approve/reject correction requests raised on locked entries."
+      actionLabel={null}
+    >
+      {/* WORKFLOW */}
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 1,
+          mb: 2.5,
+        }}
+      >
+        {workflowSteps.map((step, index) => (
+          <Box
+            key={step}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+            }}
+          >
+            <Box
+              sx={{
+                px: 2.2,
+                py: 1.4,
+                borderRadius: "11px",
+                border: "1px solid #dbe3ec",
+                backgroundColor:
+                  index === 1 ? "#3478ed" : "#ffffff",
+                color: index === 1 ? "#ffffff" : "#17233a",
+                fontSize: 13,
+                fontWeight: 700,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {step}
+            </Box>
+
+            {index < workflowSteps.length - 1 && (
+              <Typography
+                sx={{
+                  color: "#7b8798",
+                  fontSize: 18,
+                }}
+              >
+                →
+              </Typography>
+            )}
+          </Box>
+        ))}
+      </Box>
+
+      {/* METRIC CARDS */}
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: {
+            xs: "1fr",
+            sm: "repeat(2, 1fr)",
+            lg: "repeat(4, 1fr)",
+          },
+          gap: 2,
+          mb: 2.5,
+        }}
+      >
+        {metrics.map((metric) => (
+          <Paper
+            key={metric.label}
+            elevation={0}
+            sx={{
+              minHeight: 98,
+              p: 2,
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+              border: "1px solid #dbe3ec",
+              borderRadius: "12px",
+              boxShadow: "0 2px 5px rgba(16,35,61,.08)",
+            }}
+          >
+            <Box
+              sx={{
+                width: 46,
+                height: 46,
+                flexShrink: 0,
+                display: "grid",
+                placeItems: "center",
+                borderRadius: "12px",
+                backgroundColor: metric.background,
+                fontSize: 21,
+              }}
+            >
+              {metric.icon}
+            </Box>
+
+            <Box>
+              <Typography
+                sx={{
+                  color: "#667085",
+                  fontSize: 12.5,
+                }}
+              >
+                {metric.label}
+              </Typography>
+
+              <Typography
+                sx={{
+                  color: "#10233d",
+                  fontSize: 25,
+                  fontWeight: 800,
+                  lineHeight: 1.2,
+                }}
+              >
+                {metric.value}
+              </Typography>
+            </Box>
+          </Paper>
+        ))}
+      </Box>
+
+      {/* CORRECTION TABLE */}
+      <TableContainer
+        component={Paper}
+        elevation={0}
+        sx={{
+          border: "1px solid #dbe3ec",
+          borderRadius: "12px",
+          overflowX: "auto",
+        }}
+      >
+        <Table size="small" sx={{ minWidth: 1050 }}>
+          <TableHead>
+            <TableRow sx={{ backgroundColor: "#f8fafc" }}>
+              {[
+                "PROJECT",
+                "PROD. DATE",
+                "FIELD",
+                "OLD → NEW",
+                "REQUESTED BY",
+                "STATUS",
+                "ACTION",
+              ].map((heading) => (
+                <TableCell
+                  key={heading}
+                  sx={{
+                    py: 1.5,
+                    color: "#526581",
+                    fontSize: 11,
+                    fontWeight: 800,
+                  }}
+                >
+                  {heading}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+
+          <TableBody>
+            {rows.map((row, rowIndex) => (
+              <TableRow key={`${row[0]}-${rowIndex}`} hover>
+                <TableCell>{row[0]}</TableCell>
+
+                <TableCell>{row[1]}</TableCell>
+
+                <TableCell>{row[2]}</TableCell>
+
+                <TableCell sx={{ color: "#667085" }}>
+                  {row[3]}
+                </TableCell>
+
+                <TableCell>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <Avatar
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      bgcolor: "#5b5ce2",
+                      color: "#ffffff",
+                      fontSize: 11,
+                      fontWeight: 800,
+                    }}
+                  >
+                    {row[4]
+                      .split(" ")
+                      .map((name) => name[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()}
+                  </Avatar>
+
+                  <Typography
+                    sx={{
+                      fontSize: 13,
+                      color: "#17233a",
+                    }}
+                  >
+                    {row[4]}
+                  </Typography>
+                </Box>
+              </TableCell>
+
+                <TableCell>
+                  <Chip
+                    label={row[5]}
+                    size="small"
+                    sx={{
+                      ...statusColors[row[5]],
+                      height: 25,
+                      fontSize: 10,
+                      fontWeight: 800,
+                    }}
+                  />
+                </TableCell>
+
+                <TableCell>
+                  {row[5] === "PENDING" && (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 0.7,
+                      }}
+                    >
+                      <Button
+                        variant="contained"
+                        size="small"
+                        onClick={() =>
+                          updateStatus(rowIndex, "APPROVED")
+                        }
+                        sx={{
+                          minWidth: 84,
+                          height: 38,
+                          borderRadius: "10px",
+                          textTransform: "none",
+                          fontWeight: 700,
+                          boxShadow: "none",
+                        }}
+                      >
+                        Approve
+                      </Button>
+
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={() =>
+                          updateStatus(rowIndex, "REJECTED")
+                        }
+                        sx={{
+                          minWidth: 70,
+                          height: 38,
+                          borderRadius: "10px",
+                          textTransform: "none",
+                          color: "#17233a",
+                          borderColor: "#dbe3ec",
+                          fontWeight: 600,
+                        }}
+                      >
+                        Reject
+                      </Button>
+                    </Box>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </CorePageShell>
+  );
 }
 const rowsAdministrator = [["ABC-2024-0511", "Priya Sharma", "Implant Name", "Typo in device label", "20 May 09:12", "PENDING"], ["ORT-2024-0320", "Aditya Rao", "Procedure Code", "Wrong CPT code entered", "19 May 14:35", "PENDING"], ["SPI-2024-0198", "Karan Patel", "Patient DOB", "Date format mismatch", "18 May 11:00", "PENDING"], ["ABC-2024-0489", "Priya Sharma", "Surgeon Name", "Spelling correction", "17 May 16:20", "APPROVED"], ["CAR-2024-0077", "Sneha Iyer", "Report Date", "Incorrect month", "16 May 08:55", "REJECTED"]];
 function CorrectionsAdministrator() {

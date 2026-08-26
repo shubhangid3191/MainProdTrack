@@ -21,7 +21,7 @@ export const sidebarConfig = {
     { label: 'My Team', icon: '👥', page: 'my-team' },
     { label: 'Projects', icon: '📁', page: 'projects' },
     { label: 'Indexing Guide', icon: '📘', page: 'indexing-guide', badge: { text: 'NEW', color: 'success' } },
-    { label: 'Corrections', icon: '✅', page: 'corrections', badge: { text: '4', color: 'error', dot: true } },
+    { label: 'Approvals', icon: '✅', page: 'corrections', badge: { text: '4', color: 'error', dot: true } },
     { label: 'Attendance', icon: '🗓️', page: 'attendance' },
     ...common.filter(item => item.page !== 'corrections'),
   ],
