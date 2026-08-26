@@ -31,25 +31,25 @@ function IndexerCorrectionRequestsIndexer() {
     }}>
         <Box>
           <Typography sx={{
-          color: "#6b7b91",
-          fontSize: 13,
+          color: "#6A7585",
+          fontSize: 12.5,
           mb: 0.7
         }}>
             ProdTrack · Indexer
           </Typography>
 
           <Typography sx={{
-          fontSize: 25,
+          fontSize: 22,
           fontWeight: 800,
-          color: "#17233a"
+          color: "#1A2434"
         }}>
             My correction requests
           </Typography>
 
           <Typography sx={{
           mt: 0.7,
-          color: "#718096",
-          fontSize: 14
+          color: "#6A7585",
+          fontSize: 13.5,
         }}>
             Request changes to locked entries. Each request is reviewed before
             the audit log updates.
@@ -96,7 +96,7 @@ function IndexerCorrectionRequestsIndexer() {
           borderRadius: "8px",
           border: "1px solid #d7e0eb",
           backgroundColor: index === 0 ? "#2f6df6" : "#fff",
-          color: index === 0 ? "#fff" : "#263b59",
+          color: index === 0 ? "#fff" : "#1A2434",
           fontSize: 12,
           fontWeight: 700
         }}>
@@ -105,7 +105,7 @@ function IndexerCorrectionRequestsIndexer() {
 
             {index !== 3 && <ArrowForwardRoundedIcon sx={{
           mx: 0.4,
-          color: "#8190a5",
+          color: "#6A7585",
           fontSize: 17
         }} />}
           </Box>)}
@@ -134,9 +134,9 @@ function IndexerCorrectionRequestsIndexer() {
         columnGap: 1
       }}>
           {["PROJECT", "PROD. DATE", "FIELD", "OLD → NEW", "REQUESTED BY", "STATUS"].map(header => <Typography key={header} sx={{
-          fontSize: 10,
-          fontWeight: 700,
-          color: "#64748b"
+          fontSize: 11,
+          fontWeight: 800,
+          color: "#6A7585"
         }}>
               {header}
             </Typography>)}
@@ -157,7 +157,7 @@ function IndexerCorrectionRequestsIndexer() {
 
             <Typography sx={{
           fontSize: 12,
-          color: "#243b5a"
+          color: "#1A2434"
         }}>
               {request.project}
             </Typography>
@@ -165,8 +165,8 @@ function IndexerCorrectionRequestsIndexer() {
             {/* DATE */}
 
             <Typography sx={{
-          fontSize: 12,
-          color: "#243b5a"
+          fontSize: 13,
+          color: "#1A2434"
         }}>
               {request.date}
             </Typography>
@@ -174,8 +174,8 @@ function IndexerCorrectionRequestsIndexer() {
             {/* FIELD */}
 
             <Typography sx={{
-          fontSize: 12,
-          color: "#243b5a"
+          fontSize: 13,
+          color: "#1A2434"
         }}>
               {request.field}
             </Typography>
@@ -183,8 +183,8 @@ function IndexerCorrectionRequestsIndexer() {
             {/* OLD → NEW */}
 
             <Typography sx={{
-          fontSize: 12,
-          color: "#66768c"
+          fontSize: 13,
+          color: "#6A7585"
         }}>
               {request.change}
             </Typography>
@@ -208,7 +208,7 @@ function IndexerCorrectionRequestsIndexer() {
 
               <Typography sx={{
             fontSize: 12,
-            color: "#243b5a"
+            color: "#1A2434"
           }}>
                 Priya Sharma
               </Typography>
@@ -234,13 +234,13 @@ function ApprovalsTeamLead() {
   const [rows, setRows] = useState(initialTeamLead);
   const update = (i, status) => setRows(r => r.map((x, n) => n === i ? [...x.slice(0, 4), status] : x));
   return <Box><Typography sx={{
-      color: '#667085',
+      color: '#6A7585',
       fontSize: 12
     }}>ProdTrack · Team Lead</Typography><Typography sx={{
       fontSize: 24,
       fontWeight: 800
     }}>Approvals</Typography><Typography sx={{
-      color: '#667085',
+      color: '#6A7585',
       fontSize: 13,
       mt: .4,
       mb: 2
@@ -354,7 +354,7 @@ function CorrectionsCoreTeam({ roleLabel = "Team Lead" }) {
                 border: "1px solid #dbe3ec",
                 backgroundColor:
                   index === 1 ? "#3478ed" : "#ffffff",
-                color: index === 1 ? "#ffffff" : "#17233a",
+                color: index === 1 ? "#ffffff" : "#1A2434",
                 fontSize: 13,
                 fontWeight: 700,
                 whiteSpace: "nowrap",
@@ -366,7 +366,7 @@ function CorrectionsCoreTeam({ roleLabel = "Team Lead" }) {
             {index < workflowSteps.length - 1 && (
               <Typography
                 sx={{
-                  color: "#7b8798",
+                  color: "#6A7585",
                   fontSize: 18,
                 }}
               >
@@ -423,7 +423,7 @@ function CorrectionsCoreTeam({ roleLabel = "Team Lead" }) {
             <Box>
               <Typography
                 sx={{
-                  color: "#667085",
+                  color: "#6A7585",
                   fontSize: 12.5,
                 }}
               >
@@ -432,7 +432,7 @@ function CorrectionsCoreTeam({ roleLabel = "Team Lead" }) {
 
               <Typography
                 sx={{
-                  color: "#10233d",
+                  color: "#1A2434",
                   fontSize: 25,
                   fontWeight: 800,
                   lineHeight: 1.2,
@@ -471,7 +471,7 @@ function CorrectionsCoreTeam({ roleLabel = "Team Lead" }) {
                   key={heading}
                   sx={{
                     py: 1.5,
-                    color: "#526581",
+                    color: "#6A7585",
                     fontSize: 11,
                     fontWeight: 800,
                   }}
@@ -491,7 +491,7 @@ function CorrectionsCoreTeam({ roleLabel = "Team Lead" }) {
 
                 <TableCell>{row[2]}</TableCell>
 
-                <TableCell sx={{ color: "#667085" }}>
+                <TableCell sx={{ color: "#6A7585" }}>
                   {row[3]}
                 </TableCell>
 
@@ -525,7 +525,7 @@ function CorrectionsCoreTeam({ roleLabel = "Team Lead" }) {
                   <Typography
                     sx={{
                       fontSize: 13,
-                      color: "#17233a",
+                      color: "#1A2434",
                     }}
                   >
                     {row[4]}
