@@ -94,6 +94,15 @@ export function CoreMetricCards({ items }) {
   );
 }
 
+const ROLE_LABELS = ["INDEXER", "TEAM LEAD", "CORE TEAM", "ADMIN"];
+
+const ROLE_COLORS = {
+  INDEXER: { bg: "#eaf1ff", color: "#2458c7", border: "#bcd2ff" },
+  "TEAM LEAD": { bg: "#e9f7ef", color: "#15803d", border: "#a7d7bc" },
+  "CORE TEAM": { bg: "#f3e8ff", color: "#7c3aed", border: "#d3b4fd" },
+  ADMIN: { bg: "#fff0e0", color: "#b45309", border: "#f5c480" },
+};
+
 export function CoreTable({
   columns,
   rows,
@@ -110,19 +119,24 @@ export function CoreTable({
       <Table size="small" sx={{ minWidth: 680 }}>
         <TableHead>
           <TableRow sx={{ bgcolor: "#f8fafc" }}>
-            {columns.map((column) => (
-              <TableCell
-                key={column}
-                sx={{
-                  fontWeight: 800,
-                  fontSize: 11,
-                  color: "#526581",
-                  py: 1.4,
-                }}
-              >
-                {column}
-              </TableCell>
-            ))}
+            {columns.map((column, index) => {
+              const firstCell = rows[0]?.[index];
+              const isDotColumn = firstCell === "●" || firstCell === "○";
+              return (
+                <TableCell
+                  key={column}
+                  align={isDotColumn ? "center" : "left"}
+                  sx={{
+                    fontWeight: 800,
+                    fontSize: 11,
+                    color: "#526581",
+                    py: 1.4,
+                  }}
+                >
+                  {column}
+                </TableCell>
+              );
+            })}
             {actionLabel && <TableCell />}
           </TableRow>
         </TableHead>
@@ -133,6 +147,7 @@ export function CoreTable({
                 <TableCell
                   key={`${row[0]}-${cellIndex}`}
                   align={cell === "●" || cell === "○" ? "center" : "left"}
+                  sx={{ verticalAlign: "middle" }}
                 >
                   {cell === "●" || cell === "○" ? (
                     <Box
@@ -181,6 +196,25 @@ export function CoreTable({
                       }
                       sx={{ fontSize: 10, fontWeight: 800 }}
                     />
+                                    ) : ROLE_LABELS.includes(cell) ? (
+                    <Box
+                      sx={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        px: 1.2,
+                        py: 0.3,
+                        borderRadius: "5px",
+                        bgcolor: ROLE_COLORS[cell]?.bg,
+                        border: `1px solid ${ROLE_COLORS[cell]?.border}`,
+                        color: ROLE_COLORS[cell]?.color,
+                        fontSize: 10,
+                        fontWeight: 800,
+                        letterSpacing: "0.04em",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {cell}
+                    </Box>
                   ) : (
                     cell
                   )}
