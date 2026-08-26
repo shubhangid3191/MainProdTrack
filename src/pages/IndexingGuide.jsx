@@ -79,7 +79,7 @@ export default function IndexingGuide({
           }}
         >
           <Typography
-            sx={{ fontFamily: FONT, fontWeight: 700, fontSize: 14, color: "#341a1a" }}
+            sx={{ fontFamily: FONT, fontWeight: 800, fontSize: 14, color: "#341a1a" }}
           >
             Indexing guide (latest)
           </Typography>

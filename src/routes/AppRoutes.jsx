@@ -54,16 +54,17 @@ const rolePages = {
     compliance: Compliance,
   },
   administrator: {
-    "analytics-kpis": AnalyticsKpis,
-    "project-master": ProjectMaster,
-    users: UserMaster,
-    "assignment-matrix": AssignmentMatrix,
-    "guide-manager": GuideManager,
-    corrections: CorrectionApprovals,
-    "locking-rules": LockingRules,
-    "audit-log": AuditLog,
-    settings: Settings,
-  },
+  "analytics-kpis": AnalyticsKpis,
+  "project-master": ProjectMaster,
+  users: UserMaster,
+  "assignment-matrix": AssignmentMatrix,
+  "guide-manager": GuideManager,
+  corrections: CorrectionApprovals,
+  compliance: Compliance,          // ← yeh line add karo
+  "locking-rules": LockingRules,
+  "audit-log": AuditLog,
+  settings: Settings,
+},
 };
 
 const commonPages = {

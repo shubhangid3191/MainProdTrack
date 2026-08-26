@@ -64,7 +64,7 @@ const BACKLOG = [
 
 const KPI_CARDS = [
   { label: "Pending corrections", value: "6",   note: "awaiting approval",      color: "#df9324", action: "Review",  nav: "corrections" },
-  { label: "Guide compliance",    value: "91%",  note: "acknowledged this cycle", color: "#15966a", action: "Details", nav: "audit-log"    },
+  { label: "Guide compliance",    value: "91%",  note: "acknowledged this cycle", color: "#15966a", action: "Details", nav: "compliance"   },
   { label: "Missing entries",     value: "3",   note: "employees today",         color: "#dc3545", action: "View",    nav: "users"        },
 ];
 
@@ -432,7 +432,7 @@ export default function Dashboard({ onNavigate }) {
 
           <Button
             variant="contained"
-            //startIcon={<BarChartRoundedIcon sx={{ fontSize: 17 }} />}
+            startIcon={<BarChartRoundedIcon sx={{ fontSize: 17 }} />}
             onClick={() => onNavigate("analytics-kpis")}
             sx={{
               fontFamily: FONT,
