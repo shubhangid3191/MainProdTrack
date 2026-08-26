@@ -1,5 +1,5 @@
 const common = [
-  { label: 'Corrections', icon: '✅', page: 'corrections' },
+  { label: 'Corrections Requests', icon: '✏️', page: 'corrections' },
   { label: 'Reports', icon: '📊', page: 'reports' },
   { label: 'Notifications', icon: '🔔', page: 'notifications', badge: { text: '2', color: 'error', dot: true } },
   { label: 'My Profile', icon: '👤', page: 'my-profile' },

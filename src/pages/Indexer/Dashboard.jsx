@@ -559,7 +559,7 @@ function AcknowledgementBanner({
           },
         }}
       >
-        Review now →
+        Review now 
 
         <ArrowForwardRoundedIcon sx={{ fontSize: 15 }} />
       </Link>
