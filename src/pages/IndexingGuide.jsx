@@ -53,7 +53,7 @@ export default function IndexingGuide({
   const [selected, setSelected] = useState(2);
 
   // -------------------------------------------------------
-  // COMPACT CARD MODE
+  // COMPACT CARD MODE ....Dashboard
   // -------------------------------------------------------
   if (variant === "card") {
     return (
@@ -79,7 +79,7 @@ export default function IndexingGuide({
           }}
         >
           <Typography
-            sx={{ fontFamily: FONT, fontWeight: 700, fontSize: 14, color: "#1a2434" }}
+            sx={{ fontFamily: FONT, fontWeight: 700, fontSize: 14, color: "#341a1a" }}
           >
             Indexing guide (latest)
           </Typography>
@@ -168,15 +168,15 @@ export default function IndexingGuide({
         }}
       >
         <Box>
-          <Typography sx={{ color: "#6b7b91", fontSize: 13, mb: 0.7 }}>
+          <Typography sx={{ color: "#6A7585", fontSize: 12.5, mb: 0.7 }}>
             ProdTrack · {roleLabel}
           </Typography>
 
-          <Typography sx={{ fontSize: 25, fontWeight: 800, color: "#17233a" }}>
+          <Typography sx={{ fontSize: 22, fontWeight: 800, color: "#1A2434" }}>
             Indexing guide
           </Typography>
 
-          <Typography sx={{ mt: 0.7, color: "#718096", fontSize: 14 }}>
+          <Typography sx={{ mt: 0.7, color: "#6A7585", fontSize: 13.5 }}>
             {guide.name.replace(/\sv[\d.]+$/, "")} — the latest approved version.
           </Typography>
         </Box>
@@ -188,7 +188,7 @@ export default function IndexingGuide({
               height: 36,
               borderRadius: "8px",
               textTransform: "none",
-              color: "#19345b",
+              color: "#1A2434",
               borderColor: "#d6dee9",
               backgroundColor: "#fff",
             }}
@@ -226,7 +226,7 @@ export default function IndexingGuide({
           "& .MuiAlert-icon": { color: "#dc9b20" },
         }}
       >
-        <Typography component="span" sx={{ fontSize: 13 }}>
+        <Typography component="span" sx={{ fontSize: 13.5, color: "#8A6414", }}>
           <strong>Acknowledgement pending.</strong> You must acknowledge v
           {guide.version} before submitting entries for ABC Medical Imaging.{" "}
           <strong style={{ textDecoration: "underline", cursor: "pointer" }}>
@@ -257,7 +257,7 @@ export default function IndexingGuide({
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-            <Typography sx={{ fontSize: 14, fontWeight: 800, color: "#17233a" }}>
+            <Typography sx={{ fontSize: 14, fontWeight: 800, color: "#1A2434" }}>
               {guide.name}
             </Typography>
 
@@ -267,15 +267,15 @@ export default function IndexingGuide({
               sx={{
                 height: 23,
                 backgroundColor: "#e3f7ed",
-                color: "#17865d",
+                color: "#177A53",
                 border: "1px solid #b9e5d0",
-                fontSize: 10,
+                fontSize: 10.5,
                 fontWeight: 800,
               }}
             />
           </Box>
 
-          <Typography sx={{ color: "#607087", fontSize: 12, whiteSpace: "nowrap" }}>
+          <Typography sx={{ color: "#6A7585", fontSize: 12.5, whiteSpace: "nowrap" }}>
             Page 3 / 20
           </Typography>
         </Box>
@@ -303,7 +303,7 @@ export default function IndexingGuide({
                   borderRadius: "7px",
                   cursor: "pointer",
                   backgroundColor: selected === index ? "#e6efff" : "transparent",
-                  color: selected === index ? "#2563eb" : "#27405f",
+                  color: selected === index ? "#2563eb" : "#48566D",
                   fontWeight: selected === index ? 700 : 500,
                   fontSize: 13,
                 }}
@@ -315,36 +315,36 @@ export default function IndexingGuide({
 
           {/* CONTENT */}
           <Box sx={{ flex: 1, px: 2.75, py: 2.5, minWidth: 0 }}>
-            <Typography sx={{ fontSize: 19, fontWeight: 800, color: "#17233a", mb: 2 }}>
+            <Typography sx={{ fontSize: 18, fontWeight: 800, color: "#1A2434", mb: 2 }}>
               3. Indexing rules
             </Typography>
 
-            <Typography sx={{ fontSize: 14, fontWeight: 800, color: "#17233a", mb: 0.7 }}>
+            <Typography sx={{ fontSize: 14, fontWeight: 800, color: "#1A2434", mb: 0.7 }}>
               3.1 Implant indexing
             </Typography>
 
             <Box
               component="ul"
-              sx={{ mt: 0, pl: 2.2, color: "#344054", fontSize: 13, lineHeight: 1.9 }}
+              sx={{ mt: 0, pl: 2.2, color: "#3A4648", fontSize: 13.5, lineHeight: 1.9 }}
             >
               <li>Check the implant name and manufacturer.</li>
               <li>Index as per the latest field mapping.</li>
               <li>Ensure all mandatory fields are captured.</li>
             </Box>
 
-            <Typography sx={{ fontSize: 14, fontWeight: 800, color: "#17233a", mb: 0.7, mt: 2 }}>
+            <Typography sx={{ fontSize: 14, fontWeight: 800, color: "#1A2434", mb: 0.7, mt: 2 }}>
               3.2 Page identification
             </Typography>
 
             <Box
               component="ul"
-              sx={{ mt: 0, pl: 2.2, color: "#344054", fontSize: 13, lineHeight: 1.9 }}
+              sx={{ mt: 0, pl: 2.2, color: "#3A4648", fontSize: 13.5, lineHeight: 1.9 }}
             >
               <li>Identify the page type correctly.</li>
               <li>Follow the rules mentioned in section 4.</li>
             </Box>
 
-            <Typography sx={{ mt: 2.5, mb: 1, fontSize: 14, fontWeight: 800, color: "#17233a" }}>
+            <Typography sx={{ mt: 2.5, mb: 1, fontSize: 14, fontWeight: 800, color: "#1A2434" }}>
               Example
             </Typography>
 
@@ -356,12 +356,13 @@ export default function IndexingGuide({
                   backgroundColor: "#f8fafc",
                   fontSize: 11,
                   fontWeight: 700,
-                  color: "#64748b",
+                  lineHeight:3,
+                  color: "#6A7585",
                   textTransform: "uppercase",
                 },
                 "& td": {
                   fontSize: 12,
-                  color: "#243b5a",
+                  color: "#1A2434",
                   borderColor: "#e6ebf1",
                 },
               }}
