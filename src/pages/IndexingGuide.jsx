@@ -1,5 +1,5 @@
-import { useState } from "react";
-
+import { useEffect, useState } from "react";
+import apiRequest, { apiDownload } from "../Config/api.js";
 import {
   Box,
   Typography,
@@ -14,11 +14,14 @@ import {
   TableBody,
   TableRow,
   TableCell,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 
 import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 import FileDownloadRoundedIcon from "@mui/icons-material/FileDownloadRounded";
-import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
 
 const FONT =
   '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
@@ -43,14 +46,187 @@ const defaultGuide = {
 // variant="card" -> compact dashboard summary (Image 1)
 // variant="page" (default) -> full guide detail page (Image 2)
 // =========================================================
-
 export default function IndexingGuide({
   variant = "page",
-  guide = defaultGuide,
+  guide: providedGuide = defaultGuide,
   onViewGuide,
   roleLabel = "Indexer",
 }) {
   const [selected, setSelected] = useState(2);
+  const [guides, setGuides] = useState([]);
+  const [selectedVersionId, setSelectedVersionId] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [downloading, setDownloading] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [historyError, setHistoryError] = useState("");
+  const [historyProject, setHistoryProject] = useState("");
+
+  useEffect(() => {
+    // Keep the compact dashboard card using its existing prop.
+    if (variant === "card") return;
+
+    let active = true;
+
+    const loadGuides = async () => {
+      setLoading(true);
+      setError("");
+
+      try {
+        const data = await apiRequest("/guides/latest");
+
+        if (!data.success) {
+          throw new Error(data.message || "Failed to load guides");
+        }
+
+        const items = (data.guides || []).map((item) => ({
+          ...item,
+          name: item.title,
+          version: item.version,
+          updatedDate: item.updated_date
+            ? new Date(item.updated_date).toLocaleDateString("en-IN")
+            : "—",
+          acknowledged:
+            item.acknowledged === true ||
+            Number(item.acknowledged) === 1,
+          requiresAck:
+            item.requires_ack === true ||
+            Number(item.requires_ack) === 1,
+        }));
+
+        if (!active) return;
+
+        setGuides(items);
+        setSelectedVersionId(
+          items.length ? String(items[0].version_id) : ""
+        );
+      } catch (err) {
+        if (active) {
+          setError(err.message || "Failed to load guides");
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    loadGuides();
+
+    return () => {
+      active = false;
+    };
+  }, [variant]);
+
+  const guide =
+    variant === "card"
+      ? providedGuide
+      : guides.find(
+          (item) => String(item.version_id) === selectedVersionId
+        );
+
+  const handleAcknowledge = async () => {
+    if (!guide || guide.acknowledged || saving) return;
+
+    const confirmed = window.confirm(
+      `Confirm that you have read "${guide.name}" (${guide.version}).`
+    );
+
+    if (!confirmed) return;
+
+    const versionId = guide.version_id;
+
+    try {
+      setSaving(true);
+      setError("");
+
+      const data = await apiRequest(
+        `/guides/${versionId}/acknowledge`,
+        { method: "POST" }
+      );
+
+      if (!data.success) {
+        throw new Error(
+          data.message || "Failed to acknowledge guide"
+        );
+      }
+
+      // Update the screen only after the backend confirms success.
+      setGuides((currentGuides) =>
+        currentGuides.map((item) =>
+          String(item.version_id) === String(versionId)
+            ? { ...item, acknowledged: true }
+            : item
+        )
+      );
+    } catch (err) {
+      setError(err.message || "Failed to acknowledge guide");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!guide || downloading) return;
+
+    try {
+      setDownloading(true);
+      setError("");
+
+      const blob = await apiDownload(
+        `/guides/${guide.version_id}/download`
+      );
+
+      const fileName = `${guide.name}-${guide.version}`
+        .replace(/[^a-zA-Z0-9._-]+/g, "-");
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = `${fileName}.pdf`;
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      // Release the temporary URL after the browser starts downloading.
+      window.setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+      }, 10000);
+    } catch (err) {
+      setError(err.message || "Failed to download guide");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handleViewHistory = async () => {
+    if (!guide || historyLoading) return;
+
+    setHistoryOpen(true);
+    setHistoryProject(guide.project_name);
+    setHistory([]);
+    setHistoryError("");
+    setHistoryLoading(true);
+
+    try {
+      const data = await apiRequest(
+        `/guides/${guide.project_id}/history`
+      );
+
+      if (!data.success) {
+        throw new Error(data.message || "Failed to load guide history");
+      }
+
+      setHistory(data.history || []);
+    } catch (err) {
+      setHistoryError(err.message || "Failed to load guide history");
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
 
   // -------------------------------------------------------
   // COMPACT CARD MODE ....Dashboard
@@ -155,9 +331,48 @@ export default function IndexingGuide({
   // -------------------------------------------------------
   // FULL PAGE MODE (default)
   // -------------------------------------------------------
+  if (loading) {
+    return <Typography>Loading indexing guides...</Typography>;
+  }
+
+  if (!guide) {
+    return (
+      <Alert severity={error ? "error" : "info"}>
+        {error || "No guides are available for your assigned projects."}
+      </Alert>
+    );
+  }
+
   return (
     <Box sx={{ width: "100%" }}>
-      {/* HEADER */}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
+        {guides.map((item) => (
+          <Button
+            key={item.version_id}
+            disabled={saving}
+            variant={
+              String(item.version_id) === selectedVersionId
+                ? "contained"
+                : "outlined"
+            }
+            onClick={() => {
+              setSelectedVersionId(String(item.version_id));
+              setError("");
+            }}
+            sx={{ textTransform: "none", borderRadius: "8px" }}
+          >
+            {item.project_name} · {item.acknowledged ? "Read" : "Unread"}
+          </Button>
+        ))}
+      </Box>
+
+  {/* HEADER */}
       <Box
         sx={{
           display: "flex",
@@ -184,6 +399,8 @@ export default function IndexingGuide({
         <Box sx={{ display: "flex", gap: 1, flexShrink: 0 }}>
           <Button
             variant="outlined"
+            onClick={handleViewHistory}
+            disabled={historyLoading}
             sx={{
               height: 36,
               borderRadius: "8px",
@@ -198,6 +415,8 @@ export default function IndexingGuide({
 
           <Button
             variant="contained"
+            onClick={handleDownload}
+            disabled={downloading}
             startIcon={<DownloadRoundedIcon />}
             sx={{
               height: 36,
@@ -213,29 +432,48 @@ export default function IndexingGuide({
           </Button>
         </Box>
       </Box>
-
+      
       {/* ACKNOWLEDGEMENT */}
       <Alert
-        icon={<WarningAmberRoundedIcon fontSize="small" />}
-        sx={{
-          mb: 2,
-          border: "1px solid #f1d28a",
-          borderRadius: "9px",
-          backgroundColor: "#fff7df",
-          color: "#805b14",
-          "& .MuiAlert-icon": { color: "#dc9b20" },
-        }}
+        severity={guide.acknowledged ? "success" : "warning"}
+        sx={{ mb: 2, borderRadius: "9px" }}
       >
-        <Typography component="span" sx={{ fontSize: 13.5, color: "#8A6414", }}>
-          <strong>Acknowledgement pending.</strong> You must acknowledge v
-          {guide.version} before submitting entries for ABC Medical Imaging.{" "}
-          <strong style={{ textDecoration: "underline", cursor: "pointer" }}>
-            Acknowledge now
-          </strong>
-        </Typography>
+        {guide.acknowledged ? (
+          <Typography component="span" sx={{ fontSize: 13.5 }}>
+            You have acknowledged {guide.version} for {guide.project_name}.
+          </Typography>
+        ) : (
+          <Box>
+            <Typography sx={{ fontSize: 13.5 }}>
+              <strong>Acknowledgement pending.</strong>{" "}
+              {guide.requiresAck
+                ? `Read and acknowledge ${guide.version} before submitting entries for ${guide.project_name}.`
+                : `You have not acknowledged ${guide.version} for ${guide.project_name}.`}
+            </Typography>
+
+            <Button
+              type="button"
+              disabled={saving}
+              onClick={handleAcknowledge}
+              sx={{
+                mt: 0.5,
+                p: 0,
+                textTransform: "none",
+                fontWeight: 700,
+                textDecoration: "underline",
+              }}
+            >
+              {saving ? "Saving..." : "Acknowledge now"}
+            </Button>
+          </Box>
+        )}
       </Alert>
 
       {/* GUIDE CARD */}
+      <Alert severity="info" sx={{ mb: 2 }}>
+        The preview below is sample content, not the selected project's
+        actual guide. Only acknowledge after reading the actual guide.
+      </Alert>
       <Card
         elevation={0}
         sx={{
@@ -276,7 +514,7 @@ export default function IndexingGuide({
           </Box>
 
           <Typography sx={{ color: "#6A7585", fontSize: 12.5, whiteSpace: "nowrap" }}>
-            Page 3 / 20
+            Sample preview
           </Typography>
         </Box>
 
@@ -398,6 +636,90 @@ export default function IndexingGuide({
           </Box>
         </Box>
       </Card>
+      <Dialog
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        fullWidth
+        maxWidth="md"
+        aria-labelledby="guide-history-title"
+      >
+        <DialogTitle id="guide-history-title">
+          Version history — {historyProject}
+        </DialogTitle>
+
+        <DialogContent dividers>
+          {historyLoading ? (
+            <Typography>Loading version history...</Typography>
+          ) : historyError ? (
+            <Alert severity="error">{historyError}</Alert>
+          ) : history.length === 0 ? (
+            <Alert severity="info">No guide versions found.</Alert>
+          ) : (
+            <Box sx={{ overflowX: "auto" }}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Guide / version</TableCell>
+                    <TableCell>Uploaded</TableCell>
+                    <TableCell>Changes</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Acknowledgement</TableCell>
+                  </TableRow>
+                </TableHead>
+
+                <TableBody>
+                  {history.map((item) => (
+                    <TableRow key={item.version_id}>
+                      <TableCell>
+                        <Typography sx={{ fontSize: 13, fontWeight: 600 }}>
+                          {item.title}
+                        </Typography>
+                        {item.version}
+                      </TableCell>
+
+                      <TableCell>
+                        {item.updated_date
+                          ? new Date(item.updated_date).toLocaleDateString(
+                              "en-IN"
+                            )
+                          : "—"}
+                      </TableCell>
+
+                      <TableCell>{item.description || "—"}</TableCell>
+
+                      <TableCell>
+                        <Chip
+                          size="small"
+                          label={
+                            Number(item.is_latest) === 1
+                              ? "Latest"
+                              : "Previous"
+                          }
+                          color={
+                            Number(item.is_latest) === 1
+                              ? "success"
+                              : "default"
+                          }
+                        />
+                      </TableCell>
+
+                      <TableCell>
+                        {Number(item.acknowledged) === 1 ? "Read" : "Unread"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Box>
+          )}
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setHistoryOpen(false)}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

@@ -1,3 +1,6 @@
+import { useEffect, useState } from "react";
+import apiRequest from "../../Config/api.js";
+
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
@@ -139,6 +142,37 @@ const pendingAcknowledgements = [
 // =========================================================
 
 export default function IndexerDashboard({ onNavigate }) {
+  const [dashboard, setDashboard] = useState(null);
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        const data = await apiRequest("/dashboard/indexer");
+        setDashboard(data.dashboard);
+      } catch (error) {
+        console.error("Dashboard loading error:", error);
+      }
+    };
+
+    loadDashboard();
+  }, []);
+
+  const dashboardValues = dashboard
+    ? [
+        dashboard.totalReceived,
+        dashboard.totalCompleted,
+        dashboard.totalPending,
+        dashboard.todayProductivity,
+      ]
+    : stats.map((item) => item.value);
+
+  const liveStats = stats.map((item, index) => ({
+    ...item,
+    value:
+      typeof dashboardValues[index] === "number"
+        ? dashboardValues[index].toLocaleString()
+        : dashboardValues[index],
+  }));
   return (
     <Box
       sx={{
@@ -234,7 +268,7 @@ export default function IndexerDashboard({ onNavigate }) {
 
       {/* STAT CARDS */}
 
-      <StatCards stats={stats} />
+      <StatCards stats={liveStats} />
 
       {/* =====================================================
           PROJECT UPDATES + ANNOUNCEMENTS

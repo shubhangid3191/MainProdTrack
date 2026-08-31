@@ -15,48 +15,57 @@ import BeachAccessRoundedIcon from "@mui/icons-material/BeachAccessRounded";
 import SchoolRoundedIcon from "@mui/icons-material/SchoolRounded";
 import CalendarMonthRoundedIcon from "@mui/icons-material/CalendarMonthRounded";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import { useCallback, useEffect, useState } from "react";
+import apiRequest from "../Config/api.js";
+import Alert from "@mui/material/Alert";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
+import TextField from "@mui/material/TextField";
+import MenuItem from "@mui/material/MenuItem";
 
 // =====================================================
 // ATTENDANCE DATA
 // =====================================================
 
-const attendanceData = [
-  {
-    date: "20 May",
-    day: "Tue",
-    status: "Present",
-    hours: "8.0",
-    note: "—",
-  },
-  {
-    date: "19 May",
-    day: "Mon",
-    status: "Present",
-    hours: "8.0",
-    note: "—",
-  },
-  {
-    date: "16 May",
-    day: "Fri",
-    status: "Planned Leave",
-    hours: "0",
-    note: "Personal",
-  },
-  {
-    date: "15 May",
-    day: "Thu",
-    status: "Training",
-    hours: "8.0",
-    note: "Guide v2.3 session",
-  },
-  {
-    date: "14 May",
-    day: "Wed",
-    status: "Present",
-    hours: "7.5",
-    note: "—",
-  },
-];
+// const attendanceData = [
+//   {
+//     date: "20 May",
+//     day: "Tue",
+//     status: "Present",
+//     hours: "8.0",
+//     note: "—",
+//   },
+//   {
+//     date: "19 May",
+//     day: "Mon",
+//     status: "Present",
+//     hours: "8.0",
+//     note: "—",
+//   },
+//   {
+//     date: "16 May",
+//     day: "Fri",
+//     status: "Planned Leave",
+//     hours: "0",
+//     note: "Personal",
+//   },
+//   {
+//     date: "15 May",
+//     day: "Thu",
+//     status: "Training",
+//     hours: "8.0",
+//     note: "Guide v2.3 session",
+//   },
+//   {
+//     date: "14 May",
+//     day: "Wed",
+//     status: "Present",
+//     hours: "7.5",
+//     note: "—",
+//   },
+// ];
 
 // =====================================================
 // SUMMARY CARD
@@ -173,6 +182,167 @@ function getStatusStyle(status) {
 // =====================================================
 
 export default function Attendance({ roleLabel = "Indexer" }) {
+  const [summary, setSummary] = useState(null);
+  const [summaryError, setSummaryError] = useState("");
+  const [attendance, setAttendance] = useState([]);
+  const [attendanceLoading, setAttendanceLoading] = useState(true);
+  const [attendanceError, setAttendanceError] = useState("");
+  const [leaveOpen, setLeaveOpen] = useState(false);
+  const [leaveSaving, setLeaveSaving] = useState(false);
+  const [leaveRequests, setLeaveRequests] = useState([]);
+  const [leaveLoading, setLeaveLoading] = useState(true);
+  const [leaveError, setLeaveError] = useState("");
+
+  const loadLeaveRequests = useCallback(async () => {
+  setLeaveLoading(true);
+  setLeaveError("");
+
+  try {
+    const data = await apiRequest("/leave-requests/my");
+
+    if (!data.success) {
+      throw new Error(data.message || "Failed to load leave requests");
+    }
+
+    setLeaveRequests(data.requests || []);
+  } catch (error) {
+    setLeaveError(error.message || "Failed to load leave requests");
+  } finally {
+    setLeaveLoading(false);
+  }
+}, []);
+
+useEffect(() => {
+  loadLeaveRequests();
+}, [loadLeaveRequests]);
+
+  const handleSubmitLeave = async () => {
+  if (leaveSaving) return;
+
+  if (
+    !leaveForm.leaveType ||
+    !leaveForm.startDate ||
+    !leaveForm.endDate ||
+    !leaveForm.reason.trim()
+  ) {
+    alert("Please complete all leave fields.");
+    return;
+  }
+
+  if (leaveForm.startDate > leaveForm.endDate) {
+    alert("Start date cannot be after end date.");
+    return;
+  }
+
+  setLeaveSaving(true);
+  await loadLeaveRequests();
+
+  try {
+    const data = await apiRequest("/leave-requests", {
+      method: "POST",
+      body: JSON.stringify({
+        ...leaveForm,
+        reason: leaveForm.reason.trim(),
+      }),
+    });
+
+    if (!data.success) {
+      throw new Error(data.message || "Failed to submit leave request");
+    }
+
+    setLeaveOpen(false);
+
+    setLeaveForm({
+      leaveType: "planned_leave",
+      startDate: "",
+      endDate: "",
+      reason: "",
+    });
+
+    alert(
+      `Leave request #${data.leaveRequestId} submitted. Status: PENDING.`
+    );
+  } catch (error) {
+    alert(error.message || "Failed to submit leave request");
+  } finally {
+    setLeaveSaving(false);
+  }
+};
+
+    const [leaveForm, setLeaveForm] = useState({
+      leaveType: "planned_leave",
+      startDate: "",
+      endDate: "",
+      reason: "",
+    });
+
+    const handleLeaveChange = (event) => {
+      const { name, value } = event.target;
+
+      setLeaveForm((current) => ({
+        ...current,
+        [name]: value,
+      }));
+    };
+
+  useEffect(() => {
+    const loadAttendance = async () => {
+      setAttendanceLoading(true);
+      setAttendanceError("");
+
+      try {
+        const data = await apiRequest("/attendance/my");
+
+        if (!data.success) {
+          throw new Error(data.message || "Failed to load attendance");
+        }
+
+        setAttendance(
+          (data.attendance || []).map((record) => ({
+            id: record.id,
+            date: new Date(
+              `${record.attendance_date}T00:00:00`
+            ).toLocaleDateString("en-IN", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            }),
+            day: record.day_name,
+            status: record.status,
+            hours: Number(record.hours || 0).toFixed(1),
+            note: record.note || "—",
+          }))
+        );
+      } catch (error) {
+        setAttendanceError(
+          error.message || "Failed to load attendance"
+        );
+      } finally {
+        setAttendanceLoading(false);
+      }
+    };
+
+    loadAttendance();
+  }, []);
+
+  useEffect(() => {
+    const loadSummary = async () => {
+      try {
+        const data = await apiRequest("/attendance/summary");
+
+        if (!data.success) {
+          throw new Error(data.message || "Failed to load summary");
+        }
+
+        setSummary(data.summary);
+      } catch (error) {
+        setSummaryError(error.message || "Failed to load summary");
+      }
+    };
+
+    loadSummary();
+  }, []);
+
   return (
     <Box
       sx={{
@@ -239,6 +409,8 @@ export default function Attendance({ roleLabel = "Indexer" }) {
         <Button
           variant="contained"
           startIcon={<AddRoundedIcon />}
+          type="button"
+          onClick={() => setLeaveOpen(true)}
           sx={{
             px: 2,
             py: 1.15,
@@ -265,6 +437,15 @@ export default function Attendance({ roleLabel = "Indexer" }) {
         </Button>
       </Box>
 
+        {summaryError && (
+          <Alert severity="error" sx={{ mt: 2 }}>
+            {summaryError}
+          </Alert>
+        )}
+
+        <Typography sx={{ mt: 2, color: "#6A7585", fontSize: 13 }}>
+          Summary for all recorded dates
+        </Typography>
       {/* =================================================
           SUMMARY CARDS
       ================================================= */}
@@ -291,7 +472,7 @@ export default function Attendance({ roleLabel = "Indexer" }) {
             iconBg="#dcfce7"
             iconColor="#16a34a"
             label="Present days"
-            value="18"
+            value={summary ? Number(summary.present_days) : "—"}
           />
         </Grid>
 
@@ -309,7 +490,7 @@ export default function Attendance({ roleLabel = "Indexer" }) {
             iconBg="#fff3dc"
             iconColor="#d97706"
             label="Leave taken"
-            value="2"
+            value={summary ? Number(summary.leave_days) : "—"}
           />
         </Grid>
 
@@ -327,7 +508,7 @@ export default function Attendance({ roleLabel = "Indexer" }) {
             iconBg="#ede9fe"
             iconColor="#7c3aed"
             label="Training"
-            value="1"
+            value={summary ? Number(summary.training_days) : "—"}
           />
         </Grid>
 
@@ -344,8 +525,8 @@ export default function Attendance({ roleLabel = "Indexer" }) {
             icon={<CalendarMonthRoundedIcon />}
             iconBg="#e5efff"
             iconColor="#2563eb"
-            label="Working days"
-            value="22"
+            label="Production days"
+            value={summary ? Number(summary.working_days) : "—"}
           />
         </Grid>
       </Grid>
@@ -389,7 +570,7 @@ export default function Attendance({ roleLabel = "Indexer" }) {
               color: "#1A2434",
             }}
           >
-            This month
+            Attendance records
           </Typography>
         </Box>
 
@@ -466,12 +647,37 @@ export default function Attendance({ roleLabel = "Indexer" }) {
             </TableHead>
 
             <TableBody>
-              {attendanceData.map((row) => {
+              {attendanceLoading && (
+                <TableRow>
+                  <TableCell colSpan={5}>
+                    Loading attendance...
+                  </TableCell>
+                </TableRow>
+              )}
+
+              {!attendanceLoading && attendanceError && (
+                <TableRow>
+                  <TableCell colSpan={5} sx={{ color: "error.main" }}>
+                    {attendanceError}
+                  </TableCell>
+                </TableRow>
+              )}
+
+              {!attendanceLoading &&
+                !attendanceError &&
+                attendance.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5}>
+                      No attendance records found.
+                    </TableCell>
+                  </TableRow>
+                )}
+              {attendance.map((row) => {
                 const statusStyle = getStatusStyle(row.status);
 
                 return (
                   <TableRow
-                    key={`${row.date}-${row.status}`}
+                    key={row.id}
                     sx={{
                       "&:last-child td": {
                         borderBottom: 0,
@@ -583,6 +789,198 @@ export default function Attendance({ roleLabel = "Indexer" }) {
           </Table>
         </TableContainer>
       </Paper>
+      <Paper
+  elevation={0}
+  sx={{
+    mt: 3,
+    border: "1px solid #e5e7eb",
+    borderRadius: 1,
+    overflow: "hidden",
+  }}
+>
+  <Box
+    sx={{
+      px: 2.5,
+      py: 2,
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: 2,
+      borderBottom: "1px solid #e5e7eb",
+    }}
+  >
+    <Typography sx={{ fontSize: 16, fontWeight: 700 }}>
+      My leave requests
+    </Typography>
+
+    <Button
+      type="button"
+      onClick={loadLeaveRequests}
+      disabled={leaveLoading || leaveSaving}
+      sx={{ textTransform: "none" }}
+    >
+      Refresh
+    </Button>
+  </Box>
+
+  <TableContainer>
+    <Table size="small" sx={{ minWidth: 700 }}>
+      <TableHead>
+        <TableRow sx={{ bgcolor: "#f8fafc" }}>
+          {["ID", "Leave type", "From", "To", "Status", "Reason"].map(
+            (heading) => (
+              <TableCell key={heading} sx={{ fontWeight: 700 }}>
+                {heading}
+              </TableCell>
+            )
+          )}
+        </TableRow>
+      </TableHead>
+
+      <TableBody>
+        {leaveLoading ? (
+          <TableRow>
+            <TableCell colSpan={6}>
+              Loading leave requests...
+            </TableCell>
+          </TableRow>
+        ) : leaveError ? (
+          <TableRow>
+            <TableCell colSpan={6} sx={{ color: "error.main" }}>
+              {leaveError}
+            </TableCell>
+          </TableRow>
+        ) : leaveRequests.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={6}>
+              You have not submitted any leave requests.
+            </TableCell>
+          </TableRow>
+        ) : (
+          leaveRequests.map((request) => (
+            <TableRow key={request.leave_request_id}>
+              <TableCell>{request.leave_request_id}</TableCell>
+              <TableCell>{request.leave_type}</TableCell>
+              <TableCell>{request.start_date}</TableCell>
+              <TableCell>{request.end_date}</TableCell>
+
+              <TableCell>
+                <Typography
+                  sx={{
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color:
+                      request.status === "APPROVED"
+                        ? "#15803d"
+                        : request.status === "REJECTED"
+                          ? "#b91c1c"
+                          : "#b45309",
+                  }}
+                >
+                  {request.status}
+                </Typography>
+              </TableCell>
+
+              <TableCell
+                sx={{
+                  maxWidth: 300,
+                  whiteSpace: "pre-wrap",
+                  overflowWrap: "anywhere",
+                }}
+              >
+                {request.reason}
+              </TableCell>
+            </TableRow>
+          ))
+        )}
+      </TableBody>
+    </Table>
+  </TableContainer>
+</Paper>
+      <Dialog
+      
+            open={leaveOpen}
+            onClose={() => {
+                if (!leaveSaving) setLeaveOpen(false);
+              }}
+            fullWidth
+            maxWidth="sm"
+            aria-labelledby="leave-dialog-title"
+          >
+            <DialogTitle id="leave-dialog-title">
+              Apply for leave
+            </DialogTitle>
+
+            <DialogContent dividers>
+              <Box sx={{ display: "grid", gap: 2 }}>
+                <TextField
+                  select
+                  label="Leave type"
+                  name="leaveType"
+                  value={leaveForm.leaveType}
+                  onChange={handleLeaveChange}
+                  fullWidth
+                  size="small"
+                >
+                  <MenuItem value="planned_leave">Planned Leave</MenuItem>
+                  <MenuItem value="sick_leave">Sick Leave</MenuItem>
+                </TextField>
+
+                <TextField
+                  label="Start date"
+                  type="date"
+                  name="startDate"
+                  value={leaveForm.startDate}
+                  onChange={handleLeaveChange}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                  fullWidth
+                  size="small"
+                />
+
+                <TextField
+                  label="End date"
+                  type="date"
+                  name="endDate"
+                  value={leaveForm.endDate}
+                  onChange={handleLeaveChange}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                  fullWidth
+                  size="small"
+                />
+
+                <TextField
+                  label="Reason"
+                  name="reason"
+                  value={leaveForm.reason}
+                  onChange={handleLeaveChange}
+                  multiline
+                  rows={3}
+                  slotProps={{ htmlInput: { maxLength: 500 } }}
+                  fullWidth
+                />
+              </Box>
+            </DialogContent>
+
+            <DialogActions>
+              <Button
+                  type="button"
+                  disabled={leaveSaving}
+                  onClick={() => setLeaveOpen(false)}
+                >
+                  Cancel
+                </Button>
+
+              <Button
+                  type="button"
+                  variant="contained"
+                  onClick={handleSubmitLeave}
+                  disabled={leaveSaving}
+                >
+                  {leaveSaving ? "Submitting..." : "Submit request"}
+                </Button>
+            </DialogActions>
+          </Dialog>
+
     </Box>
   );
 }

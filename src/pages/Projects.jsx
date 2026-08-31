@@ -8,42 +8,78 @@ import {
   LinearProgress,
   Grid,
 } from "@mui/material";
+import { useEffect, useState } from "react";
+import apiRequest from "../Config/api.js";
 
-const projects = [
-  {
-    name: "ABC Medical Imaging",
-    client: "ABC",
-    reporting: "Indexing",
-    received: "1,250",
-    backlog: 62,
-  },
-  {
-    name: "Ortho Kids",
-    client: "Ortho",
-    reporting: "Indexing",
-    received: "880",
-    backlog: 44,
-  },
-  {
-    name: "Spine Indexing",
-    client: "Spine",
-    reporting: "Indexing",
-    received: "1,020",
-    backlog: 58,
-  },
-  {
-    name: "Cardio Records",
-    client: "Cardio",
-    reporting: "Indexing",
-    received: "640",
-    backlog: 30,
-  },
-];
+// const projects = [
+//   {
+//     name: "ABC Medical Imaging",
+//     client: "ABC",
+//     reporting: "Indexing",
+//     received: "1,250",
+//     backlog: 62,
+//   },
+//   {
+//     name: "Ortho Kids",
+//     client: "Ortho",
+//     reporting: "Indexing",
+//     received: "880",
+//     backlog: 44,
+//   },
+//   {
+//     name: "Spine Indexing",
+//     client: "Spine",
+//     reporting: "Indexing",
+//     received: "1,020",
+//     backlog: 58,
+//   },
+//   {
+//     name: "Cardio Records",
+//     client: "Cardio",
+//     reporting: "Indexing",
+//     received: "640",
+//     backlog: 30,
+//   },
+// ];
 
 export default function Projects({ user, roleLabel = "Indexer", onNavigate }) {
-  const visibleProjects = projects.filter((project) =>
-    user?.projects?.includes("All projects") || user?.projects?.includes(project.name),
-  );
+  const [projects, setProjects] = useState([]);
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState("");
+
+  useEffect(() => {
+    const loadProjects = async () => {
+      try {
+        const data = await apiRequest("/projects/my");
+
+        const formattedProjects = data.projects.map((project) => ({
+          id: project.project_id,
+          name: project.project_name,
+          client: project.client_name || project.project_code,
+          reporting: project.reporting_category || "Not assigned",
+          status: project.status,
+          received: Number(
+            project.total_received || 0
+          ).toLocaleString(),
+
+          backlog: Number(
+            project.backlog_percentage || 0
+          ),
+        }));
+
+        setProjects(formattedProjects);
+      } catch (requestError) {
+        console.error("Projects loading error:", requestError);
+        setError(requestError.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProjects();
+  }, []);
+
+  const visibleProjects = projects;
   return (
     <Box
       sx={{
@@ -103,7 +139,7 @@ export default function Projects({ user, roleLabel = "Indexer", onNavigate }) {
       <Grid container spacing={2.25}>
         {visibleProjects.map((project) => (
           <Grid
-            key={project.name}
+            key={project.id}
             size={{
               xs: 12,
               md: 4,
@@ -154,7 +190,7 @@ export default function Projects({ user, roleLabel = "Indexer", onNavigate }) {
                   </Typography>
 
                   <Chip
-                    label="ACTIVE"
+                    label={project.status?.toUpperCase() || "ACTIVE"}
                     size="small"
                     sx={{
                       height: 25,

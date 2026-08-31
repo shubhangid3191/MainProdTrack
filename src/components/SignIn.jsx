@@ -11,10 +11,7 @@ import Divider from "@mui/material/Divider";
 import Alert from "@mui/material/Alert";
 import Link from "@mui/material/Link";
 
-import {
-  DEMO_ACCOUNTS,
-  authenticateUser,
-} from "../Config/users.js";
+import { DEMO_ACCOUNTS } from "../Config/users.js";
 
 export default function SignIn({ onLogin }) {
   const [username, setUsername] = useState("");
@@ -26,20 +23,49 @@ export default function SignIn({ onLogin }) {
     setPassword("demo123");
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    const user = authenticateUser(username, password);
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_API_URL}/auth/login`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: username.trim(),
+          password,
+        }),
+      }
+    );
 
-    if (!user) {
-      alert("Invalid username or password");
+    const data = await response.json();
+
+    if (!response.ok) {
+      alert(data.message || "Login failed");
       return;
     }
 
+    const storage = keepSignedIn
+      ? localStorage
+      : sessionStorage;
+
+    storage.setItem("prodtrackToken", data.token);
+    storage.setItem(
+      "prodtrackUser",
+      JSON.stringify(data.user)
+    );
+
     if (onLogin) {
-      onLogin(user);
+      onLogin(data.user);
     }
-  };
+  } catch (error) {
+    console.error("Login error:", error);
+    alert("Cannot connect to the backend server");
+  }
+};
 
   return (
     <Box
