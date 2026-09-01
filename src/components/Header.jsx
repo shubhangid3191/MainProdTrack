@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import apiRequest from "../Config/api.js";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Box from "@mui/material/Box";
@@ -15,7 +17,7 @@ import HelpOutlineRoundedIcon from "@mui/icons-material/HelpOutlineRounded";
 export default function Header({
   userName = "Priya Sharma",
   role = "Indexer",
-  notificationCount = 3,
+  notificationCount = 0,
   onLogout,
   onNotifications,
   onHelp,
@@ -29,6 +31,54 @@ export default function Header({
     .join("")
     .slice(0, 2)
     .toUpperCase();
+
+  const [liveNotificationCount, setLiveNotificationCount] =
+  useState(notificationCount);
+
+useEffect(() => {
+  const loadNotificationCount = async () => {
+    const normalizedRole = String(role || "")
+          .replace(/\s+/g, "")
+          .toLowerCase();
+
+        if (
+          !["indexer", "teamlead"].includes(
+            normalizedRole
+          )
+        ) {
+          return;
+        }
+
+    try {
+      const data = await apiRequest(
+        "/notifications/my"
+      );
+
+      setLiveNotificationCount(
+        Number(data.unreadCount || 0)
+      );
+    } catch (error) {
+      console.error(
+        "Header notification count error:",
+        error
+      );
+    }
+  };
+
+  loadNotificationCount();
+
+  window.addEventListener(
+    "prodtrack-notifications-updated",
+    loadNotificationCount
+  );
+
+  return () => {
+    window.removeEventListener(
+      "prodtrack-notifications-updated",
+      loadNotificationCount
+    );
+  };
+}, [role]);
 
   return (
     <AppBar
@@ -171,7 +221,8 @@ export default function Header({
             }}
           >
             <Badge
-              badgeContent={notificationCount}
+              badgeContent={liveNotificationCount}
+              invisible={liveNotificationCount === 0}
               color="error"
               sx={{
                 "& .MuiBadge-badge": {

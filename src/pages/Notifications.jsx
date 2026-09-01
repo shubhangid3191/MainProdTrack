@@ -1,8 +1,10 @@
+import { useEffect, useState } from "react";
 import {
   Box,
   Paper,
   Typography,
 } from "@mui/material";
+import apiRequest from "../Config/api.js";
 
 import ErrorOutlineRoundedIcon from "@mui/icons-material/ErrorOutlineRounded";
 import MenuBookRoundedIcon from "@mui/icons-material/MenuBookRounded";
@@ -10,59 +12,134 @@ import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import TrendingUpRoundedIcon from "@mui/icons-material/TrendingUpRounded";
 import LockRoundedIcon from "@mui/icons-material/LockRounded";
 
-// =========================================================
-// NOTIFICATIONS DATA
-// =========================================================
-
-const notifications = [
-  {
-    icon: ErrorOutlineRoundedIcon,
-    color: "#dc3545",
-    title: "Missing daily entry",
-    message:
-      "You haven't submitted an entry for Spine Indexing today.",
-    time: "2h ago",
-  },
-  {
-    icon: MenuBookRoundedIcon,
-    color: "#3478ed",
-    title: "Guide update",
-    message:
-      "ABC Medical Imaging Guide v2.3 needs acknowledgement.",
-    time: "5h ago",
-  },
-  {
-    icon: CheckCircleRoundedIcon,
-    color: "#20a36b",
-    title: "Correction approved",
-    message:
-      "Your correction on ABC-...-11 was approved by Rohan Mehta.",
-    time: "1d ago",
-  },
-  {
-    icon: TrendingUpRoundedIcon,
-    color: "#8060d9",
-    title: "Backlog alert",
-    message:
-      "Pending volume for Ortho Kids increased by 12%.",
-    time: "1d ago",
-  },
-  {
-    icon: LockRoundedIcon,
-    color: "#f59e0b",
-    title: "Entry lock reminder",
-    message:
-      "Entries for 18 May lock at 6:00 PM today.",
-    time: "2d ago",
-  },
-
-];
 
 // =========================================================
 // NOTIFICATIONS PAGE
 // =========================================================
 
 export default function Notifications({ user }) {
+
+  const [notifications, setNotifications] =
+  useState([]);
+
+useEffect(() => {
+  const loadNotifications = async () => {
+    try {
+      const data = await apiRequest(
+        "/notifications/my"
+      );
+
+      const formattedNotifications = (
+        data.notifications || []
+      ).map((notification) => {
+        const type = String(
+          notification.type || ""
+        ).toLowerCase();
+
+        let Icon = ErrorOutlineRoundedIcon;
+        let color = "#dc3545";
+
+        if (type.includes("guide")) {
+          Icon = MenuBookRoundedIcon;
+          color = "#3478ed";
+        } else if (type.includes("approved")) {
+          Icon = CheckCircleRoundedIcon;
+          color = "#20a36b";
+        } else if (type.includes("backlog")) {
+          Icon = TrendingUpRoundedIcon;
+          color = "#8060d9";
+        } else if (type.includes("lock")) {
+          Icon = LockRoundedIcon;
+          color = "#f59e0b";
+        }
+
+        const createdDate = new Date(
+          notification.created_at
+        );
+
+        const differenceMinutes = Math.max(
+          0,
+          Math.floor(
+            (Date.now() - createdDate.getTime()) /
+              60000
+          )
+        );
+
+        let time = "Just now";
+
+        if (differenceMinutes >= 1440) {
+          time =
+            `${Math.floor(
+              differenceMinutes / 1440
+            )}d ago`;
+        } else if (differenceMinutes >= 60) {
+          time =
+            `${Math.floor(
+              differenceMinutes / 60
+            )}h ago`;
+        } else if (differenceMinutes > 0) {
+          time = `${differenceMinutes}m ago`;
+        }
+
+        return {
+          id:
+            notification.notification_id ||
+            notification.id,
+          icon: Icon,
+          color,
+          title: notification.title,
+          message: notification.message,
+          time,
+          isRead:
+            Number(notification.is_read) === 1,
+        };
+      });
+
+      setNotifications(formattedNotifications);
+    } catch (error) {
+      console.error(
+        "Load Notifications Error:",
+        error
+      );
+      alert(error.message);
+    }
+  };
+
+  loadNotifications();
+}, []);
+
+const handleNotificationClick = async (
+  notificationId,
+  isRead
+) => {
+  if (isRead) return;
+
+  try {
+    await apiRequest(
+      `/notifications/${notificationId}/read`,
+      {
+        method: "PATCH",
+      }
+    );
+
+    setNotifications((currentNotifications) =>
+      currentNotifications.map((notification) =>
+        notification.id === notificationId
+          ? {
+              ...notification,
+              isRead: true,
+            }
+          : notification
+      )
+    );
+    window.dispatchEvent(
+      new Event("prodtrack-notifications-updated")
+    );
+  } catch (error) {
+    alert(error.message);
+  }
+};
+
   return (
     <Box sx={{ width: "100%" }}>
       {/* BREADCRUMB */}
@@ -115,9 +192,23 @@ export default function Notifications({ user }) {
         }}
       >
         {notifications.map(
-          ({ icon: Icon, color, title, message, time }, index) => (
+            (
+              {
+                id,
+                icon: Icon,
+                color,
+                title,
+                message,
+                time,
+                isRead,
+              },
+              index
+            ) => (
             <Box
-              key={title}
+              key={id}
+              onClick={() =>
+                  handleNotificationClick(id, isRead)
+                }
               sx={{
                 minHeight: 68,
                 px: {

@@ -1,5 +1,16 @@
-import { useState } from "react";
-import { Box, Button, Paper, Typography ,TextField} from "@mui/material";
+import { useEffect, useState } from "react";
+import apiRequest from "../Config/api.js";
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Paper,
+  Typography,
+  TextField,
+} from "@mui/material";
 import InfoRoundedIcon from "@mui/icons-material/InfoRounded";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -76,6 +87,17 @@ export default function MyProfile({ user }) {
     ".",
     ""
   )}@company.com`;
+  const [passwordDialogOpen, setPasswordDialogOpen] =
+  useState(false);
+
+const [changingPassword, setChangingPassword] =
+  useState(false);
+
+const [passwordData, setPasswordData] = useState({
+  currentPassword: "",
+  newPassword: "",
+  confirmPassword: "",
+});
 
   const [formData, setFormData] = useState({
     emp: user.emp || "EMP-1042",
@@ -86,6 +108,9 @@ export default function MyProfile({ user }) {
     lead: user.lead || "Rohan Mehta",
   });
 
+  const [assignedProjects, setAssignedProjects] =
+  useState([]);
+
   const handleChange = (event) => {
     const { name, value } = event.target;
 
@@ -94,6 +119,45 @@ export default function MyProfile({ user }) {
       [name]: value,
     }));
   };
+
+  useEffect(() => {
+  const loadProfile = async () => {
+    try {
+      const data = await apiRequest(
+        "/profile/me"
+      );
+
+      const profile = data.profile;
+
+      setFormData({
+        emp: profile.emp || "",
+        name: profile.name || "",
+        email: profile.email || "",
+        dept: profile.department || "",
+        role:
+          profile.designation ||
+          profile.role ||
+          "",
+        lead:
+          profile.team_lead || "—",
+      });
+
+      setAssignedProjects(
+        (data.assignedProjects || []).map(
+          (project) => project.project_name
+        )
+      );
+    } catch (error) {
+      console.error(
+        "Load Profile Error:",
+        error
+      );
+      alert(error.message);
+    }
+  };
+
+  loadProfile();
+}, []);
 
   const fields = [
     {
@@ -128,6 +192,62 @@ export default function MyProfile({ user }) {
     },
   ];
 
+  const handlePasswordInputChange = (event) => {
+  const { name, value } = event.target;
+
+  setPasswordData((currentData) => ({
+    ...currentData,
+    [name]: value,
+  }));
+};
+
+const handleChangePassword = async () => {
+  if (
+    !passwordData.currentPassword ||
+    !passwordData.newPassword ||
+    !passwordData.confirmPassword
+  ) {
+    alert("Enter all password fields");
+    return;
+  }
+
+  if (
+    passwordData.newPassword !==
+    passwordData.confirmPassword
+  ) {
+    alert(
+      "New password and confirm password do not match"
+    );
+    return;
+  }
+
+  setChangingPassword(true);
+
+  try {
+    const data = await apiRequest(
+      "/password/change-password",
+      {
+        method: "PATCH",
+        body: JSON.stringify(passwordData),
+      }
+    );
+
+    alert(data.message);
+
+    setPasswordDialogOpen(false);
+
+    setPasswordData({
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    });
+  } catch (error) {
+    alert(error.message);
+  } finally {
+    setChangingPassword(false);
+  }
+};
+
   return (
     <Box sx={{ width: "100%", boxSizing: "border-box" }}>
 
@@ -158,6 +278,7 @@ export default function MyProfile({ user }) {
 
         <Button
           variant="outlined"
+          onClick={() => setPasswordDialogOpen(true)}
           sx={{
             fontFamily: FONT,
             fontSize: 13,
@@ -248,8 +369,7 @@ export default function MyProfile({ user }) {
           <Box sx={{ p: 2 }}>
             {/* project chips */}
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
-              {(user.projects || ["ABC Medical Imaging", "Ortho Kids", "Spine Indexing"]).map(
-                (project, i) => (
+              {assignedProjects.map((project, i) => (
                   <Box
                     key={project}
                     sx={{
@@ -265,8 +385,7 @@ export default function MyProfile({ user }) {
                   >
                     {project}
                   </Box>
-                )
-              )}
+                ))}
             </Box>
 
             {/* info notice */}
@@ -290,6 +409,76 @@ export default function MyProfile({ user }) {
           </Box>
         </Paper>
       </Box>
+      <Dialog
+        open={passwordDialogOpen}
+        onClose={() => {
+          if (!changingPassword) {
+            setPasswordDialogOpen(false);
+          }
+        }}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>
+          Change password
+        </DialogTitle>
+
+        <DialogContent>
+          <TextField
+            name="currentPassword"
+            label="Current password"
+            type="password"
+            value={passwordData.currentPassword}
+            onChange={handlePasswordInputChange}
+            fullWidth
+            margin="dense"
+            autoComplete="current-password"
+          />
+
+          <TextField
+            name="newPassword"
+            label="New password"
+            type="password"
+            value={passwordData.newPassword}
+            onChange={handlePasswordInputChange}
+            fullWidth
+            margin="dense"
+            autoComplete="new-password"
+          />
+
+          <TextField
+            name="confirmPassword"
+            label="Confirm new password"
+            type="password"
+            value={passwordData.confirmPassword}
+            onChange={handlePasswordInputChange}
+            fullWidth
+            margin="dense"
+            autoComplete="new-password"
+          />
+        </DialogContent>
+
+        <DialogActions>
+          <Button
+            onClick={() =>
+              setPasswordDialogOpen(false)
+            }
+            disabled={changingPassword}
+          >
+            Cancel
+          </Button>
+
+          <Button
+            variant="contained"
+            onClick={handleChangePassword}
+            disabled={changingPassword}
+          >
+            {changingPassword
+              ? "Changing..."
+              : "Change password"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

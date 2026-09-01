@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import apiRequest from "../Config/api.js";
 import Box from "@mui/material/Box";
 import Drawer from "@mui/material/Drawer";
 import List from "@mui/material/List";
@@ -24,6 +26,8 @@ function NavItem({
   onNavigate,
 }) {
   const isActive = currentPage === item.page;
+
+  
 
   return (
     <ListItemButton
@@ -144,9 +148,69 @@ export default function Sidebar({
   mobileOpen = false,
   onMobileClose,
 }) {
-  const menuItems =
-    sidebarConfig[roleKey] ||
-    sidebarConfig.indexer;
+  const [notificationCount, setNotificationCount] =
+  useState(0);
+
+useEffect(() => {
+  const loadNotificationCount = async () => {
+    if (
+      !["indexer", "teamLead"].includes(roleKey)
+    ) {
+      return;
+    }
+
+    try {
+      const data = await apiRequest(
+        "/notifications/my"
+      );
+
+      setNotificationCount(
+        Number(data.unreadCount || 0)
+      );
+    } catch (error) {
+      console.error(
+        "Sidebar notification count error:",
+        error
+      );
+    }
+  };
+
+  loadNotificationCount();
+
+  window.addEventListener(
+    "prodtrack-notifications-updated",
+    loadNotificationCount
+  );
+
+  return () => {
+    window.removeEventListener(
+      "prodtrack-notifications-updated",
+      loadNotificationCount
+    );
+  };
+}, [roleKey]);
+
+const baseMenuItems =
+  sidebarConfig[roleKey] ||
+  sidebarConfig.indexer;
+
+const menuItems = baseMenuItems.map((item) => {
+  if (item.page !== "notifications") {
+    return item;
+  }
+
+  return {
+    ...item,
+    badge:
+      notificationCount > 0
+        ? {
+            dot: true,
+            text: String(notificationCount),
+            color: "error",
+          }
+        : null,
+  };
+});
 
   const handleNavigate = (page) => {
     onNavigate(page);
