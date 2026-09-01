@@ -189,9 +189,9 @@ export default function Attendance({ roleLabel = "Indexer" }) {
   const [attendanceError, setAttendanceError] = useState("");
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [leaveSaving, setLeaveSaving] = useState(false);
-  const [leaveRequests, setLeaveRequests] = useState([]);
-  const [leaveLoading, setLeaveLoading] = useState(true);
-  const [leaveError, setLeaveError] = useState("");
+  // const [leaveRequests, setLeaveRequests] = useState([]);
+  // const [leaveLoading, setLeaveLoading] = useState(true);
+  // const [leaveError, setLeaveError] = useState("");
 
   const loadLeaveRequests = useCallback(async () => {
   setLeaveLoading(true);
@@ -235,7 +235,7 @@ useEffect(() => {
   }
 
   setLeaveSaving(true);
-  await loadLeaveRequests();
+  // await loadLeaveRequests();
 
   try {
     const data = await apiRequest("/leave-requests", {
@@ -789,7 +789,7 @@ useEffect(() => {
           </Table>
         </TableContainer>
       </Paper>
-      <Paper
+      {/* <Paper
   elevation={0}
   sx={{
     mt: 3,
@@ -896,7 +896,7 @@ useEffect(() => {
       </TableBody>
     </Table>
   </TableContainer>
-</Paper>
+</Paper> */}
       <Dialog
       
             open={leaveOpen}

@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import apiRequest from "../Config/api.js";
 import {
   Box,
   Typography,
@@ -17,7 +19,6 @@ import {
 } from "@mui/material";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
-import { useState } from "react";
 import PendingActionsRoundedIcon from "@mui/icons-material/PendingActionsRounded";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import CancelRoundedIcon from "@mui/icons-material/CancelRounded";
@@ -478,15 +479,97 @@ const rowsCoreTeam = [
   ],
 ];
 function CorrectionsCoreTeam({ roleLabel = "Team Lead" }) {
-  const [rows, setRows] = useState(rowsCoreTeam);
+  const [rows, setRows] = useState([]);
+  const [approvalSummary, setApprovalSummary] = useState({
+  awaitingReview: 0,
+  approvedMonth: 0,
+  rejectedMonth: 0,
+  averageTurnaroundHours: 0,
+});
 
-  const updateStatus = (rowIndex, newStatus) => {
+useEffect(() => {
+  const loadPendingRequests = async () => {
+    try {
+      const data = await apiRequest("/team-lead/approvals");
+
+      const backendRows = (data.requests || []).map((request) => [
+        request.project_name,
+        request.production_date,
+        request.field_name,
+        `${request.old_value || "—"} → ${request.new_value || "—"}`,
+        request.employee_name,
+        String(request.status || "pending").toUpperCase(),
+        request.request_id || request.id,
+      ]);
+
+      setRows(backendRows);
+    } catch (error) {
+      console.error("Load correction approvals error:", error);
+      alert(error.message);
+    }
+  };
+
+  loadPendingRequests();
+}, []);
+
+const loadApprovalSummary = async () => {
+  try {
+    const data = await apiRequest(
+      "/team-lead/approvals/summary"
+    );
+
+    setApprovalSummary(data.summary);
+  } catch (error) {
+    console.error("Load approval summary error:", error);
+  }
+};
+
+useEffect(() => {
+  loadApprovalSummary();
+}, []);
+
+const updateStatus = async (rowIndex, newStatus) => {
+  const requestId = rows[rowIndex]?.[6];
+
+  if (!requestId) {
+    alert("Correction request ID is missing");
+    return;
+  }
+
+  const action =
+    newStatus === "APPROVED"
+      ? "approve"
+      : "reject";
+
+  try {
+    const data = await apiRequest(
+      `/team-lead/approvals/${requestId}/${action}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({
+          reviewComment:
+            newStatus === "APPROVED"
+              ? "Approved from Team Lead approvals page"
+              : "Rejected from Team Lead approvals page",
+        }),
+      }
+    );
+
     setRows((currentRows) =>
       currentRows.map((row, index) =>
-        index === rowIndex ? [...row.slice(0, 5), newStatus] : row,
-      ),
+        index === rowIndex
+          ? [...row.slice(0, 5), newStatus, row[6]]
+          : row
+      )
     );
-  };
+
+    alert(data.message);
+    await loadApprovalSummary();
+  } catch (error) {
+    console.error("Update correction status error:", error);
+    alert(error.message);
+  }
+};
 
   const workflowSteps = [
     "Indexer submits",
@@ -499,28 +582,28 @@ function CorrectionsCoreTeam({ roleLabel = "Team Lead" }) {
     {
       icon: <PendingActionsRoundedIcon />,
       label: "Awaiting review",
-      value: rows.filter((row) => row[5] === "PENDING").length,
+      value: approvalSummary.awaitingReview,
       background: "#fff3dc",
       iconColor: "#a66b00",
     },
     {
       icon: <CheckCircleRoundedIcon />,
       label: "Approved (mo.)",
-      value: "41",
+      value: approvalSummary.approvedMonth,
       background: "#e2f6ec",
       iconColor: "#087a4d",
     },
     {
       icon: <CancelRoundedIcon />,
       label: "Rejected (mo.)",
-      value: "5",
+      value: approvalSummary.rejectedMonth,
       background: "#fde8e8",
       iconColor: "#b42318",
     },
     {
       icon: <AccessTimeRoundedIcon />,
       label: "Avg. turnaround",
-      value: "4h",
+      value: `${approvalSummary.averageTurnaroundHours}h`,
       background: "#eaf1ff",
       iconColor: "#2f6df6",
     },
@@ -707,7 +790,7 @@ function CorrectionsCoreTeam({ roleLabel = "Team Lead" }) {
 
           <TableBody>
             {rows.map((row, rowIndex) => (
-              <TableRow key={`${row[0]}-${rowIndex}`} hover>
+              <TableRow key={row[6] || `${row[0]}-${rowIndex}`} hover>
                 <TableCell>{row[0]}</TableCell>
 
                 <TableCell>{row[1]}</TableCell>
