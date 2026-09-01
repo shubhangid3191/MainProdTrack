@@ -493,6 +493,15 @@ export default function Dashboard({ onNavigate }) {
   // Stores live backlog-by-project data returned by the backend.
   const [backlogProjects, setBacklogProjects] = useState([]);
 
+  // Stores the live pending-corrections count returned by the backend.
+  const [pendingCorrections, setPendingCorrections] = useState(null);
+
+  // Stores the live guide-compliance data returned by the backend.
+  const [guideCompliance, setGuideCompliance] = useState(null);
+
+  // Stores the live missing-entries count returned by the backend.
+  const [missingEntries, setMissingEntries] = useState(null);
+
   // Loads all required dashboard APIs when this page opens.
   useEffect(() => {
     // Loads the main Core Team dashboard summary values.
@@ -547,6 +556,53 @@ export default function Dashboard({ onNavigate }) {
       }
     };
 
+    // Loads the pending-corrections count from the backend.
+    const loadPendingCorrections = async () => {
+      try {
+        // Calls the Core Team pending-corrections API.
+        const data = await apiRequest(
+          "/core-team/dashboard/pending-corrections"
+        );
+
+        // Stores the live pending-corrections count.
+        setPendingCorrections(data.pendingCorrections);
+      } catch (error) {
+        // Logs pending-corrections API errors in the browser console.
+        console.error("Pending Corrections Error:", error);
+      }
+    };
+    // Loads the current guide-compliance information from the backend.
+      const loadGuideCompliance = async () => {
+        try {
+          // Calls the Core Team guide-compliance dashboard API.
+          const data = await apiRequest(
+            "/core-team/dashboard/guide-compliance"
+          );
+
+          // Stores the compliance object returned by the backend.
+          setGuideCompliance(data.compliance);
+        } catch (error) {
+          // Logs guide-compliance API errors for debugging.
+          console.error("Guide Compliance Error:", error);
+        }
+      };
+
+      // Loads today's missing-entry employees from the backend.
+      const loadMissingEntries = async () => {
+        try {
+          // Calls the Core Team missing-entries API.
+          const data = await apiRequest(
+            "/core-team/dashboard/missing-entries"
+          );
+
+          // Stores the number of employees with missing entries.
+          setMissingEntries(data.count);
+        } catch (error) {
+          // Logs missing-entry API errors in the browser console.
+          console.error("Missing Entries Error:", error);
+        }
+      };
+
     // Starts loading the main dashboard summary.
     loadDashboard();
 
@@ -555,30 +611,67 @@ export default function Dashboard({ onNavigate }) {
 
     // Starts loading live project backlog data.
     loadBacklogProjects();
+
+    // Starts loading the live pending-corrections count.
+    loadPendingCorrections();
+
+    // Starts loading the live guide-compliance data.
+    loadGuideCompliance();
+
+    // Starts loading the live missing-entries count.
+    loadMissingEntries();
   }, []);
 
   // Replaces only the top-card values with live values from the backend.
-  const liveStatCards = STAT_CARDS.map(
-    (card, index) => {
-      // Creates the live value list only after dashboard data has loaded.
-      const values = dashboard
-        ? [
-            dashboard.totalReceived,
-            dashboard.totalCompleted,
-            dashboard.projectBacklog,
-            dashboard.activeEmployees,
-          ]
-        : [];
+  const liveStatCards = STAT_CARDS.map((card, index) => {
+    // Creates the live value list only after dashboard data has loaded.
+    const values = dashboard
+      ? [
+          dashboard.totalReceived,
+          dashboard.totalCompleted,
+          dashboard.projectBacklog,
+          dashboard.activeEmployees,
+        ]
+      : [];
 
-      // Keeps the original card design while replacing its displayed value.
-      return {
-        ...card,
-        value:
-          values[index] ??
-          card.value,
-      };
-    }
-  );
+    // Keeps the original card design while replacing its displayed value.
+    return {
+      ...card,
+      value: values[index] ?? card.value,
+    };
+  });
+
+  // Creates the KPI cards using live backend data without changing the original UI.
+const liveKpiCards = KPI_CARDS.map((card) => {
+  // Replaces Pending corrections with its live backend value.
+  if (card.label === "Pending corrections") {
+    return {
+      ...card,
+      value: pendingCorrections ?? card.value,
+    };
+  }
+
+  // Replaces Guide compliance with the live compliance percentage.
+  if (card.label === "Guide compliance") {
+    return {
+      ...card,
+      value:
+        guideCompliance?.complianceRate !== undefined
+          ? `${guideCompliance.complianceRate}%`
+          : card.value,
+    };
+  }
+   // Replaces Missing entries with the live backend count.
+  if (card.label === "Missing entries") {
+    return {
+      ...card,
+      value: missingEntries ?? card.value,
+    };
+  }
+
+  // Keeps any other KPI cards unchanged.
+  return card;
+});
 
   return (
     <CorePageShell
@@ -735,8 +828,8 @@ export default function Dashboard({ onNavigate }) {
           gap: 2,
         }}
       >
-        {/* Displays the existing KPI cards without changing their UI. */}
-        {KPI_CARDS.map(
+        {/* Displays KPI cards with available live backend values. */}
+        {liveKpiCards.map(
           ({
             label,
             value,
