@@ -11,6 +11,8 @@ import {
   Chip,
 } from "@mui/material";
 import apiRequest from "../Config/api.js";
+import { jsPDF } from "jspdf";
+import { autoTable } from "jspdf-autotable";
 
 import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 
@@ -36,7 +38,7 @@ const roleNames = {
 // SELECT FIELD
 // =========================================================
 
-function SelectField({ label, children }) {
+function SelectField({ label, children,value,onChange, }) {
   return (
     <Box sx={{ width: "100%" }}>
       <Typography
@@ -52,7 +54,14 @@ function SelectField({ label, children }) {
 
       <FormControl fullWidth size="small">
         <Select
-          defaultValue={children[0]?.props?.value}
+            {...(
+              value !== undefined
+                ? { value, onChange }
+                : {
+                    defaultValue:
+                      children[0]?.props?.value,
+                  }
+            )}
           sx={{
             height: 44,
             fontSize: 13,
@@ -100,9 +109,10 @@ export default function Reports({
   totalPending: 0,
   completionRate: 0,
 });
-
+const [period, setPeriod] = useState("week");
 const [bars, setBars] = useState([]);
 const [employees, setEmployees] = useState([]);
+
 
 useEffect(() => {
   const loadReports = async () => {
@@ -116,9 +126,15 @@ useEffect(() => {
             productionData,
             employeeData,
           ] = await Promise.all([
-            apiRequest("/reports/my-summary"),
-            apiRequest("/reports/my-daily-production"),
-            apiRequest("/reports/employee-production"),
+            apiRequest(
+              `/reports/my-summary?period=${period}`
+            ),
+            apiRequest(
+              `/reports/my-daily-production?period=${period}`
+            ),
+            apiRequest(
+              `/reports/employee-production?period=${period}`
+            ),
           ]);
 
       setSummary(summaryData.summary);
@@ -167,7 +183,7 @@ useEffect(() => {
   };
 
   loadReports();
-}, [roleKey]);
+}, [roleKey, period]);
   const max = Math.max(
   1,
   ...bars.map((bar) => bar.value)
@@ -181,6 +197,120 @@ useEffect(() => {
     Math.max(summary.completionRate, 0),
     100
   ) / 100) * 360;
+
+  const handleCsvDownload = () => {
+  if (employees.length === 0) {
+    alert("No report data is available to export");
+    return;
+  }
+
+  const headings = [
+    "Employee",
+    "Project",
+    "Received",
+    "Completed",
+    "Pending",
+    "Productivity",
+  ];
+
+  const reportRows = employees.map((employee) => [
+    employee[1],
+    employee[2],
+    employee[3],
+    employee[4],
+    employee[5],
+    employee[6],
+  ]);
+
+  const csvContent = [headings, ...reportRows]
+    .map((row) =>
+      row
+        .map((value) =>
+          `"${String(value ?? "").replace(/"/g, '""')}"`
+        )
+        .join(",")
+    )
+    .join("\n");
+
+  const file = new Blob(
+    [csvContent],
+    {
+      type: "text/csv;charset=utf-8;",
+    }
+  );
+
+  const downloadUrl = URL.createObjectURL(file);
+  const link = document.createElement("a");
+
+  link.href = downloadUrl;
+  link.download = `prodtrack-report-${period}.csv`;
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  URL.revokeObjectURL(downloadUrl);
+};
+
+const handlePdfDownload = () => {
+  if (employees.length === 0) {
+    alert("No report data is available to export");
+    return;
+  }
+
+  const document = new jsPDF({
+    orientation: "landscape",
+    unit: "mm",
+    format: "a4",
+  });
+
+  document.setFontSize(18);
+  document.text("ProdTrack Production Report", 14, 16);
+
+  document.setFontSize(10);
+  document.text(
+    `Role: ${currentRole} | Period: ${period}`,
+    14,
+    24
+  );
+
+  document.text(
+    `Received: ${summary.totalReceived}   Completed: ${summary.totalCompleted}   Pending: ${summary.totalPending}   Completion: ${summary.completionRate}%`,
+    14,
+    31
+  );
+
+  autoTable(document, {
+    startY: 38,
+    head: [[
+      "Employee",
+      "Project",
+      "Received",
+      "Completed",
+      "Pending",
+      "Productivity",
+    ]],
+    body: employees.map((employee) => [
+      employee[1],
+      employee[2],
+      employee[3],
+      employee[4],
+      employee[5],
+      employee[6],
+    ]),
+    theme: "grid",
+    headStyles: {
+      fillColor: [47, 109, 246],
+      textColor: [255, 255, 255],
+    },
+    styles: {
+      fontSize: 9,
+      cellPadding: 3,
+    },
+  });
+
+  document.save(`prodtrack-report-${period}.pdf`);
+};
 
   return (
     <Box
@@ -257,6 +387,7 @@ useEffect(() => {
         >
           <Button
             variant="outlined"
+            onClick={handleCsvDownload}
             sx={{
               height: 42,
               flex: {
@@ -282,6 +413,7 @@ useEffect(() => {
           <Button
             variant="contained"
             startIcon={<DownloadRoundedIcon />}
+            onClick={handlePdfDownload}
             sx={{
               height: 42,
               flex: {
@@ -361,7 +493,13 @@ useEffect(() => {
 
           {/* PERIOD */}
 
-          <SelectField label="Period">
+          <SelectField
+              label="Period"
+              value={period}
+              onChange={(event) =>
+                setPeriod(event.target.value)
+              }
+            >
             <MenuItem value="week">
               This week
             </MenuItem>

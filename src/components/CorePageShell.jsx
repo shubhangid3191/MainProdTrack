@@ -142,7 +142,7 @@ export function CoreTable({
         </TableHead>
         <TableBody>
           {rows.map((row, rowIndex) => (
-            <TableRow key={row[0]} hover>
+            <TableRow key={`row-${rowIndex}`} hover>
               {row.map((cell, cellIndex) => (
                 <TableCell
                   key={`${row[0]}-${cellIndex}`}
@@ -280,7 +280,7 @@ export default function CorePageShell({
         }}
       >
         <Box>
-          <Typography sx={{ fontSize: 22, fontWeight: 800, color:"#1A2434" }}>
+          <Typography component="div" sx={{ fontSize: 22, fontWeight: 800, color:"#1A2434" }}>
             {title}
           </Typography>
           <Typography sx={{ color: "#6A7585", fontSize: 13.5, mt: 0.4 }}>

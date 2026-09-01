@@ -376,6 +376,64 @@ function StatusChipIndexer({ status }) {
       setSaving(false);
     }
   };
+
+
+  const handleRequestCorrection = async (entry) => {
+  const fieldName = window.prompt(
+    "Enter the field name",
+    "docs_completed"
+  );
+
+  if (!fieldName) return;
+
+  let defaultOldValue = "";
+
+  if (fieldName === "docs_completed") {
+    defaultOldValue = entry.completed;
+  } else if (fieldName === "docs_received") {
+    defaultOldValue = entry.received;
+  }
+
+  const newValue = window.prompt(
+    "Enter the corrected value",
+    defaultOldValue
+  );
+
+  if (
+    newValue === null ||
+    String(newValue).trim() === ""
+  ) {
+    return;
+  }
+
+  const reason = window.prompt(
+    "Enter the reason for this correction"
+  );
+
+  if (!reason || !reason.trim()) {
+    return;
+  }
+
+  try {
+    const data = await apiRequest(
+      "/indexer/corrections",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          dailyEntryId: entry.id,
+          fieldName,
+          oldValue: defaultOldValue,
+          newValue,
+          reason,
+        }),
+      }
+    );
+
+    alert(data.message);
+  } catch (error) {
+    alert(error.message);
+  }
+};
   return (
     <Box sx={{ width: "100%" }}>
       {/* =================================================
@@ -1065,6 +1123,9 @@ function StatusChipIndexer({ status }) {
 
                   {entry.status === "LOCKED" && (
                     <Typography
+                        onClick={() =>
+                            handleRequestCorrection(entry)
+                          }
                       sx={{
                         fontSize: 12,
                         color: "#64748b",
