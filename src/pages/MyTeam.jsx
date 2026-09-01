@@ -1,4 +1,6 @@
-import { Box, Button, Card, Paper, Typography, Avatar } from "@mui/material";
+import { Box, Button, Paper, Typography, Avatar } from "@mui/material";
+import { useEffect, useState } from "react";
+import apiRequest from "../Config/api.js";
 
 // ─── Design tokens — databin.in/kavya ────────────────────────────────────────
 const FONT =
@@ -9,15 +11,6 @@ const LINE2 = "#e8ecf3";
 const MUTED = "#6a7585";
 const HEAD  = "#1a2434";
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
-
-const TEAM = [
-  { initials: "PS", name: "Priya Sharma", empId: "EMP-1042", avatarColor: "#4f73e3", projects: "ABC Medical, Ortho Kids", today: 45, guide: "PENDING", status: "PRESENT" },
-  { initials: "AR", name: "Aditya Rao",   empId: "EMP-1088", avatarColor: "#3aab8e", projects: "Ortho Kids",              today: 52, guide: "DONE",    status: "PRESENT" },
-  { initials: "SI", name: "Sneha Iyer",   empId: "EMP-1101", avatarColor: "#5b5ce2", projects: "Spine Indexing",          today: 38, guide: "DONE",    status: "PRESENT" },
-  { initials: "KP", name: "Karan Patel",  empId: "EMP-1130", avatarColor: "#e05a3a", projects: "ABC Medical",             today: 0,  guide: "DONE",    status: "LEAVE"   },
-  { initials: "DM", name: "Divya Menon",  empId: "EMP-1155", avatarColor: "#7c4dbd", projects: "Cardio Records",          today: 49, guide: "PENDING", status: "PRESENT" },
-];
 
 const COLS = "1.4fr 1fr 1.4fr 1fr 1.2fr 1fr";
 const HEADERS = ["MEMBER", "EMP ID", "PROJECT(S)", "TODAY", "GUIDE ACK.", "STATUS"];
@@ -136,6 +129,65 @@ function MemberRow({ initials, name, empId, avatarColor, projects, today, guide,
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function MyTeam({ onNavigate }) {
+  const [team, setTeam] = useState([]);
+
+useEffect(() => {
+  const loadMyTeam = async () => {
+    try {
+      const data = await apiRequest("/team-lead/my-team");
+
+      const avatarColors = [
+        "#4f73e3",
+        "#3aab8e",
+        "#5b5ce2",
+        "#e05a3a",
+        "#7c4dbd",
+      ];
+
+      const formattedMembers = (data.members || []).map(
+        (member, index) => {
+          const memberName =
+            member.name || member.full_name || "";
+
+          const initials = memberName
+            .split(" ")
+            .filter(Boolean)
+            .map((part) => part[0])
+            .join("")
+            .slice(0, 2)
+            .toUpperCase();
+
+          return {
+            id: member.id || member.user_id,
+            initials,
+            name: memberName,
+            empId:
+              member.employee_id ||
+              member.employee_code ||
+              "—",
+            avatarColor:
+              avatarColors[index % avatarColors.length],
+            projects: member.projects || "—",
+            today: Number(member.today_completed || 0),
+            guide: String(
+              member.guide_acknowledgement || "DONE"
+            ).toUpperCase(),
+            status: String(
+              member.attendance_status || "NOT MARKED"
+            ).toUpperCase(),
+          };
+        }
+      );
+
+      setTeam(formattedMembers);
+    } catch (error) {
+      console.error("Load My Team Error:", error);
+      alert(error.message);
+    }
+  };
+
+  loadMyTeam();
+}, []);
   return (
     <Box sx={{ width: "100%", boxSizing: "border-box" }}>
 
@@ -220,8 +272,11 @@ export default function MyTeam({ onNavigate }) {
 
         {/* data rows */}
         <Box sx={{ overflowX: "auto" }}>
-          {TEAM.map((member) => (
-            <MemberRow key={member.name} {...member} />
+          {team.map((member) => (
+            <MemberRow
+              key={member.id}
+              {...member}
+            />
           ))}
         </Box>
       </Paper>

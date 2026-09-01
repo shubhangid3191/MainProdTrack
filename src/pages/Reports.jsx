@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -9,33 +10,16 @@ import {
   Avatar,
   Chip,
 } from "@mui/material";
+import apiRequest from "../Config/api.js";
 
 import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 
-// =========================================================
-// CHART DATA
-// =========================================================
-
-const bars = [
-  { day: "Mon", value: 120 },
-  { day: "Tue", value: 145 },
-  { day: "Wed", value: 98 },
-  { day: "Thu", value: 167 },
-  { day: "Fri", value: 152 },
-  { day: "Sat", value: 88 },
-];
 
 // =========================================================
 // EMPLOYEE DATA
 // =========================================================
 
-const employees = [
-  ["PS", "Priya Sharma", "ABC Medical Imaging", 312, 270, 42, "87%"],
-  ["AR", "Aditya Rao", "Ortho Kids", 298, 281, 17, "94%"],
-  ["SI", "Sneha Iyer", "Spine Indexing", 256, 214, 42, "84%"],
-  ["KP", "Karan Patel", "ABC Medical Imaging", 201, 180, 21, "90%"],
-  ["DM", "Divya Menon", "Cardio Records", 277, 262, 15, "95%"],
-];
+
 
 // =========================================================
 // ROLE NAME
@@ -110,10 +94,93 @@ function SelectField({ label, children }) {
 export default function Reports({
   roleKey = "indexer",
 }) {
-  const max = Math.max(...bars.map((bar) => bar.value));
+  const [summary, setSummary] = useState({
+  totalReceived: 0,
+  totalCompleted: 0,
+  totalPending: 0,
+  completionRate: 0,
+});
+
+const [bars, setBars] = useState([]);
+const [employees, setEmployees] = useState([]);
+
+useEffect(() => {
+  const loadReports = async () => {
+    if (!["indexer", "teamLead"].includes(roleKey)) {
+      return;
+    }
+
+    try {
+      const [
+            summaryData,
+            productionData,
+            employeeData,
+          ] = await Promise.all([
+            apiRequest("/reports/my-summary"),
+            apiRequest("/reports/my-daily-production"),
+            apiRequest("/reports/employee-production"),
+          ]);
+
+      setSummary(summaryData.summary);
+
+      const formattedBars = (
+        productionData.production || []
+      ).map((entry) => ({
+        day: String(entry.day_name || "").slice(0, 3),
+        value: Number(entry.completed || 0),
+        received: Number(entry.received || 0),
+        completed: Number(entry.completed || 0),
+      }));
+
+      setBars(formattedBars);
+      const formattedEmployees = (
+          employeeData.employees || []
+        ).map((employee) => {
+          const employeeName =
+            employee.employee_name || "";
+
+          const initials = employeeName
+            .split(" ")
+            .filter(Boolean)
+            .map((part) => part[0])
+            .join("")
+            .slice(0, 2)
+            .toUpperCase();
+
+          return [
+            initials,
+            employeeName,
+            employee.projects || "—",
+            Number(employee.received || 0),
+            Number(employee.completed || 0),
+            Number(employee.pending || 0),
+            `${Number(employee.productivity || 0)}%`,
+            employee.id,
+          ];
+        });
+
+        setEmployees(formattedEmployees);
+    } catch (error) {
+      console.error("Load Reports Error:", error);
+      alert(error.message);
+    }
+  };
+
+  loadReports();
+}, [roleKey]);
+  const max = Math.max(
+  1,
+  ...bars.map((bar) => bar.value)
+);
 
   const currentRole =
     roleNames[roleKey] || "Indexer";
+
+  const completedDegrees =
+  (Math.min(
+    Math.max(summary.completionRate, 0),
+    100
+  ) / 100) * 360;
 
   return (
     <Box
@@ -542,8 +609,10 @@ export default function Reports({
                   sm: 126,
                 },
                 borderRadius: "50%",
-                background:
-                  "conic-gradient(#20a36f 0deg 225deg,#e09a22 225deg 287deg,#3475ee 287deg 360deg)",
+                background: `conic-gradient(
+                    #20a36f 0deg ${completedDegrees}deg,
+                    #e09a22 ${completedDegrees}deg 360deg
+                  )`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -577,7 +646,7 @@ export default function Reports({
                     color: "#1A2434",
                   }}
                 >
-                  78%
+                  {summary.completionRate}%
                 </Typography>
 
                 <Typography
@@ -595,10 +664,19 @@ export default function Reports({
 
             <Box>
               {[
-                ["#20a36f", "Completed · 980"],
-                ["#e09a22", "Pending · 270"],
-                ["#3475ee", "In review · 145"],
-              ].map(([color, label]) => (
+                  [
+                    "#20a36f",
+                    `Completed · ${summary.totalCompleted}`,
+                  ],
+                  [
+                    "#e09a22",
+                    `Pending · ${summary.totalPending}`,
+                  ],
+                  [
+                    "#3475ee",
+                    `Received · ${summary.totalReceived}`,
+                  ],
+                ].map(([color, label]) => (
                 <Box
                   key={label}
                   sx={{
@@ -714,7 +792,7 @@ export default function Reports({
         >
           {employees.map((employee) => (
             <Box
-              key={employee[1]}
+              key={employee[7] || employee[1]}
               sx={{
                 display: "grid",
                 gridTemplateColumns:
