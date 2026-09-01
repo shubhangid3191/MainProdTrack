@@ -1,4 +1,5 @@
-import { useState } from "react";
+// Imports React state and lifecycle hooks for loading live Analytics data.
+import { useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -13,21 +14,58 @@ import CorePageShell, {
   SectionCard,
   Person,
 } from "../components/CorePageShell.jsx";
-const projectsCoreTeam = [
-  ["ABC Medical Imaging", 120],
-  ["Ortho Kids", 145],
-  ["Spine Indexing", 98],
-  ["Cardio Records", 167],
-  ["Neuro Scan", 152],
-  ["Ortho Plus", 88],
-];
-const performersCoreTeam = [
-  ["DM", "Divya Menon", "1180", "95%"],
-  ["AR", "Aditya Rao", "1122", "94%"],
-  ["KP", "Karan Patel", "1040", "90%"],
-  ["PS", "Priya Sharma", "998", "87%"],
-];
-function TrendChartCoreTeam() {
+
+// Imports the shared authenticated API helper used for Core Team Analytics requests.
+import { apiRequest } from "../Config/api.js";
+// Displays Completed vs Target data while preserving the original chart UI.
+function TrendChartCoreTeam({ trend, targetConfigured }) {
+  // Converts backend values into normal numeric chart values.
+  const chartData = (trend || []).map((item) => ({
+    ...item,
+    completed: Number(item.completed || 0),
+    target: Number(item.target || 0),
+  }));
+
+  // Finds the highest value so chart points can be scaled inside the SVG.
+  const maxValue = Math.max(
+    ...chartData.flatMap((item) => [item.completed, item.target]),
+    1,
+  );
+
+  // Converts Completed values into SVG coordinates.
+  const completedPoints = chartData
+    .map((item, index) => {
+      const x =
+        chartData.length > 1
+          ? (index / (chartData.length - 1)) * 800
+          : 400;
+
+      const y = 158 - (item.completed / maxValue) * 140;
+
+      return `${x},${y}`;
+    })
+    .join(" ");
+
+  // Converts Target values into SVG coordinates.
+  const targetPoints = chartData
+    .map((item, index) => {
+      const x =
+        chartData.length > 1
+          ? (index / (chartData.length - 1)) * 800
+          : 400;
+
+      const y = 158 - (item.target / maxValue) * 140;
+
+      return `${x},${y}`;
+    })
+    .join(" ");
+
+  // Builds the filled area underneath the Completed line.
+  const completedAreaPoints =
+    chartData.length > 0
+      ? `0,158 ${completedPoints} 800,158`
+      : "";
+
   return (
     <Box
       sx={{
@@ -40,44 +78,100 @@ function TrendChartCoreTeam() {
         sx={{
           width: "100%",
           height: 180,
+          position: "relative",
         }}
       >
-        <svg
-          viewBox="0 0 800 180"
-          width="100%"
-          height="100%"
-          preserveAspectRatio="none"
-          role="img"
-          aria-label="Completed versus target monthly production trend"
-        >
-          <defs>
-            <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#3478ed" stopOpacity=".24" />
-              <stop offset="100%" stopColor="#3478ed" stopOpacity=".04" />
-            </linearGradient>
-          </defs>
-          <line x1="0" y1="158" x2="800" y2="158" stroke="#dbe3ec" />
-          <polygon
-            points="0,120 133,86 266,100 400,38 533,56 666,0 800,18 800,158 0,158"
-            fill="url(#trendFill)"
-          />
-          <polyline
-            points="0,120 133,86 266,100 400,38 533,56 666,0 800,18"
-            fill="none"
-            stroke="#3478ed"
-            strokeWidth="3"
-            strokeLinejoin="round"
-            strokeLinecap="round"
-          />
-          <polyline
-            points="0,136 133,122 266,112 400,98 533,86 666,70 800,56"
-            fill="none"
-            stroke="#8052df"
-            strokeWidth="2"
-            strokeDasharray="7 7"
-          />
-        </svg>
+        {/* Shows a truthful empty state when production targets are not configured. */}
+        {!targetConfigured ? (
+          <Box
+            sx={{
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#667085",
+              fontSize: 13,
+            }}
+          >
+            Production target not configured
+          </Box>
+        ) : (
+          /* Uses the original SVG chart styling when target data is available. */
+          <svg
+            viewBox="0 0 800 180"
+            width="100%"
+            height="100%"
+            preserveAspectRatio="none"
+            role="img"
+            aria-label="Completed versus target monthly production trend"
+          >
+            <defs>
+              <linearGradient
+                id="trendFill"
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="1"
+              >
+                <stop
+                  offset="0%"
+                  stopColor="#3478ed"
+                  stopOpacity=".24"
+                />
+
+                <stop
+                  offset="100%"
+                  stopColor="#3478ed"
+                  stopOpacity=".04"
+                />
+              </linearGradient>
+            </defs>
+
+            {/* Keeps the original chart baseline. */}
+            <line
+              x1="0"
+              y1="158"
+              x2="800"
+              y2="158"
+              stroke="#dbe3ec"
+            />
+
+            {/* Keeps the original blue Completed area fill. */}
+            {chartData.length > 0 && (
+              <polygon
+                points={completedAreaPoints}
+                fill="url(#trendFill)"
+              />
+            )}
+
+            {/* Draws the live Completed trend using the original blue style. */}
+            {chartData.length > 0 && (
+              <polyline
+                points={completedPoints}
+                fill="none"
+                stroke="#3478ed"
+                strokeWidth="3"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+            )}
+
+            {/* Draws the live Target trend using the original purple dashed style. */}
+            {chartData.length > 0 && (
+              <polyline
+                points={targetPoints}
+                fill="none"
+                stroke="#8052df"
+                strokeWidth="2"
+                strokeDasharray="7 7"
+              />
+            )}
+          </svg>
+        )}
       </Box>
+
+      {/* Keeps the original Completed and Target legend unchanged. */}
       <Box
         sx={{
           display: "flex",
@@ -99,6 +193,7 @@ function TrendChartCoreTeam() {
           />
           Completed
         </span>
+
         <span>
           <i
             style={{
@@ -115,7 +210,20 @@ function TrendChartCoreTeam() {
     </Box>
   );
 }
-function StatusChartCoreTeam() {
+// Displays live workflow distribution data using the original donut-chart UI.
+function StatusChartCoreTeam({ distribution }) {
+  // Uses safe zero values until the backend response finishes loading.
+  const completed = distribution?.completed ?? 0;
+  const pending = distribution?.pending ?? 0;
+  const inReview = distribution?.inReview ?? 0;
+  const completionRate = distribution?.completionRate ?? 0;
+  const received = distribution?.received ?? 0;
+
+  // Calculates the donut percentages from the live backend values.
+  const completedPercent = received > 0 ? (completed / received) * 100 : 0;
+  const pendingPercent =
+    received > 0 ? ((completed + pending) / received) * 100 : 0;
+
   return (
     <Box
       sx={{
@@ -138,8 +246,12 @@ function StatusChartCoreTeam() {
           height: 150,
           flexShrink: 0,
           borderRadius: "50%",
-          background:
-            "conic-gradient(#20a36b 0 78%, #e09a20 78% 91%, #3478ed 91% 100%)",
+          // Keeps the original donut colors while using live status percentages.
+          background: `conic-gradient(
+            #20a36b 0 ${completedPercent}%,
+            #e09a20 ${completedPercent}% ${pendingPercent}%,
+            #3478ed ${pendingPercent}% 100%
+          )`,
           display: "grid",
           placeItems: "center",
         }}
@@ -160,7 +272,7 @@ function StatusChartCoreTeam() {
               fontSize: 23,
             }}
           >
-            78%
+            {completionRate}%
           </strong>
           <small
             style={{
@@ -187,7 +299,7 @@ function StatusChartCoreTeam() {
           >
             ■
           </b>{" "}
-          Completed · 980
+          Completed · {completed}
         </span>
         <span>
           <b
@@ -197,7 +309,7 @@ function StatusChartCoreTeam() {
           >
             ■
           </b>{" "}
-          Pending · 270
+          Pending · {pending}
         </span>
         <span>
           <b
@@ -207,14 +319,104 @@ function StatusChartCoreTeam() {
           >
             ■
           </b>{" "}
-          In review · 145
+          In review · {inReview}
         </span>
       </Box>
     </Box>
   );
 }
 function AnalyticsKpisCoreTeam() {
+  // Controls the existing Export success notification.
   const [notice, setNotice] = useState(false);
+
+  // Stores the live Analytics summary returned by the backend.
+  const [analyticsSummary, setAnalyticsSummary] = useState(null);
+
+  // Stores the live status-distribution values returned by the backend.
+  const [statusDistribution, setStatusDistribution] = useState(null);
+
+  // Stores live project-comparison data returned by the backend.
+  const [projectComparison, setProjectComparison] = useState([]);
+
+  // Stores live top-performer data returned by the backend.
+  const [topPerformers, setTopPerformers] = useState([]);
+
+  // Stores Completed vs Target trend data returned by the backend.
+const [completedVsTarget, setCompletedVsTarget] = useState([]);
+
+// Stores whether a production target is currently configured in the database.
+const [targetConfigured, setTargetConfigured] = useState(false);
+
+  // Loads all currently connected Core Team Analytics data when the page opens.
+  useEffect(() => {
+    // Loads the main organisation-wide KPI summary.
+    const loadAnalyticsSummary = async () => {
+      try {
+        const data = await apiRequest("/core-team/analytics/summary");
+        setAnalyticsSummary(data.summary);
+      } catch (error) {
+        console.error("Analytics Summary Error:", error);
+      }
+    };
+
+    // Loads the production workflow status distribution.
+    const loadStatusDistribution = async () => {
+      try {
+        const data = await apiRequest(
+          "/core-team/analytics/status-distribution",
+        );
+        setStatusDistribution(data.distribution);
+      } catch (error) {
+        console.error("Status Distribution Error:", error);
+      }
+    };
+
+    // Loads live project comparison values.
+    const loadProjectComparison = async () => {
+      try {
+        const data = await apiRequest("/core-team/analytics/projects");
+        setProjectComparison(data.projects || []);
+      } catch (error) {
+        console.error("Project Comparison Error:", error);
+      }
+    };
+
+    // Loads live employee performance values.
+    const loadTopPerformers = async () => {
+      try {
+        const data = await apiRequest("/core-team/analytics/top-performers");
+        setTopPerformers(data.performers || []);
+      } catch (error) {
+        console.error("Top Performers Error:", error);
+      }
+    };
+    // Loads Completed vs Target Analytics data from the backend.
+    const loadCompletedVsTarget = async () => {
+      try {
+        // Requests the Completed vs Target endpoint.
+        const data = await apiRequest(
+          "/core-team/analytics/completed-vs-target",
+        );
+
+        // Stores whether production targets are available.
+        setTargetConfigured(Boolean(data.targetConfigured));
+
+        // Stores trend data when production targets are configured.
+        setCompletedVsTarget(data.trend || []);
+      } catch (error) {
+        // Logs API errors without breaking the Analytics page.
+        console.error("Completed Vs Target Error:", error);
+      }
+    };
+
+    // Starts all Analytics requests without changing the existing UI structure.
+    loadAnalyticsSummary();
+    loadStatusDistribution();
+    loadProjectComparison();
+    loadTopPerformers();
+    loadCompletedVsTarget();
+  }, []);
+
   return (
     <CorePageShell
       title="Analytics & KPIs"
@@ -241,12 +443,27 @@ function AnalyticsKpisCoreTeam() {
       actionLabel="Export"
       actionHandler={() => setNotice(true)}
     >
+      {/* Displays live KPI values inside the original metric-card UI. */}
       <CoreMetricCards
         items={[
-          ["Received (mo.)", "12,480"],
-          ["Completed (mo.)", "9,860", "▲ 4.1%"],
-          ["Backlog", "2,620", "▲ 3.6%"],
-          ["Avg. productivity", "88%", "▲ 2 pts"],
+          [
+            "Received (mo.)",
+            analyticsSummary?.totalReceived?.toLocaleString() ?? "0",
+          ],
+          [
+            "Completed (mo.)",
+            analyticsSummary?.totalCompleted?.toLocaleString() ?? "0",
+          ],
+          [
+            "Backlog",
+            analyticsSummary?.backlog?.toLocaleString() ?? "0",
+          ],
+          [
+            "Avg. productivity",
+            analyticsSummary?.averageProductivity !== undefined
+              ? `${analyticsSummary.averageProductivity}`
+              : "0",
+          ],
         ]}
       />
       <Box
@@ -260,10 +477,12 @@ function AnalyticsKpisCoreTeam() {
         }}
       >
         <SectionCard title="Completed vs target — trend">
-          <TrendChartCoreTeam />
+          <TrendChartCoreTeam  trend={completedVsTarget}
+  targetConfigured={targetConfigured} />
         </SectionCard>
         <SectionCard title="Status distribution">
-          <StatusChartCoreTeam />
+          {/* Passes live status data into the original donut-chart component. */}
+          <StatusChartCoreTeam distribution={statusDistribution} />
         </SectionCard>
       </Box>
       <Box
@@ -287,47 +506,65 @@ function AnalyticsKpisCoreTeam() {
               pb: 2,
             }}
           >
-            {projectsCoreTeam.map(([name, value], index) => (
-              <Box
-                key={name}
-                sx={{
-                  width: 38,
-                  height: `${value * 0.82}px`,
-                  maxHeight: 145,
-                  bgcolor:
-                    index === projectsCoreTeam.length - 1
-                      ? "#8060d9"
-                      : "#4b7ff0",
-                  borderRadius: "7px 7px 0 0",
-                  position: "relative",
-                }}
-              >
-                <Typography
+            {/* Renders live project values with the original bar-chart layout. */}
+            {projectComparison.map((project, index) => {
+              // Uses completed documents as the existing bar value.
+              const value = Number(project.completed || 0);
+
+              // Uses the backend project name for the existing label.
+              const name = project.project_name;
+
+              // Finds the largest live value so every bar remains proportional.
+              const maxCompleted = Math.max(
+                ...projectComparison.map((item) => Number(item.completed || 0)),
+                1,
+              );
+
+              // Converts the completed count into the original maximum bar height.
+              const barHeight = (value / maxCompleted) * 145;
+
+              return (
+                <Box
+                  key={project.id}
                   sx={{
-                    position: "absolute",
-                    top: -22,
-                    width: 40,
-                    textAlign: "center",
-                    fontSize: 11,
+                    width: 38,
+                    height: `${barHeight}px`,
+                    maxHeight: 145,
+                    bgcolor:
+                      index === projectComparison.length - 1
+                        ? "#8060d9"
+                        : "#4b7ff0",
+                    borderRadius: "7px 7px 0 0",
+                    position: "relative",
                   }}
                 >
-                  {value}
-                </Typography>
-                <Typography
-                  sx={{
-                    position: "absolute",
-                    bottom: -24,
-                    width: 50,
-                    left: -6,
-                    textAlign: "center",
-                    fontSize: 11,
-                    color: "#526581",
-                  }}
-                >
-                  {name.split(" ")[0]}
-                </Typography>
-              </Box>
-            ))}
+                  <Typography
+                    sx={{
+                      position: "absolute",
+                      top: -22,
+                      width: 40,
+                      textAlign: "center",
+                      fontSize: 11,
+                    }}
+                  >
+                    {value}
+                  </Typography>
+                  <Typography
+                    sx={{
+                      position: "absolute",
+                      bottom: -24,
+                      width: 50,
+                      left: -6,
+                      textAlign: "center",
+                      fontSize: 11,
+                      color: "#526581",
+                    }}
+                  >
+                    {name.split(" ")[0]}
+                  </Typography>
+                </Box>
+              );
+            })}
           </Box>
         </SectionCard>
         <SectionCard title="Top performers — this month">
@@ -347,10 +584,21 @@ function AnalyticsKpisCoreTeam() {
             <span>COMPLETED</span>
             <span>PRODUCTIVITY</span>
           </Box>
-          {performersCoreTeam.map(
-            ([initials, name, completed, productivity]) => (
+          {/* Displays live top performers with the original table UI. */}
+          {topPerformers.map((performer) => {
+            // Creates initials from the employee name for the existing avatar.
+            const initials = performer.name
+              ? performer.name
+                  .split(" ")
+                  .map((part) => part[0])
+                  .join("")
+                  .slice(0, 2)
+                  .toUpperCase()
+              : "";
+
+            return (
               <Box
-                key={name}
+                key={performer.id}
                 sx={{
                   display: "grid",
                   gridTemplateColumns: "1fr 90px 105px",
@@ -361,10 +609,15 @@ function AnalyticsKpisCoreTeam() {
                   fontSize: 12,
                 }}
               >
-                <Person initials={initials} name={name} />
-                <span>{completed}</span>
+                {/* Uses the existing Person component for avatar and employee name. */}
+                <Person initials={initials} name={performer.name} />
+
+                {/* Shows the live completed-production count. */}
+                <span>{performer.completed}</span>
+
+                {/* Shows the live productivity percentage using the original chip UI. */}
                 <Chip
-                  label={productivity}
+                  label={`${performer.productivity}%`}
                   size="small"
                   color="success"
                   sx={{
@@ -374,8 +627,8 @@ function AnalyticsKpisCoreTeam() {
                   }}
                 />
               </Box>
-            ),
-          )}
+            );
+          })}
         </SectionCard>
       </Box>
       <Snackbar
