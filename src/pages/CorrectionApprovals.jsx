@@ -27,21 +27,75 @@ import CorePageShell, {
   CoreMetricCards,
   CoreTable,
 } from "../components/CorePageShell.jsx";
-const requestsIndexer = [
-  {
-    project: "ABC Medical Imaging",
-    date: "19 May",
-    field: "Implant Name",
-    change: "ABC Screw 5.0 → ABC Screw 5.5",
+
+
+const correctionStatusStyles = {
+  PENDING: {
+    backgroundColor: "#fff4db",
+    color: "#c27a12",
+    border: "1px solid #f2d39b",
   },
-  {
-    project: "ABC Medical Imaging",
-    date: "19 May",
-    field: "Implant Name",
-    change: "ABC Screw 5.0 → ABC Screw 5.5",
+  APPROVED: {
+    backgroundColor: "#e4f6ee",
+    color: "#177a53",
+    border: "1px solid #b7e3cc",
   },
-];
-function IndexerCorrectionRequestsIndexer() {
+  REJECTED: {
+    backgroundColor: "#fde8e8",
+    color: "#b42318",
+    border: "1px solid #f5c4c4",
+  },
+};
+
+function IndexerCorrectionRequestsIndexer({ user , onNavigate,}) {
+  const [requestsIndexer, setRequestsIndexer] =
+    useState([]);
+
+  const userName = user?.name || "Indexer";
+
+  const userInitials = userName
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  useEffect(() => {
+    const loadMyCorrectionRequests = async () => {
+      try {
+        const data = await apiRequest(
+          "/indexer/corrections/my"
+        );
+
+        const formattedRequests = (
+          data.requests || []
+        ).map((request) => ({
+          id: request.request_id || request.id,
+          project: request.project_name,
+          date: request.production_date,
+          field: request.field_name,
+          change:
+            `${request.old_value || "—"} → ` +
+            `${request.new_value || "—"}`,
+          status: String(
+            request.status || "pending"
+          ).toUpperCase(),
+        }));
+
+        setRequestsIndexer(formattedRequests);
+      } catch (error) {
+        console.error(
+          "Load Indexer corrections error:",
+          error
+        );
+        alert(error.message);
+      }
+    };
+
+    loadMyCorrectionRequests();
+  }, []);
+
   return (
     <Box
       sx={{
@@ -97,6 +151,7 @@ function IndexerCorrectionRequestsIndexer() {
         <Button
           variant="contained"
           startIcon={<AddRoundedIcon />}
+          onClick={() => onNavigate?.("daily-entry")}
           sx={{
             mt: 1,
             height: 38,
@@ -223,7 +278,7 @@ function IndexerCorrectionRequestsIndexer() {
 
         {requestsIndexer.map((request, index) => (
           <Box
-            key={index}
+            key={request.id}
             sx={{
               display: "grid",
               gridTemplateColumns: "1.5fr .75fr 1fr 2fr 1.35fr .8fr",
@@ -299,7 +354,7 @@ function IndexerCorrectionRequestsIndexer() {
                   backgroundColor: "#6366df",
                 }}
               >
-                PS
+                {userInitials}
               </Avatar>
 
               <Typography
@@ -308,21 +363,19 @@ function IndexerCorrectionRequestsIndexer() {
                   color: "#1A2434",
                 }}
               >
-                Priya Sharma
+                {userName}
               </Typography>
             </Box>
 
             {/* STATUS */}
 
             <Chip
-              label="PENDING"
+              label={request.status}
               size="small"
               sx={{
                 width: "fit-content",
                 height: 22,
-                backgroundColor: "#fff4db",
-                color: "#c27a12",
-                border: "1px solid #f2d39b",
+                ...correctionStatusStyles[request.status],
                 fontSize: 9,
                 fontWeight: 800,
               }}
@@ -478,7 +531,10 @@ const rowsCoreTeam = [
     "REJECTED",
   ],
 ];
-function CorrectionsCoreTeam({ roleLabel = "Team Lead" }) {
+function CorrectionsCoreTeam({
+  roleKey,
+  roleLabel = "Team Lead",
+}) {
   const [rows, setRows] = useState([]);
   const [approvalSummary, setApprovalSummary] = useState({
   awaitingReview: 0,
@@ -489,6 +545,9 @@ function CorrectionsCoreTeam({ roleLabel = "Team Lead" }) {
 
 useEffect(() => {
   const loadPendingRequests = async () => {
+    if (roleKey !== "teamLead") {
+        return;
+      }
     try {
       const data = await apiRequest("/team-lead/approvals");
 
@@ -513,6 +572,9 @@ useEffect(() => {
 }, []);
 
 const loadApprovalSummary = async () => {
+  if (roleKey !== "teamLead") {
+      return;
+    }
   try {
     const data = await apiRequest(
       "/team-lead/approvals/summary"
@@ -1032,11 +1094,14 @@ export default function CorrectionApprovals(props) {
     case "indexer":
       return <IndexerCorrectionRequestsIndexer {...props} />;
     case "teamLead":
-      return <CorrectionsCoreTeam {...props} />;
+      return <CorrectionsCoreTeam roleKey={props.roleKey}
+        roleLabel={props.roleLabel}{...props} />;
     case "coreTeam":
-      return <CorrectionsCoreTeam {...props} />;
+      return <CorrectionsCoreTeam roleKey={props.roleKey}
+            roleLabel={props.roleLabel}{...props} />;
     case "administrator":
-      return <CorrectionsCoreTeam {...props} />;
+      return <CorrectionsCoreTeam roleKey={props.roleKey}
+        roleLabel={props.roleLabel}{...props} />;
     default:
       return <IndexerCorrectionRequestsIndexer {...props} />;
   }
