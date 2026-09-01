@@ -8,6 +8,11 @@ import {
   Alert,
   Typography,
   Paper,
+    // Provides the dropdown container for the Analytics month filter.
+  Menu,
+
+  // Provides each selectable month inside the Analytics filter.
+  MenuItem,
 } from "@mui/material";
 import CorePageShell, {
   CoreMetricCards,
@@ -137,36 +142,84 @@ function TrendChartCoreTeam({ trend, targetConfigured }) {
               stroke="#dbe3ec"
             />
 
-            {/* Keeps the original blue Completed area fill. */}
-            {chartData.length > 0 && (
-              <polygon
-                points={completedAreaPoints}
-                fill="url(#trendFill)"
-              />
-            )}
+            {/* Draws a normal trend when multiple months are available. */}
+{chartData.length > 1 && (
+  <>
+    {/* Keeps the blue filled area underneath the Completed trend. */}
+    <polygon
+      points={completedAreaPoints}
+      fill="url(#trendFill)"
+    />
 
-            {/* Draws the live Completed trend using the original blue style. */}
-            {chartData.length > 0 && (
-              <polyline
-                points={completedPoints}
-                fill="none"
-                stroke="#3478ed"
-                strokeWidth="3"
-                strokeLinejoin="round"
-                strokeLinecap="round"
-              />
-            )}
+    {/* Draws the Completed multi-month trend line. */}
+    <polyline
+      points={completedPoints}
+      fill="none"
+      stroke="#3478ed"
+      strokeWidth="3"
+      strokeLinejoin="round"
+      strokeLinecap="round"
+    />
 
-            {/* Draws the live Target trend using the original purple dashed style. */}
-            {chartData.length > 0 && (
-              <polyline
-                points={targetPoints}
-                fill="none"
-                stroke="#8052df"
-                strokeWidth="2"
-                strokeDasharray="7 7"
-              />
-            )}
+    {/* Draws the Target multi-month dotted trend line. */}
+    <polyline
+      points={targetPoints}
+      fill="none"
+      stroke="#8052df"
+      strokeWidth="2"
+      strokeDasharray="7 7"
+    />
+  </>
+)}
+
+{/* Handles a single selected month without creating a triangle. */}
+{chartData.length === 1 && (() => {
+  // Reads the single selected month's Completed value.
+  const completed = chartData[0].completed;
+
+  // Reads the single selected month's Target value.
+  const target = chartData[0].target;
+
+  // Calculates the vertical position of the Completed value.
+  const completedY =
+    158 - (completed / maxValue) * 140;
+
+  // Calculates the vertical position of the Target value.
+  const targetY =
+    158 - (target / maxValue) * 140;
+
+  return (
+    <>
+      {/* Adds a light blue area underneath the single-month Completed value. */}
+      <polygon
+        points={`0,${completedY} 800,${completedY} 800,158 0,158`}
+        fill="url(#trendFill)"
+      />
+
+      {/* Draws the single-month Completed value as a horizontal blue line. */}
+      <line
+        x1="0"
+        y1={completedY}
+        x2="800"
+        y2={completedY}
+        stroke="#3478ed"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+
+      {/* Draws the single-month Target value as a horizontal purple dotted line. */}
+      <line
+        x1="0"
+        y1={targetY}
+        x2="800"
+        y2={targetY}
+        stroke="#8052df"
+        strokeWidth="2"
+        strokeDasharray="7 7"
+      />
+    </>
+  );
+})()}
           </svg>
         )}
       </Box>
@@ -329,6 +382,36 @@ function AnalyticsKpisCoreTeam() {
   // Controls the existing Export success notification.
   const [notice, setNotice] = useState(false);
 
+  // Stores the element used to position the existing month dropdown.
+const [monthAnchorEl, setMonthAnchorEl] = useState(null);
+
+// Stores the selected production month; empty means all available data.
+const [selectedMonth, setSelectedMonth] = useState("");
+
+// Stores the production months returned dynamically by the backend.
+const [availableMonths, setAvailableMonths] = useState([]);
+
+// Opens the existing month-filter dropdown.
+const handleMonthMenuOpen = (event) => {
+  setMonthAnchorEl(event.currentTarget);
+};
+
+// Closes the existing month-filter dropdown.
+const handleMonthMenuClose = () => {
+  setMonthAnchorEl(null);
+};
+
+// Changes the selected month and closes the dropdown.
+const handleMonthChange = (month) => {
+  setSelectedMonth(month);
+  setMonthAnchorEl(null);
+};
+
+// Builds the month query string used by the Analytics APIs.
+const monthQuery = selectedMonth
+  ? `?month=${selectedMonth}`
+  : "";
+
   // Stores the live Analytics summary returned by the backend.
   const [analyticsSummary, setAnalyticsSummary] = useState(null);
 
@@ -347,24 +430,73 @@ const [completedVsTarget, setCompletedVsTarget] = useState([]);
 // Stores whether a production target is currently configured in the database.
 const [targetConfigured, setTargetConfigured] = useState(false);
 
+// Loads available production months once when the Analytics page opens.
+useEffect(() => {
+  // Requests the months that actually contain production data.
+  const loadAvailableMonths = async () => {
+    try {
+      // Calls the Monthly Analytics endpoint used to build the month dropdown.
+      const data = await apiRequest(
+        "/core-team/analytics/monthly",
+      );
+
+      // Converts backend monthly records into dropdown options.
+      const dynamicMonths = (data.monthly || [])
+        .map((item) => ({
+          value: item.month_key,
+          label: item.month_name,
+        }))
+        // Shows the newest available production month first.
+        .reverse();
+
+      // Stores the database-driven month list.
+      setAvailableMonths(dynamicMonths);
+    } catch (error) {
+      // Logs month-loading errors without breaking the Analytics page.
+      console.error(
+        "Available Analytics Months Error:",
+        error,
+      );
+
+      // Keeps the dropdown safe if month loading fails.
+      setAvailableMonths([]);
+    }
+  };
+
+  // Loads the available production months once when the page opens.
+  loadAvailableMonths();
+}, []);
+
+
   // Loads all currently connected Core Team Analytics data when the page opens.
   useEffect(() => {
     // Loads the main organisation-wide KPI summary.
-    const loadAnalyticsSummary = async () => {
-      try {
-        const data = await apiRequest("/core-team/analytics/summary");
-        setAnalyticsSummary(data.summary);
-      } catch (error) {
-        console.error("Analytics Summary Error:", error);
-      }
-    };
+   // Loads the main Analytics KPI summary for the selected month.
+const loadAnalyticsSummary = async () => {
+  try {
+    // Calls the summary API using the current month filter.
+    const data = await apiRequest(
+      `/core-team/analytics/summary${monthQuery}`,
+    );
+
+    // TEMP: Shows exactly what the frontend receives from the backend.
+    console.log("SUMMARY API RESPONSE:", data);
+
+    // Stores the returned summary object for the KPI cards.
+    setAnalyticsSummary(data?.summary || null);
+  } catch (error) {
+    // Shows the exact frontend API error if the request fails.
+    console.error("Analytics Summary Error:", error);
+  }
+};
 
     // Loads the production workflow status distribution.
     const loadStatusDistribution = async () => {
       try {
-        const data = await apiRequest(
-          "/core-team/analytics/status-distribution",
-        );
+        // Loads workflow Status Distribution for the selected month.
+const data = await apiRequest(
+  `/core-team/analytics/status-distribution${monthQuery}`,
+);
         setStatusDistribution(data.distribution);
       } catch (error) {
         console.error("Status Distribution Error:", error);
@@ -374,7 +506,8 @@ const [targetConfigured, setTargetConfigured] = useState(false);
     // Loads live project comparison values.
     const loadProjectComparison = async () => {
       try {
-        const data = await apiRequest("/core-team/analytics/projects");
+        // Loads Project Comparison for the selected month.
+          const data = await apiRequest(`/core-team/analytics/projects${monthQuery}`,);
         setProjectComparison(data.projects || []);
       } catch (error) {
         console.error("Project Comparison Error:", error);
@@ -384,30 +517,33 @@ const [targetConfigured, setTargetConfigured] = useState(false);
     // Loads live employee performance values.
     const loadTopPerformers = async () => {
       try {
-        const data = await apiRequest("/core-team/analytics/top-performers");
+          // Loads Top Performers for the selected month.
+        const data = await apiRequest( `/core-team/analytics/top-performers${monthQuery}`,
+);
         setTopPerformers(data.performers || []);
       } catch (error) {
         console.error("Top Performers Error:", error);
       }
     };
     // Loads Completed vs Target Analytics data from the backend.
-    const loadCompletedVsTarget = async () => {
-      try {
-        // Requests the Completed vs Target endpoint.
-        const data = await apiRequest(
-          "/core-team/analytics/completed-vs-target",
-        );
+    // Loads Completed vs Target Analytics for the selected month.
+const loadCompletedVsTarget = async () => {
+  try {
+    // Sends the selected month to the Completed vs Target backend API.
+    const data = await apiRequest(
+      `/core-team/analytics/completed-vs-target${monthQuery}`,
+    );
 
-        // Stores whether production targets are available.
-        setTargetConfigured(Boolean(data.targetConfigured));
+    // Stores whether production targets are configured.
+    setTargetConfigured(Boolean(data.targetConfigured));
 
-        // Stores trend data when production targets are configured.
-        setCompletedVsTarget(data.trend || []);
-      } catch (error) {
-        // Logs API errors without breaking the Analytics page.
-        console.error("Completed Vs Target Error:", error);
-      }
-    };
+    // Stores the filtered Completed vs Target trend.
+    setCompletedVsTarget(data.trend || []);
+  } catch (error) {
+    // Logs Completed vs Target API errors.
+    console.error("Completed Vs Target Error:", error);
+  }
+};
 
     // Starts all Analytics requests without changing the existing UI structure.
     loadAnalyticsSummary();
@@ -415,33 +551,266 @@ const [targetConfigured, setTargetConfigured] = useState(false);
     loadProjectComparison();
     loadTopPerformers();
     loadCompletedVsTarget();
-  }, []);
+    // Reloads Analytics automatically whenever the selected month changes.
+  }, [selectedMonth]);
+
+  // Exports the currently displayed Analytics data as a CSV file.
+const handleExportAnalytics = () => {
+  // Creates a readable name for the currently selected reporting period.
+  const selectedMonthLabel = selectedMonth
+    ? availableMonths.find(
+        (option) => option.value === selectedMonth,
+      )?.label || selectedMonth
+    : "All Months";
+
+  // Starts the CSV with the selected Analytics period.
+  const csvRows = [
+    ["ProdTrack Analytics Report"],
+    ["Period", selectedMonthLabel],
+    [],
+    ["KPI SUMMARY"],
+    ["Metric", "Value"],
+
+    // Adds the live KPI summary currently displayed on the page.
+    [
+      "Total Received",
+      analyticsSummary?.totalReceived ?? 0,
+    ],
+    [
+      "Total Completed",
+      analyticsSummary?.totalCompleted ?? 0,
+    ],
+    [
+      "Backlog",
+      analyticsSummary?.backlog ?? 0,
+    ],
+    [
+      "Completion Rate",
+      `${analyticsSummary?.completionRate ?? 0}%`,
+    ],
+    [
+      "Average Productivity",
+      analyticsSummary?.averageProductivity ?? 0,
+    ],
+    [
+      "Active Indexers",
+      analyticsSummary?.activeIndexers ?? 0,
+    ],
+    [
+      "Production Days",
+      analyticsSummary?.productionDays ?? 0,
+    ],
+
+    [],
+    ["STATUS DISTRIBUTION"],
+    ["Status", "Documents"],
+
+    // Adds the live workflow distribution values.
+    [
+      "Completed",
+      statusDistribution?.completed ?? 0,
+    ],
+    [
+      "Pending",
+      statusDistribution?.pending ?? 0,
+    ],
+    [
+      "In Review",
+      statusDistribution?.inReview ?? 0,
+    ],
+
+    [],
+    ["COMPLETED VS TARGET"],
+    [
+      "Month",
+      "Completed",
+      "Target",
+      "Achievement Rate",
+    ],
+
+    // Adds every currently loaded Completed vs Target record.
+    ...completedVsTarget.map((item) => [
+      item.month_name || item.month_key,
+      item.completed ?? 0,
+      item.target ?? 0,
+      `${item.achievementRate ?? 0}%`,
+    ]),
+
+    [],
+    ["PROJECT COMPARISON"],
+    [
+      "Project Code",
+      "Project Name",
+      "Received",
+      "Completed",
+      "Backlog",
+      "Completion Rate",
+    ],
+
+    // Adds every project from the currently filtered project comparison.
+    ...projectComparison.map((project) => [
+      project.project_code,
+      project.project_name,
+      project.received ?? 0,
+      project.completed ?? 0,
+      project.backlog ?? 0,
+      `${project.completion_rate ?? 0}%`,
+    ]),
+
+    [],
+    ["TOP PERFORMERS"],
+    [
+      "Employee ID",
+      "Employee",
+      "Received",
+      "Completed",
+      "Production Days",
+      "Productivity",
+      "Average Daily Productivity",
+    ],
+
+    // Adds every currently displayed top performer.
+    ...topPerformers.map((performer) => [
+      performer.employee_id,
+      performer.name,
+      performer.received ?? 0,
+      performer.completed ?? 0,
+      performer.productionDays ?? 0,
+      `${performer.productivity ?? 0}%`,
+      performer.averageDailyProductivity ?? 0,
+    ]),
+  ];
+
+  // Escapes CSV values so commas, quotes and special characters remain valid.
+  const escapeCsvValue = (value) => {
+    const stringValue = String(value ?? "");
+
+    return `"${stringValue.replace(/"/g, '""')}"`;
+  };
+
+  // Converts all Analytics rows into standard CSV text.
+  const csvContent = csvRows
+    .map((row) =>
+      row.map((value) => escapeCsvValue(value)).join(","),
+    )
+    .join("\n");
+
+  // Creates a temporary browser file containing the generated CSV.
+  const csvBlob = new Blob(
+    ["\uFEFF", csvContent],
+    {
+      type: "text/csv;charset=utf-8;",
+    },
+  );
+
+  // Creates a temporary browser URL for the generated CSV file.
+  const downloadUrl = URL.createObjectURL(csvBlob);
+
+  // Creates an invisible download link.
+  const downloadLink = document.createElement("a");
+
+  // Uses the generated CSV URL as the download source.
+  downloadLink.href = downloadUrl;
+
+  // Creates a different filename depending on the selected month.
+  downloadLink.download = selectedMonth
+    ? `ProdTrack_Analytics_${selectedMonth}.csv`
+    : "ProdTrack_Analytics_All_Months.csv";
+
+  // Temporarily adds the download link to the page.
+  document.body.appendChild(downloadLink);
+
+  // Starts the CSV download.
+  downloadLink.click();
+
+  // Removes the temporary download element.
+  document.body.removeChild(downloadLink);
+
+  // Releases the temporary browser URL from memory.
+  URL.revokeObjectURL(downloadUrl);
+
+  // Shows the existing success Snackbar after the export completes.
+  setNotice(true);
+};
 
   return (
     <CorePageShell
       title="Analytics & KPIs"
       description="Real-time production, backlog and performance across all projects."
+
       headerExtra={
-        <Button
-          variant="outlined"
-          size="small"
-          sx={{
-            width: 112,
-            height: 36,
-            bgcolor: "#fff",
-            borderColor: "#c8d9ff",
-            borderRadius: "8px",
-            justifyContent: "space-between",
-            px: 1.5,
-            color: "#2458c7",
-            fontSize: 12,
-          }}
-        >
-          This month <span aria-hidden="true">⌄</span>
-        </Button>
-      }
+  <>
+    {/* Keeps the existing month-filter button styling and opens its dropdown. */}
+    <Button
+      variant="outlined"
+      size="small"
+      onClick={handleMonthMenuOpen}
+      sx={{
+        width: 112,
+        height: 36,
+        bgcolor: "#fff",
+        borderColor: "#c8d9ff",
+        borderRadius: "8px",
+        justifyContent: "space-between",
+        px: 1.5,
+        color: "#2458c7",
+        fontSize: 12,
+        textTransform: "none",
+      }}
+    >
+      
+     {/* Shows the selected database-driven month or All months. */}
+{selectedMonth
+  ? availableMonths.find(
+      (option) => option.value === selectedMonth,
+    )?.label || "All months"
+  : "All months"}
+
+      <span aria-hidden="true">⌄</span>
+    </Button>
+
+    {/* Displays available production months below the existing filter button. */}
+    <Menu
+      anchorEl={monthAnchorEl}
+      open={Boolean(monthAnchorEl)}
+      onClose={handleMonthMenuClose}
+    >
+      {/* Creates one selectable menu item for every available production month. */}
+    {/* Provides an option to remove the month filter and show all production data. */}
+<MenuItem
+  selected={selectedMonth === ""}
+  onClick={() => handleMonthChange("")}
+  sx={{
+    fontSize: 12,
+    minWidth: 130,
+  }}
+>
+  All months
+</MenuItem>
+
+{/* Creates month options automatically from production data returned by the backend. */}
+{availableMonths.map((option) => (
+  <MenuItem
+    key={option.value}
+    selected={selectedMonth === option.value}
+    onClick={() =>
+      handleMonthChange(option.value)
+    }
+    sx={{
+      fontSize: 12,
+      minWidth: 130,
+    }}
+  >
+    {option.label}
+  </MenuItem>
+))}
+    </Menu>
+  </>
+}
+        
       actionLabel="Export"
-      actionHandler={() => setNotice(true)}
+      // Downloads the currently filtered Analytics data.
+      actionHandler={handleExportAnalytics}
     >
       {/* Displays live KPI values inside the original metric-card UI. */}
       <CoreMetricCards
