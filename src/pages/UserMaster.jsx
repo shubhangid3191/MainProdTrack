@@ -1,110 +1,788 @@
-import { useState } from "react";
+// Imports React hooks used for loading API data and managing page/dialog state.
+import { useEffect, useMemo, useState } from "react";
+
+// Imports the existing MUI components used by the original UI.
 import { Chip, Box } from "@mui/material";
-import CorePageShell, { CoreFormDialog, CoreTable, Person } from "../components/CorePageShell.jsx";
-const rowsCoreTeam = [[<Person initials="PS" name="Priya Sharma" />, 'EMP-1042', 'Indexing Ops', <Chip label="INDEXER" size="small" color="primary" />, 'Rohan Mehta', '3', 'ACTIVE'], [<Person initials="RM" name="Rohan Mehta" />, 'EMP-0771', 'Indexing Ops', <Chip label="TEAM LEAD" size="small" color="primary" />, 'Meera Nair', '4', 'ACTIVE'], [<Person initials="MN" name="Meera Nair" />, 'EMP-0310', 'Production Core', <Chip label="CORE TEAM" size="small" color="primary" />, '—', 'All', 'ACTIVE'], [<Person initials="AR" name="Aditya Rao" />, 'EMP-1088', 'Indexing Ops', <Chip label="INDEXER" size="small" color="primary" />, 'Rohan Mehta', '2', 'ACTIVE'], [<Person initials="KP" name="Karan Patel" />, 'EMP-1130', 'Indexing Ops', <Chip label="INDEXER" size="small" color="primary" />, 'Rohan Mehta', '1', 'INACTIVE']];
-const fieldsCoreTeam = [{
-  name: 'employee',
-  label: 'Employee name',
-  placeholder: 'Full name'
-}, {
-  name: 'email',
-  label: 'Email',
-  placeholder: 'name@company.com',
-  type: 'email'
-}, {
-  name: 'department',
-  label: 'Department',
-  placeholder: 'Indexing Ops'
-}, {
-  name: 'designation',
-  label: 'Designation',
-  placeholder: 'e.g. Senior Indexer'
-}, {
-  name: 'role',
-  label: 'Role',
-  placeholder: 'Indexer',
-  options: ['Indexer', 'Team Lead', 'Core Team', 'Administrator']
-}, {
-  name: 'lead',
-  label: 'Team lead',
-  placeholder: 'Rohan Mehta',
-  options: ['Rohan Mehta', 'Meera Nair']
-}, {
-  name: 'status',
-  label: 'Status',
-  placeholder: 'Active',
-  options: ['Active', 'Inactive']
-}, {
-  name: 'projects',
-  label: 'Assigned projects',
-  placeholder: 'Select...',
-  options: ['ABC Medical Imaging', 'Ortho Kids', 'Spine Indexing', 'All projects']
-}];
-function UserMasterCoreTeam() {
+
+// Imports the existing shared Core Team page components.
+import CorePageShell, {
+  CoreFormDialog,
+  CoreTable,
+  Person,
+} from "../components/CorePageShell.jsx";
+
+// Imports the shared API helper so all requests use the configured backend URL and token.
+import { apiRequest } from "../Config/api.js";
+
+
+// ============================================================
+// ROLE HELPERS
+// ============================================================
+
+// Maps backend role IDs to the labels already used by the Users UI.
+const roleOptions = [
+  { label: "Indexer", value: "1" },
+  { label: "Team Lead", value: "2" },
+  { label: "Core Team", value: "3" },
+  { label: "Administrator", value: "4" },
+];
+
+// Converts a role ID into the text shown in the form.
+const getRoleLabelFromId = (roleId) => {
+  const role = roleOptions.find(
+    (item) => Number(item.value) === Number(roleId)
+  );
+
+  return role?.label || "";
+};
+
+// Converts the selected role label back into the backend role ID.
+const getRoleIdFromLabel = (label) => {
+  const role = roleOptions.find(
+    (item) => item.label === label
+  );
+
+  return role ? Number(role.value) : null;
+};
+
+// Converts backend role codes into the uppercase labels shown in the table.
+const getRoleDisplayLabel = (role) => {
+  const roleLabels = {
+    indexer: "INDEXER",
+    lead: "TEAM LEAD",
+    core: "CORE TEAM",
+    admin: "ADMINISTRATOR",
+  };
+
+  return roleLabels[role] || String(role || "").toUpperCase();
+};
+
+
+// ============================================================
+// DEPARTMENT HELPERS
+// ============================================================
+
+// Maps the current database department names to their normalized department IDs.
+const departmentMap = {
+  "Indexing Ops": 1,
+  "Production Core": 2,
+  "IT / Admin": 3,
+};
+
+// Converts the entered department name into the backend department ID.
+const getDepartmentId = (departmentName) =>
+  departmentMap[departmentName] || null;
+
+
+// ============================================================
+// ACCOUNT HELPERS
+// ============================================================
+
+// Generates a username from the user's email because the current UI has no username field.
+const generateUsernameFromEmail = (email = "") =>
+  email
+    .split("@")[0]
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]/g, "");
+
+// Generates a temporary password because the existing dialog has no password field.
+const generateTemporaryPassword = () => {
+  const randomPart = Math.random()
+    .toString(36)
+    .slice(-6);
+
+  return `Prod@${randomPart}9A`;
+};
+
+// Returns initials for the existing Person avatar component.
+const getInitials = (name = "") =>
+  name
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+
+// ============================================================
+// SHARED USER MASTER
+// ============================================================
+
+function UserMasterPage({
+  administrator = false,
+}) {
+  // Stores whether the Add/Edit User dialog is open.
   const [open, setOpen] = useState(false);
-  return <><CorePageShell title="Users" description="Centralised user management — roles, departments and assignments." actionLabel="Add user" actionHandler={() => setOpen(true)}><CoreTable columns={['EMPLOYEE', 'EMP ID', 'DEPT', 'ROLE', 'TEAM LEAD', 'PROJECTS', 'STATUS']} rows={rowsCoreTeam} onAction={() => setOpen(true)} /></CorePageShell><CoreFormDialog open={open} onClose={() => setOpen(false)} title="User details" fields={fieldsCoreTeam} submitLabel="Save user" /></>;
-}
-const rowsAdministrator = [[<Person initials="PS" name="Priya Sharma" />, "EMP-1042", "Indexing Ops", <Chip label="INDEXER" size="small" color="primary" />, "Rohan Mehta", "3", "ACTIVE"], [<Person initials="RM" name="Rohan Mehta" />, "EMP-0771", "Indexing Ops", <Chip label="TEAM LEAD" size="small" color="primary" />, "Meera Nair", "4", "ACTIVE"], [<Person initials="MN" name="Meera Nair" />, "EMP-0310", "Production Core", <Chip label="CORE TEAM" size="small" color="primary" />, "—", "All", "ACTIVE"], [<Person initials="AR" name="Aditya Rao" />, "EMP-1088", "Indexing Ops", <Chip label="INDEXER" size="small" color="primary" />, "Rohan Mehta", "2", "ACTIVE"], [<Person initials="KP" name="Karan Patel" />, "EMP-1130", "Indexing Ops", <Chip label="INDEXER" size="small" color="primary" />, "Rohan Mehta", "1", "INACTIVE"], [<Person initials="SA" name="System Admin" />, "EMP-0001", "IT / Admin", <Chip label="ADMINISTRATOR" size="small" color="primary" />, "—", "All", "ACTIVE"]];
-const fieldsAdministrator = [{
-  name: "employee",
-  label: "Employee name",
-  placeholder: "Full name"
-}, {
-  name: "email",
-  label: "Email",
-  placeholder: "name@company.com",
-  type: "email"
-}, {
-  name: "department",
-  label: "Department",
-  placeholder: "Indexing Ops"
-}, {
-  name: "designation",
-  label: "Designation",
-  placeholder: "e.g. Senior Indexer"
-}, {
-  name: "role",
-  label: "Role",
-  placeholder: "Indexer",
-  options: ["Indexer", "Team Lead", "Core Team", "Administrator"]
-}, {
-  name: "lead",
-  label: "Team lead",
-  placeholder: "Rohan Mehta",
-  options: ["Rohan Mehta", "Meera Nair"]
-}, {
-  name: "status",
-  label: "Status",
-  placeholder: "Active",
-  options: ["Active", "Inactive"]
-}, {
-  name: "projects",
-  label: "Assigned projects",
-  placeholder: "Select...",
-  options: ["ABC Medical Imaging", "Ortho Kids", "Spine Indexing", "All projects"]
-}];
-function UserMasterAdministrator() {
-  const [open, setOpen] = useState(false);
-  return <>
-      <CorePageShell breadcrumb="Administrator" title="User master" description="Centralised user management — roles, departments and assignments." actionLabel="Add user" actionHandler={() => setOpen(true)}>
-        <Box sx={{
-        width: "100%",
-        overflowX: "auto"
-      }}>
-          <CoreTable columns={["EMPLOYEE", "EMP ID", "DEPT", "ROLE", "TEAM LEAD", "PROJECTS", "STATUS"]} rows={rowsAdministrator} onAction={() => setOpen(true)} />
+
+  // Stores the live users returned by the backend.
+  const [users, setUsers] = useState([]);
+
+  // Stores active Team Leads used by the Team Lead dropdown.
+  const [teamLeads, setTeamLeads] = useState([]);
+
+  // Stores active projects used by the Assigned Projects dropdown.
+  const [projects, setProjects] = useState([]);
+
+  // Stores the user currently being edited; null means Add User mode.
+  const [selectedUser, setSelectedUser] = useState(null);
+
+  // Tracks whether API data is currently loading.
+  const [loading, setLoading] = useState(false);
+
+
+  // ==========================================================
+  // LOAD USERS
+  // ==========================================================
+
+  // Loads all users from the working Core Team Users API.
+  const loadUsers = async () => {
+    try {
+      const response = await apiRequest(
+        "/core-team/users"
+      );
+
+      setUsers(response.users || []);
+    } catch (error) {
+      console.error(
+        "Load users error:",
+        error
+      );
+
+      window.alert(
+        error.message || "Failed to load users"
+      );
+    }
+  };
+
+
+  // ==========================================================
+  // LOAD TEAM LEADS
+  // ==========================================================
+
+  // Loads active Team Leads for the Add/Edit User dialog.
+  const loadTeamLeads = async () => {
+    try {
+      const response = await apiRequest(
+        "/core-team/users/team-leads"
+      );
+
+      setTeamLeads(
+        response.teamLeads || []
+      );
+    } catch (error) {
+      console.error(
+        "Load Team Leads error:",
+        error
+      );
+    }
+  };
+
+
+  // ==========================================================
+  // LOAD PROJECTS
+  // ==========================================================
+
+  // Loads active projects for user assignment.
+  const loadProjects = async () => {
+    try {
+      const response = await apiRequest(
+        "/core-team/users/projects"
+      );
+
+      setProjects(
+        response.projects || []
+      );
+    } catch (error) {
+      console.error(
+        "Load projects error:",
+        error
+      );
+    }
+  };
+
+
+  // ==========================================================
+  // INITIAL API LOAD
+  // ==========================================================
+
+  // Loads Users, Team Leads and Projects when the page first opens.
+  useEffect(() => {
+    const loadPageData = async () => {
+      setLoading(true);
+
+      await Promise.all([
+        loadUsers(),
+        loadTeamLeads(),
+        loadProjects(),
+      ]);
+
+      setLoading(false);
+    };
+
+    loadPageData();
+  }, []);
+
+
+  // ==========================================================
+  // TABLE ROWS
+  // ==========================================================
+
+  // Converts live backend user objects into the exact existing CoreTable structure.
+  const tableRows = useMemo(
+    () =>
+      users.map((user) => [
+        <Person
+          key={`person-${user.id}`}
+          initials={getInitials(user.name)}
+          name={user.name}
+        />,
+
+        user.employee_id,
+
+        user.department || "—",
+
+        <Chip
+          key={`role-${user.id}`}
+          label={getRoleDisplayLabel(
+            user.role
+          )}
+          size="small"
+          color="primary"
+        />,
+
+        user.team_lead_name || "—",
+
+        user.projects?.length
+          ? user.projects.length
+          : "0",
+
+        String(
+          user.status || ""
+        ).toUpperCase(),
+      ]),
+    [users]
+  );
+
+
+  // ==========================================================
+  // FORM FIELDS
+  // ==========================================================
+
+  // Builds the same existing form fields but replaces static dropdown data with API data.
+  const fields = useMemo(
+    () => [
+      {
+        name: "employee",
+        label: "Employee name",
+        placeholder: "Full name",
+      },
+      {
+        name: "email",
+        label: "Email",
+        placeholder: "name@company.com",
+        type: "email",
+      },
+      {
+        name: "department",
+        label: "Department",
+        placeholder: "Indexing Ops",
+      },
+      {
+        name: "designation",
+        label: "Designation",
+        placeholder: "e.g. Senior Indexer",
+      },
+      {
+        name: "role",
+        label: "Role",
+        placeholder: "Indexer",
+        options: roleOptions.map(
+          (role) => role.label
+        ),
+      },
+      {
+        name: "lead",
+        label: "Team lead",
+        placeholder: "Rohan Mehta",
+        options: [
+          "None",
+          ...teamLeads.map(
+            (lead) => lead.name
+          ),
+        ],
+      },
+      {
+        name: "status",
+        label: "Status",
+        placeholder: "Active",
+        options: [
+          "Active",
+          "Inactive",
+        ],
+      },
+      {
+        name: "projects",
+        label: "Assigned projects",
+        placeholder: "Select...",
+        options: [
+          ...projects.map(
+            (project) =>
+              project.project_name
+          ),
+          "All projects",
+        ],
+      },
+    ],
+    [teamLeads, projects]
+  );
+
+
+  // ==========================================================
+  // OPEN ADD USER
+  // ==========================================================
+
+  // Opens the existing dialog in Add User mode.
+  const handleAddUser = () => {
+    setSelectedUser(null);
+    setOpen(true);
+  };
+
+
+  // ==========================================================
+  // OPEN EDIT USER
+  // ==========================================================
+
+  // Finds the backend user using the clicked table row index and opens Edit mode.
+  const handleEditUser = (
+    row,
+    rowIndex
+  ) => {
+    const user = users[rowIndex];
+
+    if (!user) {
+      return;
+    }
+
+    setSelectedUser(user);
+    setOpen(true);
+  };
+
+
+  // ==========================================================
+  // FORM INITIAL VALUES
+  // ==========================================================
+
+  // Converts the selected backend user into values understood by CoreFormDialog.
+  const initialValues = useMemo(() => {
+    if (!selectedUser) {
+      return {
+        employee: "",
+        email: "",
+        department: "",
+        designation: "",
+        role: "Indexer",
+        lead: "None",
+        status: "Active",
+        projects: "",
+      };
+    }
+
+    // Finds the Team Lead name already assigned to the selected employee.
+    const leadName =
+      selectedUser.team_lead_name ||
+      "None";
+
+    // Determines how the current project assignment should appear in the existing single-select control.
+    let projectValue = "";
+
+    // Shows the project directly when exactly one project is assigned.
+    if (
+      selectedUser.projects?.length === 1
+    ) {
+      projectValue =
+        selectedUser.projects[0];
+    }
+
+    // Shows All projects when every active project is assigned.
+    if (
+      projects.length > 0 &&
+      selectedUser.project_ids?.length ===
+        projects.length
+    ) {
+      projectValue = "All projects";
+    }
+
+    return {
+      employee: selectedUser.name || "",
+      email: selectedUser.email || "",
+      department:
+        selectedUser.department || "",
+      designation:
+        selectedUser.designation || "",
+      role: getRoleLabelFromId(
+        selectedUser.role_id
+      ),
+      lead: leadName,
+      status:
+        selectedUser.status === "inactive"
+          ? "Inactive"
+          : "Active",
+      projects: projectValue,
+    };
+  }, [selectedUser, projects]);
+
+
+  // ==========================================================
+  // PROJECT VALUE → IDS
+  // ==========================================================
+
+  // Converts the form's project dropdown selection into project IDs expected by the backend.
+  const getSelectedProjectIds = (
+    projectSelection
+  ) => {
+    // Assigns every active project when All projects is selected.
+    if (
+      projectSelection ===
+      "All projects"
+    ) {
+      return projects.map(
+        (project) => project.id
+      );
+    }
+
+    // Finds the selected project by its visible project name.
+    const selectedProject =
+      projects.find(
+        (project) =>
+          project.project_name ===
+          projectSelection
+      );
+
+    // Returns either the selected project ID or an empty assignment.
+    return selectedProject
+      ? [selectedProject.id]
+      : [];
+  };
+
+
+  // ==========================================================
+  // TEAM LEAD VALUE → ID
+  // ==========================================================
+
+  // Converts the selected Team Lead name into its backend user ID.
+  const getSelectedTeamLeadId = (
+    leadName
+  ) => {
+    if (
+      !leadName ||
+      leadName === "None"
+    ) {
+      return null;
+    }
+
+    const lead = teamLeads.find(
+      (item) =>
+        item.name === leadName
+    );
+
+    return lead?.id || null;
+  };
+
+
+  // ==========================================================
+  // SAVE USER
+  // ==========================================================
+
+  // Creates a new user or updates the selected existing user.
+  const handleSubmit = async (
+    values
+  ) => {
+    try {
+      // Converts the visible Role label into the normalized database role ID.
+      const roleId =
+        getRoleIdFromLabel(
+          values.role
+        );
+
+      // Converts the visible department text into the normalized department ID.
+      const departmentId =
+        getDepartmentId(
+          values.department
+        );
+
+      // Converts Team Lead selection into its user ID.
+      const teamLeadId =
+        getSelectedTeamLeadId(
+          values.lead
+        );
+
+      // Converts Active/Inactive into lowercase backend values.
+      const status =
+        values.status === "Inactive"
+          ? "inactive"
+          : "active";
+
+
+      // ======================================================
+      // EDIT EXISTING USER
+      // ======================================================
+
+      if (selectedUser) {
+        // Builds the PATCH body using fields supported by updateUser().
+        const updateBody = {
+          name: values.employee,
+          email: values.email,
+          departmentId,
+          designation:
+            values.designation,
+          roleId,
+          teamLeadId,
+          status,
+        };
+
+        /*
+         * Only updates project assignments when the user selected a
+         * project value. This prevents existing multi-project users
+         * from accidentally losing assignments when the single-select
+         * UI cannot represent all of their current projects.
+         */
+        if (values.projects) {
+          updateBody.projectIds =
+            getSelectedProjectIds(
+              values.projects
+            );
+        }
+
+        // Sends the user update to the working PATCH endpoint.
+        await apiRequest(
+          `/core-team/users/${selectedUser.id}`,
+          {
+            method: "PATCH",
+            body: JSON.stringify(
+              updateBody
+            ),
+          }
+        );
+
+        // Closes the dialog after successful update.
+        setOpen(false);
+
+        // Clears Edit mode.
+        setSelectedUser(null);
+
+        // Reloads fresh database values into the table.
+        await loadUsers();
+
+        return;
+      }
+
+
+      // ======================================================
+      // CREATE NEW USER
+      // ======================================================
+
+      // Generates the username from the entered email address.
+      const username =
+        generateUsernameFromEmail(
+          values.email
+        );
+
+      // Generates a temporary first-login password.
+      const temporaryPassword =
+        generateTemporaryPassword();
+
+      // Builds the exact request body required by createUser().
+      const createBody = {
+        name: values.employee,
+        username,
+        email: values.email,
+        password: temporaryPassword,
+        roleId,
+        departmentId,
+        designation:
+          values.designation,
+        teamLeadId,
+        status,
+        projectIds:
+          getSelectedProjectIds(
+            values.projects
+          ),
+      };
+
+      // Sends the new user to the working POST endpoint.
+      const response = await apiRequest(
+        "/core-team/users",
+        {
+          method: "POST",
+          body: JSON.stringify(
+            createBody
+          ),
+        }
+      );
+
+      // Closes the existing dialog after creation.
+      setOpen(false);
+
+      // Reloads the Users table with the newly-created database user.
+      await loadUsers();
+
+      // Shows the generated credentials once because the current UI contains no username/password fields.
+      window.alert(
+        `User created successfully.\n\nEmployee ID: ${
+          response.user?.employee_id || ""
+        }\nUsername: ${username}\nTemporary Password: ${temporaryPassword}`
+      );
+    } catch (error) {
+      console.error(
+        "Save user error:",
+        error
+      );
+
+      // Shows the backend validation message if creation or update fails.
+      window.alert(
+        error.message ||
+          "Failed to save user"
+      );
+
+      // Re-throws so CoreFormDialog does not silently treat a failed request as successful.
+      throw error;
+    }
+  };
+
+
+  // ==========================================================
+  // RENDER
+  // ==========================================================
+
+  return (
+    <>
+      <CorePageShell
+        // Keeps the Administrator breadcrumb used by the original Administrator version.
+        breadcrumb={
+          administrator
+            ? "Administrator"
+            : undefined
+        }
+        // Keeps the original page title for each role.
+        title={
+          administrator
+            ? "User master"
+            : "Users"
+        }
+        // Keeps the original page description exactly the same.
+        description="Centralised user management — roles, departments and assignments."
+        // Keeps the original Add user action.
+        actionLabel="Add user"
+        // Opens the form in Add mode.
+        actionHandler={handleAddUser}
+      >
+        <Box
+          sx={{
+            width: "100%",
+            overflowX: "auto",
+          }}
+        >
+          <CoreTable
+            // Keeps the original table columns exactly the same.
+            columns={[
+              "EMPLOYEE",
+              "EMP ID",
+              "DEPT",
+              "ROLE",
+              "TEAM LEAD",
+              "PROJECTS",
+              "STATUS",
+            ]}
+            // Uses live rows instead of the original hardcoded rows.
+            rows={tableRows}
+            // Opens the selected table user in Edit mode.
+            onAction={handleEditUser}
+          />
         </Box>
+
+        {/* Keeps loading behavior lightweight without changing the existing page design. */}
+        {loading && users.length === 0
+          ? null
+          : null}
       </CorePageShell>
 
-      <CoreFormDialog open={open} onClose={() => setOpen(false)} title="User details" fields={fieldsAdministrator} submitLabel="Save user" />
-    </>;
+      <CoreFormDialog
+        // Controls whether the existing dialog is open.
+        open={open}
+        // Closes the dialog and clears Edit mode.
+        onClose={() => {
+          setOpen(false);
+          setSelectedUser(null);
+        }}
+        // Keeps the original dialog title.
+        title="User details"
+        // Supplies API-powered form fields.
+        fields={fields}
+        // Supplies existing user data when editing.
+        initialValues={initialValues}
+        // Sends Add/Edit values to the backend.
+        onSubmit={handleSubmit}
+        // Keeps the original Save user button label.
+        submitLabel="Save user"
+      />
+    </>
+  );
 }
-export default function UserMaster(props) {
+
+
+// ============================================================
+// ROLE-SPECIFIC WRAPPERS
+// ============================================================
+
+// Renders the shared live Users module for Core Team.
+function UserMasterCoreTeam() {
+  return (
+    <UserMasterPage
+      administrator={false}
+    />
+  );
+}
+
+// Renders the same shared live Users module for Administrator.
+function UserMasterAdministrator() {
+  return (
+    <UserMasterPage
+      administrator
+    />
+  );
+}
+
+
+// ============================================================
+// MAIN EXPORT
+// ============================================================
+
+// Selects the correct Users page according to the logged-in application role.
+export default function UserMaster(
+  props
+) {
   switch (props.roleKey) {
     case "coreTeam":
-      return <UserMasterCoreTeam {...props} />;
+      return (
+        <UserMasterCoreTeam
+          {...props}
+        />
+      );
+
     case "administrator":
-      return <UserMasterAdministrator {...props} />;
+      return (
+        <UserMasterAdministrator
+          {...props}
+        />
+      );
+
     default:
-      return <UserMasterCoreTeam {...props} />;
+      return (
+        <UserMasterCoreTeam
+          {...props}
+        />
+      );
   }
 }
