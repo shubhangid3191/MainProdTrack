@@ -112,6 +112,12 @@ export default function Reports({
 const [period, setPeriod] = useState("week");
 const [bars, setBars] = useState([]);
 const [employees, setEmployees] = useState([]);
+const [employeeOptions, setEmployeeOptions] = useState([]);
+const [projects, setProjects] = useState([]);
+const [selectedProject, setSelectedProject] = useState("all");
+const [selectedEmployee, setSelectedEmployee] = useState("all");
+const [reportType, setReportType] =
+  useState("employee");
 
 
 useEffect(() => {
@@ -121,37 +127,73 @@ useEffect(() => {
     }
 
     try {
+      const queryParams = new URLSearchParams({
+        period,
+      });
+
+      if (selectedProject !== "all") {
+        queryParams.set(
+          "projectId",
+          selectedProject
+        );
+      }
+
+      if (selectedEmployee !== "all") {
+        queryParams.set(
+          "employeeId",
+          selectedEmployee
+        );
+      }
+
+    const reportQuery = queryParams.toString();
+
+
       const [
-            summaryData,
-            productionData,
-            employeeData,
-          ] = await Promise.all([
-            apiRequest(
-              `/reports/my-summary?period=${period}`
-            ),
-            apiRequest(
-              `/reports/my-daily-production?period=${period}`
-            ),
-            apiRequest(
-              `/reports/employee-production?period=${period}`
-            ),
-          ]);
+        summaryData,
+        productionData,
+        employeeData,
+        employeeOptionsData,
+        projectData,
+      ] = await Promise.all([
+        apiRequest(
+          `/reports/my-summary?${reportQuery}`
+        ),
+
+        apiRequest(
+          `/reports/my-daily-production?${reportQuery}`
+        ),
+
+        apiRequest(
+          `/reports/employee-production?${reportQuery}`
+        ),
+
+        // Unfiltered request for dropdown options
+        apiRequest(
+          `/reports/employee-production?period=${period}`
+        ),
+
+        apiRequest("/projects/my"),
+      ]);
 
       setSummary(summaryData.summary);
+      setProjects(projectData.projects || []);
 
       const formattedBars = (
         productionData.production || []
       ).map((entry) => ({
-        day: String(entry.day_name || "").slice(0, 3),
+        day: String(
+          entry.day_name || ""
+        ).slice(0, 3),
+
         value: Number(entry.completed || 0),
         received: Number(entry.received || 0),
         completed: Number(entry.completed || 0),
       }));
 
       setBars(formattedBars);
-      const formattedEmployees = (
-          employeeData.employees || []
-        ).map((employee) => {
+
+      const formatEmployees = (employeeList) =>
+        (employeeList || []).map((employee) => {
           const employeeName =
             employee.employee_name || "";
 
@@ -175,16 +217,34 @@ useEffect(() => {
           ];
         });
 
-        setEmployees(formattedEmployees);
+      setEmployees(
+        formatEmployees(employeeData.employees)
+      );
+
+      setEmployeeOptions(
+        formatEmployees(
+          employeeOptionsData.employees
+        )
+      );
     } catch (error) {
-      console.error("Load Reports Error:", error);
+      console.error(
+        "Load Reports Error:",
+        error
+      );
+
       alert(error.message);
     }
   };
 
   loadReports();
-}, [roleKey, period]);
-  const max = Math.max(
+}, [
+  roleKey,
+  period,
+  selectedProject,
+  selectedEmployee,
+]);
+
+const max = Math.max(
   1,
   ...bars.map((bar) => bar.value)
 );
@@ -197,6 +257,19 @@ useEffect(() => {
     Math.max(summary.completionRate, 0),
     100
   ) / 100) * 360;
+
+  const displayedEmployees =
+  reportType === "pending"
+    ? [...employees]
+        .filter(
+          (employee) =>
+            Number(employee[5]) > 0
+        )
+        .sort(
+          (a, b) =>
+            Number(b[5]) - Number(a[5])
+        )
+    : employees;
 
   const handleCsvDownload = () => {
   if (employees.length === 0) {
@@ -469,7 +542,13 @@ const handlePdfDownload = () => {
         >
           {/* REPORT TYPE */}
 
-          <SelectField label="Report type">
+          <SelectField
+              label="Report type"
+              value={reportType}
+              onChange={(event) =>
+                setReportType(event.target.value)
+              }
+            >
             <MenuItem value="employee">
               Employee-wise production
             </MenuItem>
@@ -493,53 +572,58 @@ const handlePdfDownload = () => {
 
           {/* PERIOD */}
 
-          <SelectField
-              label="Period"
-              value={period}
+            <SelectField
+              label="Project"
+              value={selectedProject}
               onChange={(event) =>
-                setPeriod(event.target.value)
+                setSelectedProject(event.target.value)
               }
             >
-            <MenuItem value="week">
-              This week
-            </MenuItem>
+              <MenuItem value="all">
+                All projects
+              </MenuItem>
 
-            <MenuItem value="month">
-              This month
-            </MenuItem>
+              {projects.map((project) => (
+                <MenuItem
+                  key={project.project_id || project.id}
+                  value={project.project_id || project.id}
+                >
+                  {project.project_name}
+                </MenuItem>
+              ))}
+            </SelectField>
 
-            <MenuItem value="custom">
-              Custom range
-            </MenuItem>
-          </SelectField>
-
-          {/* PROJECT */}
-
-          <SelectField label="Project">
-            <MenuItem value="all">
-              All projects
-            </MenuItem>
-
-            <MenuItem value="abc">
-              ABC Medical Imaging
-            </MenuItem>
-
-            <MenuItem value="ortho">
-              Ortho Kids
-            </MenuItem>
-          </SelectField>
+            <SelectField
+              label="Period"
+              value={period}
+              onChange={(event) => setPeriod(event.target.value)}
+            >
+              <MenuItem value="week">This week</MenuItem>
+              <MenuItem value="month">This month</MenuItem>
+            </SelectField>
 
           {/* EMPLOYEE */}
 
-          <SelectField label="Employee">
-            <MenuItem value="all">
-              All employees
-            </MenuItem>
+            <SelectField
+              label="Employee"
+              value={selectedEmployee}
+              onChange={(event) =>
+                setSelectedEmployee(event.target.value)
+              }
+            >
+              <MenuItem value="all">
+                All employees
+              </MenuItem>
 
-            <MenuItem value="priya">
-              Priya Sharma
-            </MenuItem>
-          </SelectField>
+              {employeeOptions.map((employee) => (
+                <MenuItem
+                  key={employee[7]}
+                  value={employee[7]}
+                >
+                  {employee[1]}
+                </MenuItem>
+              ))}
+            </SelectField>
         </Box>
       </Card>
 
@@ -881,7 +965,17 @@ const handlePdfDownload = () => {
               color: "#17233a",
             }}
           >
-            Employee-wise production — this week
+            {reportType === "pending"
+            ? `Pending backlog — ${
+                period === "month"
+                  ? "this month"
+                  : "this week"
+              }`
+            : `Employee-wise production — ${
+                period === "month"
+                  ? "this month"
+                  : "this week"
+              }`}
           </Typography>
         </Box>
 
@@ -928,7 +1022,7 @@ const handlePdfDownload = () => {
             width: "100%",
           }}
         >
-          {employees.map((employee) => (
+          {displayedEmployees.map((employee) => (
             <Box
               key={employee[7] || employee[1]}
               sx={{
