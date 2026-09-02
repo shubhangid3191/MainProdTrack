@@ -1,4 +1,9 @@
-import { useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import apiRequest from "../Config/api.js";
 import {
   Alert,
   Avatar,
@@ -15,48 +20,6 @@ import {
   Typography,
 } from "@mui/material";
 
-const rows = [
-  [
-    "20 May 14:22",
-    "RM",
-    "Rohan Mehta",
-    "APPROVED CORRECTION",
-    "ABC-...-11",
-    "Implant Name updated",
-  ],
-  [
-    "20 May 12:03",
-    "PS",
-    "Priya Sharma",
-    "ACKNOWLEDGED GUIDE",
-    "ABC v2.3",
-    "Read & understood",
-  ],
-  [
-    "20 May 09:41",
-    "SA",
-    "System Admin",
-    "CREATED USER",
-    "EMP-1160",
-    "Nikhil Verma / Indexer",
-  ],
-  [
-    "19 May 18:00",
-    "SY",
-    "System",
-    "AUTO-LOCKED ENTRIES",
-    "ABC Medical",
-    "142 entries locked",
-  ],
-  [
-    "19 May 10:15",
-    "MN",
-    "Meera Nair",
-    "UPLOADED GUIDE",
-    "ABC v2.3",
-    "Notified 50 users",
-  ],
-];
 
 const tabs = ["Activity", "Change History", "Login Events"];
 
@@ -64,6 +27,145 @@ export default function AuditLog() {
   const [notice, setNotice] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
 
+  const [logs, setLogs] = useState([]);
+
+useEffect(() => {
+  const loadAuditLogs = async () => {
+    try {
+      const data = await apiRequest(
+        "/audit-logs?pageSize=100"
+      );
+
+      setLogs(data.logs || []);
+    } catch (error) {
+      console.error(
+        "Load Audit Logs Error:",
+        error
+      );
+
+      alert(error.message);
+    }
+  };
+
+  loadAuditLogs();
+}, []);
+
+const rows = logs.map((log) => {
+  const userName =
+    log.user_name || "System";
+
+  const initials = userName
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  const createdDate = new Date(
+    log.created_at
+  );
+
+  const formattedTime =
+    Number.isNaN(createdDate.getTime())
+      ? "—"
+      : createdDate.toLocaleString(
+          "en-IN",
+          {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          }
+        );
+
+  const entity = [
+    log.entity_type,
+    log.entity_ref,
+  ]
+    .filter(Boolean)
+    .join(" #");
+
+  return [
+    formattedTime,
+    initials || "SY",
+    userName,
+    String(
+      log.action || "Activity"
+    ).toUpperCase(),
+    entity || "—",
+    log.detail || "—",
+  ];
+});
+
+const handleExport = () => {
+  if (logs.length === 0) {
+    alert("No audit logs are available");
+    return;
+  }
+
+  const escapeCsv = (value) => {
+    let text = String(value ?? "");
+
+    if (/^[=+\-@]/.test(text)) {
+      text = `'${text}`;
+    }
+
+    return `"${text.replaceAll('"', '""')}"`;
+  };
+
+  const exportRows = [
+    [
+      "Timestamp",
+      "User",
+      "Employee ID",
+      "Action",
+      "Entity Type",
+      "Entity Reference",
+      "Detail",
+    ],
+
+    ...logs.map((log) => [
+      log.created_at,
+      log.user_name || "System",
+      log.emp_code || "",
+      log.action,
+      log.entity_type,
+      log.entity_ref,
+      log.detail,
+    ]),
+  ];
+
+  const csvContent = exportRows
+    .map((row) =>
+      row.map(escapeCsv).join(",")
+    )
+    .join("\n");
+
+  const file = new Blob(
+    [csvContent],
+    {
+      type: "text/csv;charset=utf-8;",
+    }
+  );
+
+  const url = URL.createObjectURL(file);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download =
+    `audit-log-${new Date()
+      .toISOString()
+      .slice(0, 10)}.csv`;
+
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  URL.revokeObjectURL(url);
+  setNotice(true);
+};
   return (
     <Box sx={{ width: "100%" }}>
       {/* ── PAGE HEADER ── */}
@@ -90,7 +192,10 @@ export default function AuditLog() {
             User activity, change history and login events for compliance.
           </Typography>
         </Box>
-        <Button variant="contained" onClick={() => setNotice(true)}>
+       <Button
+          variant="contained"
+          onClick={handleExport}
+        >
           Export
         </Button>
       </Box>
