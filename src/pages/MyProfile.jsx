@@ -87,14 +87,11 @@ export default function MyProfile({ user }) {
     ".",
     ""
   )}@company.com`;
-  const [passwordDialogOpen, setPasswordDialogOpen] =
-  useState(false);
-
-const [changingPassword, setChangingPassword] =
-  useState(false);
-
-const [passwordData, setPasswordData] = useState({
-  currentPassword: "",
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+const [resetStep, setResetStep]                   = useState(1); // 1=request, 2=set new password
+const [resetToken, setResetToken]                 = useState("");
+const [changingPassword, setChangingPassword]     = useState(false);
+const [passwordData, setPasswordData]             = useState({
   newPassword: "",
   confirmPassword: "",
 });
@@ -193,60 +190,55 @@ const [passwordData, setPasswordData] = useState({
   ];
 
   const handlePasswordInputChange = (event) => {
-  const { name, value } = event.target;
+    const { name, value } = event.target;
+    setPasswordData((prev) => ({ ...prev, [name]: value }));
+  };
 
-  setPasswordData((currentData) => ({
-    ...currentData,
-    [name]: value,
-  }));
-};
+  // Step 1 — Request reset link → inserts row in password_reset table
+  const handleRequestReset = async () => {
+    setChangingPassword(true);
+    try {
+      const data = await apiRequest("/password/request-reset", { method: "POST" });
+      setResetToken(data.resetToken);
+      setResetStep(2);
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setChangingPassword(false);
+    }
+  };
 
-const handleChangePassword = async () => {
-  if (
-    !passwordData.currentPassword ||
-    !passwordData.newPassword ||
-    !passwordData.confirmPassword
-  ) {
-    alert("Enter all password fields");
-    return;
-  }
-
-  if (
-    passwordData.newPassword !==
-    passwordData.confirmPassword
-  ) {
-    alert(
-      "New password and confirm password do not match"
-    );
-    return;
-  }
-
-  setChangingPassword(true);
-
-  try {
-    const data = await apiRequest(
-      "/password/change-password",
-      {
-        method: "PATCH",
-        body: JSON.stringify(passwordData),
-      }
-    );
-
-    alert(data.message);
-
-    setPasswordDialogOpen(false);
-
-    setPasswordData({
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    });
-  } catch (error) {
-    alert(error.message);
-  } finally {
-    setChangingPassword(false);
-  }
-};
+  // Step 2 — Set new password using the token received
+  const handleResetWithToken = async () => {
+    if (!passwordData.newPassword || !passwordData.confirmPassword) {
+      alert("Enter new password and confirm password");
+      return;
+    }
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      alert("New password and confirm password do not match");
+      return;
+    }
+    setChangingPassword(true);
+    try {
+      const data = await apiRequest("/password/reset-with-token", {
+        method: "POST",
+        body: JSON.stringify({
+          resetToken,
+          newPassword:     passwordData.newPassword,
+          confirmPassword: passwordData.confirmPassword,
+        }),
+      });
+      alert(data.message);
+      setPasswordDialogOpen(false);
+      setResetStep(1);
+      setResetToken("");
+      setPasswordData({ newPassword: "", confirmPassword: "" });
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setChangingPassword(false);
+    }
+  };
 
   return (
     <Box sx={{ width: "100%", boxSizing: "border-box" }}>
@@ -414,69 +406,114 @@ const handleChangePassword = async () => {
         onClose={() => {
           if (!changingPassword) {
             setPasswordDialogOpen(false);
+            setResetStep(1);
+            setResetToken("");
+            setPasswordData({ newPassword: "", confirmPassword: "" });
           }
         }}
         fullWidth
         maxWidth="xs"
       >
-        <DialogTitle>
-          Change password
+        <DialogTitle sx={{ fontFamily: FONT, fontWeight: 700 }}>
+          Reset password
         </DialogTitle>
 
         <DialogContent>
-          <TextField
-            name="currentPassword"
-            label="Current password"
-            type="password"
-            value={passwordData.currentPassword}
-            onChange={handlePasswordInputChange}
-            fullWidth
-            margin="dense"
-            autoComplete="current-password"
-          />
+          {/* STEP 1 — Request reset link */}
+          {resetStep === 1 && (
+            <Box>
+              <Typography sx={{ fontFamily: FONT, fontSize: 13.5, color: MUTED, mb: 1.5 }}>
+                Click <strong>Send reset link</strong> to generate a password reset token.
+                A row will be created in the system and you can set a new password immediately.
+              </Typography>
+              <Box sx={{
+                p: 1.5, bgcolor: "#f0f7ff", border: "1px solid #cfe0f7",
+                borderRadius: "8px", display: "flex", gap: 1, alignItems: "flex-start",
+              }}>
+                <InfoRoundedIcon sx={{ fontSize: 16, color: "#2f6df0", mt: "2px", flexShrink: 0 }} />
+                <Typography sx={{ fontFamily: FONT, fontSize: 12.5, color: "#44566f" }}>
+                  In production, a secure link will be sent to your registered email.
+                  For this prototype, the token is returned directly.
+                </Typography>
+              </Box>
+            </Box>
+          )}
 
-          <TextField
-            name="newPassword"
-            label="New password"
-            type="password"
-            value={passwordData.newPassword}
-            onChange={handlePasswordInputChange}
-            fullWidth
-            margin="dense"
-            autoComplete="new-password"
-          />
+          {/* STEP 2 — Set new password */}
+          {resetStep === 2 && (
+            <Box>
+              <Box sx={{
+                p: 1.5, mb: 2, bgcolor: "#f0faf5", border: "1px solid #b7e3cc",
+                borderRadius: "8px",
+              }}>
+                <Typography sx={{ fontFamily: FONT, fontSize: 12.5, color: "#177a53", fontWeight: 600 }}>
+                  ✓ Reset link generated — token saved in system
+                </Typography>
+                <Typography sx={{ fontFamily: FONT, fontSize: 12, color: MUTED, mt: 0.4 }}>
+                  Enter your new password below to complete the reset.
+                </Typography>
+              </Box>
 
-          <TextField
-            name="confirmPassword"
-            label="Confirm new password"
-            type="password"
-            value={passwordData.confirmPassword}
-            onChange={handlePasswordInputChange}
-            fullWidth
-            margin="dense"
-            autoComplete="new-password"
-          />
+              <TextField
+                name="newPassword"
+                label="New password"
+                type="password"
+                value={passwordData.newPassword}
+                onChange={handlePasswordInputChange}
+                fullWidth
+                margin="dense"
+                autoComplete="new-password"
+              />
+
+              <TextField
+                name="confirmPassword"
+                label="Confirm new password"
+                type="password"
+                value={passwordData.confirmPassword}
+                onChange={handlePasswordInputChange}
+                fullWidth
+                margin="dense"
+                autoComplete="new-password"
+              />
+            </Box>
+          )}
         </DialogContent>
 
         <DialogActions>
           <Button
-            onClick={() =>
-              setPasswordDialogOpen(false)
-            }
+            onClick={() => {
+              setPasswordDialogOpen(false);
+              setResetStep(1);
+              setResetToken("");
+              setPasswordData({ newPassword: "", confirmPassword: "" });
+            }}
             disabled={changingPassword}
+            sx={{ fontFamily: FONT }}
           >
             Cancel
           </Button>
 
-          <Button
-            variant="contained"
-            onClick={handleChangePassword}
-            disabled={changingPassword}
-          >
-            {changingPassword
-              ? "Changing..."
-              : "Change password"}
-          </Button>
+          {resetStep === 1 && (
+            <Button
+              variant="contained"
+              onClick={handleRequestReset}
+              disabled={changingPassword}
+              sx={{ fontFamily: FONT }}
+            >
+              {changingPassword ? "Generating..." : "Send reset link"}
+            </Button>
+          )}
+
+          {resetStep === 2 && (
+            <Button
+              variant="contained"
+              onClick={handleResetWithToken}
+              disabled={changingPassword}
+              sx={{ fontFamily: FONT }}
+            >
+              {changingPassword ? "Resetting..." : "Set new password"}
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
     </Box>
