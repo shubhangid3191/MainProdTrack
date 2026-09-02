@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect,useState } from "react";
 import {
   Alert,
   Avatar,
@@ -11,6 +11,7 @@ import {
   DialogTitle,
   Divider,
   IconButton,
+  MenuItem,
   Paper,
   Snackbar,
   Table,
@@ -424,28 +425,62 @@ export function Person({ initials, name }) {
     </Box>
   );
 }
+// Displays the shared Add/Edit form dialog while supporting selectable fields and API submission.
 export function CoreFormDialog({
   open,
   onClose,
   title,
   fields,
   submitLabel = "Save",
+  onSubmit,
+  initialValues = {},
 }) {
+  // Stores the current values entered or selected inside the form.
   const [values, setValues] = useState({});
-  const update = (name, value) =>
-    setValues((current) => ({ ...current, [name]: value }));
-  const submit = () => {
+
+  // Updates one form field whenever the user types or selects an option.
+  const update = (name, value) => {
+    setValues((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  };
+
+  // Initializes the form whenever the dialog opens.
+  useEffect(() => {
+    if (open) {
+      setValues(initialValues || {});
+    }
+  }, [open, initialValues]);
+
+  // Submits the current form values to the parent page.
+  const submit = async () => {
+    // Calls the supplied API submit handler when one exists.
+    if (onSubmit) {
+      await onSubmit(values);
+      return;
+    }
+
+    // Keeps old dialogs working when they do not provide an API submit handler.
     onClose();
+
+    // Clears the local form after the old-style dialog closes.
     setValues({});
   };
+
   return (
     <Dialog
       open={open}
       onClose={onClose}
       fullWidth
       maxWidth="sm"
-      PaperProps={{ sx: { borderRadius: 2 } }}
+      PaperProps={{
+        sx: {
+          borderRadius: 2,
+        },
+      }}
     >
+      {/* Keeps the existing dialog title UI unchanged. */}
       <DialogTitle
         sx={{
           fontWeight: 800,
@@ -454,18 +489,28 @@ export function CoreFormDialog({
         }}
       >
         {title}
-        <IconButton onClick={onClose} size="small">
+
+        {/* Keeps the existing close button unchanged. */}
+        <IconButton
+          onClick={onClose}
+          size="small"
+        >
           <CloseRoundedIcon fontSize="small" />
         </IconButton>
       </DialogTitle>
+
       <Divider />
+
+      {/* Keeps the existing two-column form layout unchanged. */}
       <DialogContent
         sx={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
           gap: 2,
           pt: 2,
-          "@media (max-width: 560px)": { gridTemplateColumns: "1fr" },
+          "@media (max-width: 560px)": {
+            gridTemplateColumns: "1fr",
+          },
         }}
       >
         {fields.map((field) => (
@@ -475,26 +520,57 @@ export function CoreFormDialog({
             placeholder={field.placeholder}
             type={field.type || "text"}
             value={values[field.name] || ""}
-            onChange={(event) => update(field.name, event.target.value)}
+            onChange={(event) =>
+              update(
+                field.name,
+                event.target.value,
+              )
+            }
             select={Boolean(field.options)}
-            SelectProps={{ native: true }}
             fullWidth
           >
+            {/* Shows the field placeholder as the first dropdown option. */}
             {field.options && (
-              <option value="">{field.placeholder || "Select..."}</option>
+              <MenuItem value="">
+                {field.placeholder ||
+                  "Select..."}
+              </MenuItem>
             )}
-            {field.options?.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
+
+            {/* Creates a selectable MUI dropdown item for every supplied option. */}
+            {field.options?.map(
+              (option) => (
+                <MenuItem
+                  key={option}
+                  value={option}
+                >
+                  {option}
+                </MenuItem>
+              ),
+            )}
           </TextField>
         ))}
       </DialogContent>
+
       <Divider />
-      <DialogActions sx={{ p: 2, bgcolor: "#f8fafc" }}>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={submit}>
+
+      {/* Keeps the existing dialog action area unchanged. */}
+      <DialogActions
+        sx={{
+          p: 2,
+          bgcolor: "#f8fafc",
+        }}
+      >
+        {/* Keeps the existing Cancel button unchanged. */}
+        <Button onClick={onClose}>
+          Cancel
+        </Button>
+
+        {/* Sends the entered form values to ProjectMaster.jsx. */}
+        <Button
+          variant="contained"
+          onClick={submit}
+        >
           {submitLabel}
         </Button>
       </DialogActions>
