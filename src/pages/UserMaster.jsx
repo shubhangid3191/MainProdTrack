@@ -284,10 +284,16 @@ function UserMasterPage({
         placeholder: "name@company.com",
         type: "email",
       },
+      // Shows the available database departments as a dropdown.
       {
         name: "department",
         label: "Department",
-        placeholder: "Indexing Ops",
+        placeholder: "Select department",
+        options: [
+          "Indexing Ops",
+          "Production Core",
+          "IT / Admin",
+        ],
       },
       {
         name: "designation",
