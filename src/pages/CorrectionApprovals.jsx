@@ -545,7 +545,13 @@ function CorrectionsCoreTeam({
 
 useEffect(() => {
   const loadPendingRequests = async () => {
-    if (roleKey !== "teamLead") {
+    if (
+        ![
+          "teamLead",
+          "coreTeam",
+          "administrator",
+        ].includes(roleKey)
+      ) {
         return;
       }
     try {
@@ -568,11 +574,17 @@ useEffect(() => {
     }
   };
 
-  loadPendingRequests();
-}, []);
+ loadPendingRequests();
+}, [roleKey]);
 
 const loadApprovalSummary = async () => {
-  if (roleKey !== "teamLead") {
+  if (
+      ![
+        "teamLead",
+        "coreTeam",
+        "administrator",
+      ].includes(roleKey)
+    ) {
       return;
     }
   try {
@@ -588,7 +600,7 @@ const loadApprovalSummary = async () => {
 
 useEffect(() => {
   loadApprovalSummary();
-}, []);
+}, [roleKey]);
 
 const updateStatus = async (rowIndex, newStatus) => {
   const requestId = rows[rowIndex]?.[6];

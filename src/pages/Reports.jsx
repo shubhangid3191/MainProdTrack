@@ -122,9 +122,16 @@ const [reportType, setReportType] =
 
 useEffect(() => {
   const loadReports = async () => {
-    if (!["indexer", "teamLead"].includes(roleKey)) {
-      return;
-    }
+    if (
+        ![
+          "indexer",
+          "teamLead",
+          "coreTeam",
+          "administrator",
+        ].includes(roleKey)
+      ) {
+        return;
+      }
 
     try {
       const queryParams = new URLSearchParams({
