@@ -52,12 +52,39 @@ const handleSubmit = async (e) => {
       ? localStorage
       : sessionStorage;
 
+      const otherStorage = keepSignedIn
+          ? sessionStorage
+          : localStorage;
+
+        otherStorage.removeItem(
+          "prodtrackToken"
+        );
+
+        otherStorage.removeItem(
+          "prodtrackUser"
+        );
+
+        otherStorage.removeItem(
+          "prodtrackSessionTimeout"
+        );
+
+        storage.setItem(
+          "prodtrackToken",
+          data.token
+        );
+
     storage.setItem("prodtrackToken", data.token);
     storage.setItem(
       "prodtrackUser",
       JSON.stringify(data.user)
     );
-
+    
+    storage.setItem(
+        "prodtrackSessionTimeout",
+        String(
+          data.sessionTimeoutMinutes || 30
+        )
+      );
     if (onLogin) {
       onLogin(data.user);
     }
