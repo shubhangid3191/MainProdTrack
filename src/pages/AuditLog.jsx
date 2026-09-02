@@ -26,8 +26,34 @@ const tabs = ["Activity", "Change History", "Login Events"];
 export default function AuditLog() {
   const [notice, setNotice] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
-
+  const [loginEvents, setLoginEvents] =
+  useState([]);
   const [logs, setLogs] = useState([]);
+
+  useEffect(() => {
+  if (activeTab !== 2) {
+    return;
+  }
+
+  const loadLoginEvents = async () => {
+    try {
+      const data = await apiRequest(
+        "/audit-logs/login-events?pageSize=100"
+      );
+
+      setLoginEvents(data.events || []);
+    } catch (error) {
+      console.error(
+        "Load Login Events Error:",
+        error
+      );
+
+      alert(error.message);
+    }
+  };
+
+  loadLoginEvents();
+}, [activeTab]);
 
 useEffect(() => {
   const loadAuditLogs = async () => {
@@ -50,7 +76,7 @@ useEffect(() => {
   loadAuditLogs();
 }, []);
 
-const rows = logs.map((log) => {
+const formatAuditRow = (log) => {
   const userName =
     log.user_name || "System";
 
@@ -97,11 +123,45 @@ const rows = logs.map((log) => {
     entity || "—",
     log.detail || "—",
   ];
-});
+};
+
+
+const activityRows =
+  logs.map(formatAuditRow);
+
+const changeRows = logs
+  .filter((log) => {
+    const action = String(
+      log.action || ""
+    ).toLowerCase();
+
+    const isActualChange =
+      action.includes("updated") ||
+      action.includes("changed") ||
+      action.includes("approved") ||
+      action.includes("rejected") ||
+      action.includes("reviewed") ||
+      action.includes("locked") ||
+      action.includes("deleted");
+
+    const isCreationActivity =
+      action.includes("created") ||
+      action.includes("submitted") ||
+      action.includes("uploaded") ||
+      action.includes("assigned");
+
+    return (
+      isActualChange &&
+      !isCreationActivity
+    );
+  })
+  .map(formatAuditRow);
 
 const handleExport = () => {
-  if (logs.length === 0) {
-    alert("No audit logs are available");
+  if (rows.length === 0) {
+    alert(
+      `No ${tabs[activeTab]} data is available`
+    );
     return;
   }
 
@@ -119,22 +179,27 @@ const handleExport = () => {
     [
       "Timestamp",
       "User",
-      "Employee ID",
       "Action",
-      "Entity Type",
-      "Entity Reference",
+      "Entity",
       "Detail",
     ],
 
-    ...logs.map((log) => [
-      log.created_at,
-      log.user_name || "System",
-      log.emp_code || "",
-      log.action,
-      log.entity_type,
-      log.entity_ref,
-      log.detail,
-    ]),
+    ...rows.map(
+      ([
+        time,
+        initials,
+        name,
+        action,
+        entity,
+        detail,
+      ]) => [
+        time,
+        name,
+        action,
+        entity,
+        detail,
+      ]
+    ),
   ];
 
   const csvContent = exportRows
@@ -153,9 +218,13 @@ const handleExport = () => {
   const url = URL.createObjectURL(file);
   const link = document.createElement("a");
 
+  const selectedTabName = tabs[activeTab]
+    .toLowerCase()
+    .replaceAll(" ", "-");
+
   link.href = url;
   link.download =
-    `audit-log-${new Date()
+    `${selectedTabName}-${new Date()
       .toISOString()
       .slice(0, 10)}.csv`;
 
@@ -166,6 +235,68 @@ const handleExport = () => {
   URL.revokeObjectURL(url);
   setNotice(true);
 };
+const loginRows = loginEvents.map(
+  (event) => {
+    const userName =
+      event.user_name ||
+      event.username_tried ||
+      "Unknown user";
+
+    const initials = userName
+      .split(" ")
+      .filter(Boolean)
+      .map((part) => part[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+
+    const createdDate = new Date(
+      event.created_at
+    );
+
+    const formattedTime =
+      Number.isNaN(createdDate.getTime())
+        ? "—"
+        : createdDate.toLocaleString(
+            "en-IN",
+            {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            }
+          );
+
+    const action =
+      Number(event.success) === 1
+        ? "LOGIN SUCCESS"
+        : "LOGIN FAILED";
+
+    const entity = [
+      String(
+        event.method || "password"
+      ).toUpperCase(),
+      event.ip_address || "Unknown IP",
+    ].join(" · ");
+
+    return [
+      formattedTime,
+      initials || "UN",
+      userName,
+      action,
+      entity,
+      event.user_agent || "—",
+    ];
+  }
+);
+
+const rows =
+  activeTab === 2
+    ? loginRows
+    : activeTab === 1
+      ? changeRows
+      : activityRows;
   return (
     <Box sx={{ width: "100%" }}>
       {/* ── PAGE HEADER ── */}
