@@ -412,7 +412,8 @@ const [error, setError] = useState("");
 
                 <Button
                   fullWidth
-                 onClick={() => {
+                  variant="outlined"
+                   onClick={() => {
                     const canEnterProduction =
                       user?.roleKey === "indexer" ||
                       user?.roleKey === "teamLead";
