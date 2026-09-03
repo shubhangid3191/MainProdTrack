@@ -67,6 +67,7 @@ export default function IndexingGuide({
   const [historyProject, setHistoryProject] = useState("");
   const { confirm, ConfirmElement } = useConfirm();
 
+
   useEffect(() => {
     // Keep the compact dashboard card using its existing prop.
     if (variant === "card") return;
@@ -127,6 +128,7 @@ export default function IndexingGuide({
       : guides.find(
           (item) => String(item.version_id) === selectedVersionId
         );
+
 
   const handleAcknowledge = async () => {
     if (!guide || guide.acknowledged || saving) return;
@@ -474,10 +476,6 @@ export default function IndexingGuide({
       </Alert>
 
       {/* GUIDE CARD */}
-      <Alert severity="info" sx={{ mb: 2 }}>
-        The preview below is sample content, not the selected project's
-        actual guide. Only acknowledge after reading the actual guide.
-      </Alert>
       <Card
         elevation={0}
         sx={{
@@ -518,7 +516,7 @@ export default function IndexingGuide({
           </Box>
 
           <Typography sx={{ color: "#6A7585", fontSize: 12.5, whiteSpace: "nowrap" }}>
-            Sample preview
+            Document preview
           </Typography>
         </Box>
 

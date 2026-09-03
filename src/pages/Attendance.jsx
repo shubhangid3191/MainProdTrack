@@ -182,7 +182,7 @@ function getStatusStyle(status) {
 // ATTENDANCE PAGE
 // =====================================================
 
-export default function Attendance({ roleLabel = "Indexer" }) {
+export default function Attendance({ roleLabel = "Indexer", roleKey, }) {
   const toast = useToast();
   const [summary, setSummary] = useState(null);
   const [summaryError, setSummaryError] = useState("");
@@ -191,9 +191,20 @@ export default function Attendance({ roleLabel = "Indexer" }) {
   const [attendanceError, setAttendanceError] = useState("");
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [leaveSaving, setLeaveSaving] = useState(false);
-  // const [leaveRequests, setLeaveRequests] = useState([]);
-  // const [leaveLoading, setLeaveLoading] = useState(true);
-  // const [leaveError, setLeaveError] = useState("");
+  const [leaveRequests, setLeaveRequests] = useState([]);
+  const [leaveLoading, setLeaveLoading] = useState(true);
+  const [leaveError, setLeaveError] = useState("");
+  const [teamLeaveRequests, setTeamLeaveRequests] =
+  useState([]);
+
+  const [teamLeaveLoading, setTeamLeaveLoading] =
+    useState(false);
+
+  const [teamLeaveError, setTeamLeaveError] =
+    useState("");
+
+  const [reviewingLeaveId, setReviewingLeaveId] =
+    useState(null);
 
   const loadLeaveRequests = useCallback(async () => {
   setLeaveLoading(true);
@@ -213,6 +224,69 @@ export default function Attendance({ roleLabel = "Indexer" }) {
     setLeaveLoading(false);
   }
 }, []);
+
+const loadTeamLeaveRequests = useCallback(
+  async () => {
+    setTeamLeaveLoading(true);
+    setTeamLeaveError("");
+
+    try {
+      const data = await apiRequest(
+        "/team-lead/leave-requests"
+      );
+
+      setTeamLeaveRequests(
+        data.requests || []
+      );
+    } catch (error) {
+      setTeamLeaveError(
+        error.message ||
+          "Failed to load team leave requests"
+      );
+    } finally {
+      setTeamLeaveLoading(false);
+    }
+  },
+  []
+);
+
+useEffect(() => {
+  if (roleKey === "teamLead") {
+    loadTeamLeaveRequests();
+  }
+}, [roleKey, loadTeamLeaveRequests]);
+
+const handleLeaveDecision = async (
+  requestId,
+  decision
+) => {
+  if (reviewingLeaveId !== null) return;
+
+  setReviewingLeaveId(requestId);
+
+  try {
+    const data = await apiRequest(
+      `/team-lead/leave-requests/${requestId}/${decision}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({}),
+      }
+    );
+
+    toast.success(data.message);
+
+    setTeamLeaveRequests((current) =>
+      current.filter(
+        (request) =>
+          request.id !== requestId
+      )
+    );
+  } catch (error) {
+    toast.error(error.message);
+  } finally {
+    setReviewingLeaveId(null);
+  }
+};
 
 useEffect(() => {
   loadLeaveRequests();
@@ -255,15 +329,17 @@ useEffect(() => {
     setLeaveOpen(false);
 
     setLeaveForm({
-      leaveType: "planned_leave",
-      startDate: "",
-      endDate: "",
-      reason: "",
-    });
+    leaveType: "planned_leave",
+    startDate: "",
+    endDate: "",
+    reason: "",
+  });
 
-    toast.success(
-      `Leave request #${data.leaveRequestId} submitted. Status: PENDING.`
-    );
+  await loadLeaveRequests();
+
+  toast.success(
+    `Leave request #${data.leaveRequestId} submitted. Status: PENDING.`
+  );
   } catch (error) {
     toast.error(error.message || "Failed to submit leave request");
   } finally {
@@ -791,114 +867,271 @@ useEffect(() => {
           </Table>
         </TableContainer>
       </Paper>
-      {/* <Paper
-  elevation={0}
-  sx={{
-    mt: 3,
-    border: "1px solid #e5e7eb",
-    borderRadius: 1,
-    overflow: "hidden",
-  }}
->
-  <Box
+      {roleKey === "teamLead" && (
+  <Paper
+    elevation={0}
     sx={{
-      px: 2.5,
-      py: 2,
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      gap: 2,
-      borderBottom: "1px solid #e5e7eb",
+      mt: 3,
+      border: "1px solid #e5e7eb",
+      borderRadius: 1,
+      overflow: "hidden",
     }}
   >
-    <Typography sx={{ fontSize: 16, fontWeight: 700 }}>
-      My leave requests
-    </Typography>
-
-    <Button
-      type="button"
-      onClick={loadLeaveRequests}
-      disabled={leaveLoading || leaveSaving}
-      sx={{ textTransform: "none" }}
+    <Box
+      sx={{
+        px: 2.5,
+        py: 2,
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        borderBottom: "1px solid #e5e7eb",
+      }}
     >
-      Refresh
-    </Button>
-  </Box>
+      <Typography
+        sx={{ fontSize: 16, fontWeight: 700 }}
+      >
+        Pending team leave requests
+      </Typography>
 
-  <TableContainer>
-    <Table size="small" sx={{ minWidth: 700 }}>
-      <TableHead>
-        <TableRow sx={{ bgcolor: "#f8fafc" }}>
-          {["ID", "Leave type", "From", "To", "Status", "Reason"].map(
-            (heading) => (
-              <TableCell key={heading} sx={{ fontWeight: 700 }}>
+      <Button
+        onClick={loadTeamLeaveRequests}
+        disabled={teamLeaveLoading}
+        sx={{ textTransform: "none" }}
+      >
+        Refresh
+      </Button>
+    </Box>
+
+    {teamLeaveError && (
+      <Alert severity="error" sx={{ m: 2 }}>
+        {teamLeaveError}
+      </Alert>
+    )}
+
+    <TableContainer>
+      <Table size="small" sx={{ minWidth: 850 }}>
+        <TableHead>
+          <TableRow sx={{ bgcolor: "#f8fafc" }}>
+            {[
+              "Employee",
+              "Leave type",
+              "From",
+              "To",
+              "Reason",
+              "Actions",
+            ].map((heading) => (
+              <TableCell
+                key={heading}
+                sx={{ fontWeight: 700 }}
+              >
                 {heading}
               </TableCell>
-            )
-          )}
-        </TableRow>
-      </TableHead>
-
-      <TableBody>
-        {leaveLoading ? (
-          <TableRow>
-            <TableCell colSpan={6}>
-              Loading leave requests...
-            </TableCell>
+            ))}
           </TableRow>
-        ) : leaveError ? (
-          <TableRow>
-            <TableCell colSpan={6} sx={{ color: "error.main" }}>
-              {leaveError}
-            </TableCell>
-          </TableRow>
-        ) : leaveRequests.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={6}>
-              You have not submitted any leave requests.
-            </TableCell>
-          </TableRow>
-        ) : (
-          leaveRequests.map((request) => (
-            <TableRow key={request.leave_request_id}>
-              <TableCell>{request.leave_request_id}</TableCell>
-              <TableCell>{request.leave_type}</TableCell>
-              <TableCell>{request.start_date}</TableCell>
-              <TableCell>{request.end_date}</TableCell>
+        </TableHead>
 
-              <TableCell>
-                <Typography
-                  sx={{
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color:
-                      request.status === "APPROVED"
-                        ? "#15803d"
-                        : request.status === "REJECTED"
-                          ? "#b91c1c"
-                          : "#b45309",
-                  }}
-                >
-                  {request.status}
-                </Typography>
-              </TableCell>
-
-              <TableCell
-                sx={{
-                  maxWidth: 300,
-                  whiteSpace: "pre-wrap",
-                  overflowWrap: "anywhere",
-                }}
-              >
-                {request.reason}
+        <TableBody>
+          {teamLeaveLoading ? (
+            <TableRow>
+              <TableCell colSpan={6}>
+                Loading leave requests...
               </TableCell>
             </TableRow>
-          ))
-        )}
-      </TableBody>
-    </Table>
-  </TableContainer>
-</Paper> */}
+          ) : teamLeaveRequests.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={6}>
+                No pending team leave requests.
+              </TableCell>
+            </TableRow>
+          ) : (
+            teamLeaveRequests.map((request) => (
+              <TableRow key={request.id}>
+                <TableCell>
+                  {request.employee_name}
+                  <Typography
+                    sx={{
+                      fontSize: 11,
+                      color: "#64748b",
+                    }}
+                  >
+                    {request.employee_id}
+                  </Typography>
+                </TableCell>
+
+                <TableCell>
+                  {request.leave_type}
+                </TableCell>
+
+                <TableCell>
+                  {request.start_date}
+                </TableCell>
+
+                <TableCell>
+                  {request.end_date}
+                </TableCell>
+
+                <TableCell>
+                  {request.reason}
+                </TableCell>
+
+                <TableCell>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      gap: 1,
+                    }}
+                  >
+                    <Button
+                      size="small"
+                      variant="contained"
+                      color="success"
+                      disabled={
+                        reviewingLeaveId !== null
+                      }
+                      onClick={() =>
+                        handleLeaveDecision(
+                          request.id,
+                          "approve"
+                        )
+                      }
+                    >
+                      Approve
+                    </Button>
+
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      color="error"
+                      disabled={
+                        reviewingLeaveId !== null
+                      }
+                      onClick={() =>
+                        handleLeaveDecision(
+                          request.id,
+                          "reject"
+                        )
+                      }
+                    >
+                      Reject
+                    </Button>
+                  </Box>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  </Paper>
+)}
+      <Paper
+        elevation={0}
+        sx={{
+          mt: 3,
+          border: "1px solid #e5e7eb",
+          borderRadius: 1,
+          overflow: "hidden",
+        }}
+      >
+        <Box
+          sx={{
+            px: 2.5,
+            py: 2,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 2,
+            borderBottom: "1px solid #e5e7eb",
+          }}
+        >
+          <Typography sx={{ fontSize: 16, fontWeight: 700 }}>
+            My leave requests
+          </Typography>
+
+          <Button
+            type="button"
+            onClick={loadLeaveRequests}
+            disabled={leaveLoading || leaveSaving}
+            sx={{ textTransform: "none" }}
+          >
+            Refresh
+          </Button>
+        </Box>
+
+        <TableContainer>
+          <Table size="small" sx={{ minWidth: 700 }}>
+            <TableHead>
+              <TableRow sx={{ bgcolor: "#f8fafc" }}>
+                {["ID", "Leave type", "From", "To", "Status", "Reason"].map(
+                  (heading) => (
+                    <TableCell key={heading} sx={{ fontWeight: 700 }}>
+                      {heading}
+                    </TableCell>
+                  )
+                )}
+              </TableRow>
+            </TableHead>
+
+            <TableBody>
+              {leaveLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6}>
+                    Loading leave requests...
+                  </TableCell>
+                </TableRow>
+              ) : leaveError ? (
+                <TableRow>
+                  <TableCell colSpan={6} sx={{ color: "error.main" }}>
+                    {leaveError}
+                  </TableCell>
+                </TableRow>
+              ) : leaveRequests.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6}>
+                    You have not submitted any leave requests.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                leaveRequests.map((request) => (
+                  <TableRow key={request.leave_request_id}>
+                    <TableCell>{request.leave_request_id}</TableCell>
+                    <TableCell>{request.leave_type}</TableCell>
+                    <TableCell>{request.start_date}</TableCell>
+                    <TableCell>{request.end_date}</TableCell>
+
+                    <TableCell>
+                      <Typography
+                        sx={{
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color:
+                            request.status === "APPROVED"
+                              ? "#15803d"
+                              : request.status === "REJECTED"
+                                ? "#b91c1c"
+                                : "#b45309",
+                        }}
+                      >
+                        {request.status}
+                      </Typography>
+                    </TableCell>
+
+                    <TableCell
+                      sx={{
+                        maxWidth: 300,
+                        whiteSpace: "pre-wrap",
+                        overflowWrap: "anywhere",
+                      }}
+                    >
+                      {request.reason}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
       <Dialog
       
             open={leaveOpen}

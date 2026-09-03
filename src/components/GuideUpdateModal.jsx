@@ -1,4 +1,9 @@
-import { useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import apiRequest from "../Config/api.js";
 
 import {
   Dialog,
@@ -19,8 +24,6 @@ import {
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 
-import { apiRequest } from "../Config/api.js";
-
 // ======================================================
 // GUIDE UPDATE MODAL
 // Shows the latest unacknowledged guide when an indexer
@@ -28,9 +31,11 @@ import { apiRequest } from "../Config/api.js";
 // passed from App.jsx after the /pending-ack fetch.
 // ======================================================
 
-export default function GuideUpdateModal({ open, onClose, guide }) {
+export default function GuideUpdateModal({ open, onClose }) {
   const [checked, setChecked] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [guide, setGuide] = useState(null);
+  const [submitting, setSubmitting] =
+    useState(false);
   const [error, setError] = useState("");
 
   // Reset local state whenever the dialog opens with a new guide.
@@ -40,27 +45,42 @@ export default function GuideUpdateModal({ open, onClose, guide }) {
     onClose();
   };
 
-  const handleAcknowledge = async () => {
-    if (!checked || saving || !guide) return;
+const handleAcknowledge = async () => {
+  if (
+    !checked ||
+    !guide?.version_id ||
+    submitting
+  ) {
+    return;
+  }
 
-    try {
-      setSaving(true);
-      setError("");
+  try {
+    setSubmitting(true);
 
-      // Calls the existing acknowledge endpoint.
-      await apiRequest(`/guides/${guide.version_id}/acknowledge`, {
+    await apiRequest(
+      `/guides/${guide.version_id}/acknowledge`,
+      {
         method: "POST",
-      });
+      }
+    );
 
-      setChecked(false);
-      // Tell App.jsx the guide was acknowledged so it can clear state.
-      onClose(true);
-    } catch (err) {
-      setError(err.message || "Failed to acknowledge guide. Please try again.");
-    } finally {
-      setSaving(false);
-    }
-  };
+    setChecked(false);
+    setGuide(null);
+    onClose();
+  } catch (error) {
+    console.error(
+      "Acknowledge Guide Error:",
+      error
+    );
+
+    window.alert(
+      error.message ||
+        "Failed to acknowledge guide"
+    );
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   // Build the version line shown under the guide title.
   const versionLine = guide
@@ -78,10 +98,35 @@ export default function GuideUpdateModal({ open, onClose, guide }) {
     ? `I have read and understood the updated indexing guide (${guide.version}).`
     : "I have read and understood the updated indexing guide.";
 
+    useEffect(() => {
+  if (!open) return;
+
+  const loadPendingGuide = async () => {
+    try {
+      const data = await apiRequest(
+        "/guides/pending-ack"
+      );
+
+      if (data.hasPending && data.guide) {
+        setGuide(data.guide);
+      } else {
+        setGuide(null);
+        onClose();
+      }
+    } catch (error) {
+      console.error(
+        "Load Pending Guide Error:",
+        error
+      );
+    }
+  };
+
+  loadPendingGuide();
+}, [open, onClose]);
   return (
     <Dialog
       open={open}
-      onClose={saving ? undefined : handleClose}
+      onClose={submitting ? undefined : handleClose}
       maxWidth={false}
       sx={{
         "& .MuiDialog-paper": {
@@ -122,7 +167,7 @@ export default function GuideUpdateModal({ open, onClose, guide }) {
         <IconButton
           onClick={handleClose}
           size="small"
-          disabled={saving}
+          disabled={submitting}
           sx={{ color: "#6A7585" }}
         >
           <CloseRoundedIcon fontSize="small" />
@@ -257,7 +302,7 @@ export default function GuideUpdateModal({ open, onClose, guide }) {
             control={
               <Checkbox
                 checked={checked}
-                disabled={saving}
+                disabled={submitting}
                 onChange={(e) => setChecked(e.target.checked)}
                 sx={{
                   color: "#7c8798",
@@ -299,7 +344,7 @@ export default function GuideUpdateModal({ open, onClose, guide }) {
         <Button
           variant="outlined"
           onClick={handleClose}
-          disabled={saving}
+          disabled={submitting}
           sx={{
             height: 44,
             px: 2,
@@ -322,10 +367,14 @@ export default function GuideUpdateModal({ open, onClose, guide }) {
 
         <Button
           variant="contained"
-          disabled={!checked || saving}
+          disabled={
+            !checked ||
+            !guide ||
+            submitting
+          }
           onClick={handleAcknowledge}
           startIcon={
-            saving ? (
+            submitting ? (
               <CircularProgress size={14} sx={{ color: "#fff" }} />
             ) : null
           }
@@ -352,7 +401,7 @@ export default function GuideUpdateModal({ open, onClose, guide }) {
             },
           }}
         >
-          {saving ? "Saving…" : "Acknowledge & continue"}
+          {submitting ? "Saving…" : "Acknowledge & continue"}
         </Button>
       </DialogActions>
     </Dialog>
