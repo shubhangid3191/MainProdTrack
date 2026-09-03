@@ -207,6 +207,9 @@ function StatusChipIndexer({ status }) {
   const [saving, setSaving] = useState(false);
   const [editingEntryId, setEditingEntryId] = useState(null);
 
+  // Stores the original workflow status so editing a Submitted entry cannot accidentally turn it back into Draft.
+  const [editingEntryStatus, setEditingEntryStatus] = useState(null);
+
   // ── Correction request dialog state ──────────────────────────────────────
   const [correctionOpen, setCorrectionOpen] = useState(false);
   const [correctionEntry, setCorrectionEntry] = useState(null);
@@ -273,6 +276,9 @@ function StatusChipIndexer({ status }) {
           received: entry.documents_received,
           completed: entry.documents_completed,
           status: entry.status?.toUpperCase(),
+
+          // Preserves the backend-calculated edit permission for this entry.
+          canEdit: Boolean(entry.canEdit),
         }))
       );
     } catch (error) {
@@ -309,11 +315,14 @@ function StatusChipIndexer({ status }) {
   };
 
   const handleEditEntry = (entry) => {
-  if (saving || entry.status !== "DRAFT") return;
+  if (saving || !entry.canEdit) return;
 
   const original = entry.raw;
 
   setEditingEntryId(entry.id);
+
+  // Remembers whether the current entry was Draft or Submitted before editing started.
+  setEditingEntryStatus(entry.status);
 
   setFormData({
     productionDate: original.production_date,
@@ -357,6 +366,12 @@ function StatusChipIndexer({ status }) {
       return;
     }
 
+    // Keeps an already Submitted entry in Submitted state while updating its values.
+    const statusToSend =
+      editingEntryId !== null && editingEntryStatus === "SUBMITTED"
+        ? "submitted"
+        : status;
+
     setSaving(true);
 
     try {
@@ -371,7 +386,9 @@ function StatusChipIndexer({ status }) {
               ...formData,
               ...numbers,
               projectId: Number(formData.projectId),
-              status,
+
+              // Sends the preserved workflow status when editing an already Submitted entry.
+              status: statusToSend,
             }),
           }
         );
@@ -380,6 +397,9 @@ function StatusChipIndexer({ status }) {
 
       await loadEntries();
       setEditingEntryId(null);
+
+      // Clears the remembered workflow status after the edit has been saved.
+      setEditingEntryStatus(null);
 
       setFormData((currentData) => ({
         ...currentData,
@@ -791,6 +811,9 @@ function StatusChipIndexer({ status }) {
             onClick={() => {
               setEditingEntryId(null);
 
+              // Clears the remembered workflow status when editing is cancelled.
+              setEditingEntryStatus(null);
+
               setFormData((currentData) => ({
                 ...currentData,
                 batchJobId: "",
@@ -1121,7 +1144,7 @@ function StatusChipIndexer({ status }) {
                     py: 0.8,
                   }}
                 >
-                  {entry.status === "DRAFT" && (
+                  {entry.canEdit && (
                     <Button
                       size="small"
                       variant="outlined"
