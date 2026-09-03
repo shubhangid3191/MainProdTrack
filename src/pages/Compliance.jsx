@@ -4,6 +4,7 @@ import {
 } from "react";
 
 import apiRequest from "../Config/api.js";
+import { useToast } from "../components/ToastProvider.jsx";
 
 import {
   Box,
@@ -18,6 +19,7 @@ import CorePageShell, {
 } from "../components/CorePageShell.jsx";
 
 export default function Compliance({ roleLabel }) {
+  const toast = useToast();
   const [complianceData, setComplianceData] =
   useState({
     summary: {
@@ -53,12 +55,12 @@ useEffect(() => {
         error
       );
 
-      alert(error.message);
+      toast.error(error.message);
     }
   };
 
   loadCompliance();
-}, []);
+}, [toast]);
 
 const guideRows =
   complianceData.guideTracking.map(
@@ -129,14 +131,14 @@ const handleSendReminders = async () => {
       },
     }));
 
-    alert(data.message);
+    toast.success(data.message);
   } catch (error) {
     console.error(
       "Send Reminders Error:",
       error
     );
 
-    alert(error.message);
+    toast.error(error.message);
   } finally {
     setSendingReminders(false);
   }

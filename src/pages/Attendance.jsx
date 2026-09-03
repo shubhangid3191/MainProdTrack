@@ -17,6 +17,7 @@ import CalendarMonthRoundedIcon from "@mui/icons-material/CalendarMonthRounded";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import { useCallback, useEffect, useState } from "react";
 import apiRequest from "../Config/api.js";
+import { useToast } from "../components/ToastProvider.jsx";
 import Alert from "@mui/material/Alert";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
@@ -182,6 +183,7 @@ function getStatusStyle(status) {
 // =====================================================
 
 export default function Attendance({ roleLabel = "Indexer" }) {
+  const toast = useToast();
   const [summary, setSummary] = useState(null);
   const [summaryError, setSummaryError] = useState("");
   const [attendance, setAttendance] = useState([]);
@@ -225,12 +227,12 @@ useEffect(() => {
     !leaveForm.endDate ||
     !leaveForm.reason.trim()
   ) {
-    alert("Please complete all leave fields.");
+    toast.warning("Please complete all leave fields.");
     return;
   }
 
   if (leaveForm.startDate > leaveForm.endDate) {
-    alert("Start date cannot be after end date.");
+    toast.warning("Start date cannot be after end date.");
     return;
   }
 
@@ -259,11 +261,11 @@ useEffect(() => {
       reason: "",
     });
 
-    alert(
+    toast.success(
       `Leave request #${data.leaveRequestId} submitted. Status: PENDING.`
     );
   } catch (error) {
-    alert(error.message || "Failed to submit leave request");
+    toast.error(error.message || "Failed to submit leave request");
   } finally {
     setLeaveSaving(false);
   }

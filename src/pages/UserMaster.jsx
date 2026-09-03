@@ -14,6 +14,9 @@ import CorePageShell, {
 // Imports the shared API helper so all requests use the configured backend URL and token.
 import { apiRequest } from "../Config/api.js";
 
+// Imports the global toast notification hook.
+import { useToast } from "../components/ToastProvider.jsx";
+
 
 // ============================================================
 // ROLE HELPERS
@@ -113,6 +116,7 @@ const getInitials = (name = "") =>
 function UserMasterPage({
   administrator = false,
 }) {
+  const toast = useToast();
   // Stores whether the Add/Edit User dialog is open.
   const [open, setOpen] = useState(false);
 
@@ -150,7 +154,7 @@ function UserMasterPage({
         error
       );
 
-      window.alert(
+      toast.error(
         error.message || "Failed to load users"
       );
     }
@@ -635,7 +639,7 @@ function UserMasterPage({
       await loadUsers();
 
       // Shows the generated credentials once because the current UI contains no username/password fields.
-      window.alert(
+      toast.success(
         `User created successfully.\n\nEmployee ID: ${
           response.user?.employee_id || ""
         }\nUsername: ${username}\nTemporary Password: ${temporaryPassword}`
@@ -647,7 +651,7 @@ function UserMasterPage({
       );
 
       // Shows the backend validation message if creation or update fails.
-      window.alert(
+      toast.error(
         error.message ||
           "Failed to save user"
       );

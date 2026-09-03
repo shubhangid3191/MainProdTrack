@@ -5,6 +5,7 @@ import {
   Typography,
 } from "@mui/material";
 import apiRequest from "../Config/api.js";
+import { useToast } from "../components/ToastProvider.jsx";
 
 import ErrorOutlineRoundedIcon from "@mui/icons-material/ErrorOutlineRounded";
 import MenuBookRoundedIcon from "@mui/icons-material/MenuBookRounded";
@@ -19,6 +20,7 @@ import LockRoundedIcon from "@mui/icons-material/LockRounded";
 
 export default function Notifications({ user }) {
 
+  const toast = useToast();
   const [notifications, setNotifications] =
   useState([]);
 
@@ -101,12 +103,12 @@ useEffect(() => {
         "Load Notifications Error:",
         error
       );
-      alert(error.message);
+      toast.error(error.message);
     }
   };
 
   loadNotifications();
-}, []);
+}, [toast]);
 
 const handleNotificationClick = async (
   notificationId,
@@ -136,7 +138,7 @@ const handleNotificationClick = async (
       new Event("prodtrack-notifications-updated")
     );
   } catch (error) {
-    alert(error.message);
+    toast.error(error.message);
   }
 };
 

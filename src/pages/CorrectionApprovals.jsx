@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import apiRequest from "../Config/api.js";
+import { useToast } from "../components/ToastProvider.jsx";
+import { useConfirm } from "../components/ConfirmDialog.jsx";
 import {
   Box,
   Typography,
@@ -48,6 +50,7 @@ const correctionStatusStyles = {
 };
 
 function IndexerCorrectionRequestsIndexer({ user , onNavigate,}) {
+  const toast = useToast();
   const [requestsIndexer, setRequestsIndexer] =
     useState([]);
 
@@ -89,7 +92,7 @@ function IndexerCorrectionRequestsIndexer({ user , onNavigate,}) {
           "Load Indexer corrections error:",
           error
         );
-        alert(error.message);
+        toast.error(error.message);
       }
     };
 
@@ -535,6 +538,8 @@ function CorrectionsCoreTeam({
   roleKey,
   roleLabel = "Team Lead",
 }) {
+  const toast = useToast();
+  const { confirm, ConfirmElement } = useConfirm();
   const [rows, setRows] = useState([]);
   const [approvalSummary, setApprovalSummary] = useState({
   awaitingReview: 0,
@@ -570,7 +575,7 @@ useEffect(() => {
       setRows(backendRows);
     } catch (error) {
       console.error("Load correction approvals error:", error);
-      alert(error.message);
+      toast.error(error.message);
     }
   };
 
@@ -606,9 +611,19 @@ const updateStatus = async (rowIndex, newStatus) => {
   const requestId = rows[rowIndex]?.[6];
 
   if (!requestId) {
-    alert("Correction request ID is missing");
+    toast.warning("Correction request ID is missing");
     return;
   }
+
+  const isDanger = newStatus === "REJECTED";
+  const confirmed = await confirm({
+    title: newStatus === "APPROVED" ? "Approve correction?" : "Reject correction?",
+    message: `${newStatus === "APPROVED" ? "Approve" : "Reject"} the correction request from ${rows[rowIndex]?.[4] || "this employee"}?`,
+    confirmLabel: newStatus === "APPROVED" ? "Approve" : "Reject",
+    danger: isDanger,
+  });
+
+  if (!confirmed) return;
 
   const action =
     newStatus === "APPROVED"
@@ -637,11 +652,11 @@ const updateStatus = async (rowIndex, newStatus) => {
       )
     );
 
-    alert(data.message);
+    toast.success(data.message);
     await loadApprovalSummary();
   } catch (error) {
     console.error("Update correction status error:", error);
-    alert(error.message);
+    toast.error(error.message);
   }
 };
 
@@ -702,6 +717,7 @@ const updateStatus = async (rowIndex, newStatus) => {
   };
 
   return (
+    <>
     <CorePageShell
       breadcrumb={roleLabel}
       title="Correction requests"
@@ -974,6 +990,8 @@ const updateStatus = async (rowIndex, newStatus) => {
         </Table>
       </TableContainer>
     </CorePageShell>
+    {ConfirmElement}
+    </>
   );
 }
 const rowsAdministrator = [

@@ -1,6 +1,7 @@
 import { Box, Button, Paper, Typography, Avatar } from "@mui/material";
 import { useEffect, useState } from "react";
 import apiRequest from "../Config/api.js";
+import { useToast } from "../components/ToastProvider.jsx";
 
 // ─── Design tokens — databin.in/kavya ────────────────────────────────────────
 const FONT =
@@ -129,6 +130,7 @@ function MemberRow({ initials, name, empId, avatarColor, projects, today, guide,
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function MyTeam({ onNavigate }) {
+  const toast = useToast();
   const [team, setTeam] = useState([]);
 
 useEffect(() => {
@@ -182,12 +184,12 @@ useEffect(() => {
       setTeam(formattedMembers);
     } catch (error) {
       console.error("Load My Team Error:", error);
-      alert(error.message);
+      toast.error(error.message);
     }
   };
 
   loadMyTeam();
-}, []);
+}, [toast]);
   return (
     <Box sx={{ width: "100%", boxSizing: "border-box" }}>
 

@@ -4,6 +4,7 @@ import {
 } from "react";
 
 import apiRequest from "../Config/api.js";
+import { useToast } from "../components/ToastProvider.jsx";
 import {
   Alert,
   Box,
@@ -97,6 +98,7 @@ function SelectSetting({
 }
 
 export default function Settings() {
+  const toast = useToast();
   const [saved, setSaved] = useState(false);
   
   const [saving, setSaving] =
@@ -141,12 +143,12 @@ useEffect(() => {
         error
       );
 
-      alert(error.message);
+      toast.error(error.message);
     }
   };
 
   loadSettings();
-}, []);
+}, [toast]);
 
 const updateSetting = (key, value) => {
   setSettings((current) => ({
@@ -206,7 +208,7 @@ const handleSave = async () => {
       error
     );
 
-    alert(error.message);
+    toast.error(error.message);
   } finally {
     setSaving(false);
   }

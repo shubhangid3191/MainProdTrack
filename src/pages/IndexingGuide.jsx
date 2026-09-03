@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import apiRequest, { apiDownload } from "../Config/api.js";
+import { useConfirm } from "../components/ConfirmDialog.jsx";
 import {
   Box,
   Typography,
@@ -64,6 +65,7 @@ export default function IndexingGuide({
   const [history, setHistory] = useState([]);
   const [historyError, setHistoryError] = useState("");
   const [historyProject, setHistoryProject] = useState("");
+  const { confirm, ConfirmElement } = useConfirm();
 
   useEffect(() => {
     // Keep the compact dashboard card using its existing prop.
@@ -129,9 +131,11 @@ export default function IndexingGuide({
   const handleAcknowledge = async () => {
     if (!guide || guide.acknowledged || saving) return;
 
-    const confirmed = window.confirm(
-      `Confirm that you have read "${guide.name}" (${guide.version}).`
-    );
+    const confirmed = await confirm({
+      title: "Acknowledge guide?",
+      message: `Confirm that you have read "${guide.name}" (${guide.version}).`,
+      confirmLabel: "Acknowledge",
+    });
 
     if (!confirmed) return;
 
@@ -720,6 +724,7 @@ export default function IndexingGuide({
           </Button>
         </DialogActions>
       </Dialog>
+      {ConfirmElement}
     </Box>
   );
 }

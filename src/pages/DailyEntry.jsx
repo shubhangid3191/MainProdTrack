@@ -1,10 +1,18 @@
-import {useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+// import { useCallback, useEffect, useState } from "react";
 import apiRequest from "../Config/api.js";
+import { useToast } from "../components/ToastProvider.jsx";
+import { useConfirm } from "../components/ConfirmDialog.jsx";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContentText from "@mui/material/DialogContentText";
+import MenuItem from "@mui/material/MenuItem";
+import TextField from "@mui/material/TextField";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
-import TextField from "@mui/material/TextField";
-import MenuItem from "@mui/material/MenuItem";
 import Card from "@mui/material/Card";
 import Chip from "@mui/material/Chip";
 import Table from "@mui/material/Table";
@@ -193,10 +201,22 @@ function StatusChipIndexer({ status }) {
   // =========================================================
 
   function IndexerDailyEntryIndexer() {
+  const toast = useToast();
   const [entries, setEntries] = useState([]);
   const [projects, setProjects] = useState([]);
   const [saving, setSaving] = useState(false);
   const [editingEntryId, setEditingEntryId] = useState(null);
+
+  // ── Correction request dialog state ──────────────────────────────────────
+  const [correctionOpen, setCorrectionOpen] = useState(false);
+  const [correctionEntry, setCorrectionEntry] = useState(null);
+  const [correctionForm, setCorrectionForm] = useState({
+    fieldName: "docs_completed",
+    newValue: "",
+    reason: "",
+  });
+  const [correctionSaving, setCorrectionSaving] = useState(false);
+
   const [formData, setFormData] = useState({
     productionDate: new Date().toISOString().slice(0, 10),
     projectId: "",
@@ -257,9 +277,9 @@ function StatusChipIndexer({ status }) {
       );
     } catch (error) {
       console.error("Daily entries loading error:", error);
-      alert("Could not refresh the entries table. Please reload the page.");
+      toast.error("Could not refresh the entries table. Please reload the page.");
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     loadEntries();
@@ -312,7 +332,7 @@ function StatusChipIndexer({ status }) {
     if (saving) return;
 
     if (!formData.projectId || !formData.productionDate) {
-      alert("Select a project and production date.");
+      toast.warning("Select a project and production date.");
       return;
     }
 
@@ -328,12 +348,12 @@ function StatusChipIndexer({ status }) {
         (value) => !Number.isInteger(value) || value < 0
       )
     ) {
-      alert("Enter valid non-negative whole numbers.");
+      toast.warning("Enter valid non-negative whole numbers.");
       return;
     }
 
     if (numbers.documentsCompleted > numbers.documentsReceived) {
-      alert("Completed documents cannot exceed received documents.");
+      toast.warning("Completed documents cannot exceed received documents.");
       return;
     }
 
@@ -356,7 +376,7 @@ function StatusChipIndexer({ status }) {
           }
         );
 
-      alert(`${data.message}. Entry ID: ${data.entryId}`);
+      toast.success(`${data.message}. Entry ID: ${data.entryId}`);
 
       await loadEntries();
       setEditingEntryId(null);
@@ -371,69 +391,70 @@ function StatusChipIndexer({ status }) {
         notes: "",
       }));
     } catch (error) {
-      alert(error.message);
+      toast.error(error.message);
     } finally {
       setSaving(false);
     }
   };
 
 
-  const handleRequestCorrection = async (entry) => {
-  const fieldName = window.prompt(
-    "Enter the field name",
-    "docs_completed"
-  );
+  const handleRequestCorrection = (entry) => {
+    setCorrectionEntry(entry);
+    setCorrectionForm({
+      fieldName: "docs_completed",
+      newValue: String(entry.completed ?? ""),
+      reason: "",
+    });
+    setCorrectionOpen(true);
+  };
 
-  if (!fieldName) return;
+  const handleCorrectionFieldChange = (event) => {
+    const { name, value } = event.target;
+    setCorrectionForm((prev) => ({ ...prev, [name]: value }));
+    // Pre-fill newValue when field changes
+    if (name === "fieldName" && correctionEntry) {
+      const defaultVal =
+        value === "docs_completed"
+          ? String(correctionEntry.completed ?? "")
+          : value === "docs_received"
+          ? String(correctionEntry.received ?? "")
+          : "";
+      setCorrectionForm((prev) => ({ ...prev, [name]: value, newValue: defaultVal }));
+    }
+  };
 
-  let defaultOldValue = "";
-
-  if (fieldName === "docs_completed") {
-    defaultOldValue = entry.completed;
-  } else if (fieldName === "docs_received") {
-    defaultOldValue = entry.received;
-  }
-
-  const newValue = window.prompt(
-    "Enter the corrected value",
-    defaultOldValue
-  );
-
-  if (
-    newValue === null ||
-    String(newValue).trim() === ""
-  ) {
-    return;
-  }
-
-  const reason = window.prompt(
-    "Enter the reason for this correction"
-  );
-
-  if (!reason || !reason.trim()) {
-    return;
-  }
-
-  try {
-    const data = await apiRequest(
-      "/indexer/corrections",
-      {
+  const handleCorrectionSubmit = async () => {
+    if (!correctionEntry) return;
+    if (!correctionForm.newValue.trim() || !correctionForm.reason.trim()) {
+      toast.warning("Please fill in the corrected value and reason.");
+      return;
+    }
+    const oldValue =
+      correctionForm.fieldName === "docs_completed"
+        ? correctionEntry.completed
+        : correctionForm.fieldName === "docs_received"
+        ? correctionEntry.received
+        : "";
+    setCorrectionSaving(true);
+    try {
+      const data = await apiRequest("/indexer/corrections", {
         method: "POST",
         body: JSON.stringify({
-          dailyEntryId: entry.id,
-          fieldName,
-          oldValue: defaultOldValue,
-          newValue,
-          reason,
+          dailyEntryId: correctionEntry.id,
+          fieldName: correctionForm.fieldName,
+          oldValue,
+          newValue: correctionForm.newValue.trim(),
+          reason: correctionForm.reason.trim(),
         }),
-      }
-    );
-
-    alert(data.message);
-  } catch (error) {
-    alert(error.message);
-  }
-};
+      });
+      toast.success(data.message);
+      setCorrectionOpen(false);
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setCorrectionSaving(false);
+    }
+  };
   return (
     <Box sx={{ width: "100%" }}>
       {/* =================================================
@@ -1130,6 +1151,7 @@ function StatusChipIndexer({ status }) {
                         fontSize: 12,
                         color: "#64748b",
                         whiteSpace: "nowrap",
+                        cursor: "pointer",
                       }}
                     >
                       Request correction
@@ -1141,6 +1163,73 @@ function StatusChipIndexer({ status }) {
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* ── Correction request dialog ── */}
+      <Dialog
+        open={correctionOpen}
+        onClose={() => { if (!correctionSaving) setCorrectionOpen(false); }}
+        fullWidth
+        maxWidth="xs"
+        aria-labelledby="correction-dialog-title"
+      >
+        <DialogTitle id="correction-dialog-title">Request correction</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2, fontSize: 13 }}>
+            Entry #{correctionEntry?.id} — {correctionEntry?.project}
+          </DialogContentText>
+          <TextField
+            select
+            label="Field to correct"
+            name="fieldName"
+            value={correctionForm.fieldName}
+            onChange={handleCorrectionFieldChange}
+            fullWidth
+            size="small"
+            sx={{ mb: 2 }}
+            SelectProps={{ native: true }}
+          >
+            <option value="docs_completed">Documents completed</option>
+            <option value="docs_received">Documents received</option>
+          </TextField>
+          <TextField
+            label="Corrected value"
+            name="newValue"
+            value={correctionForm.newValue}
+            onChange={handleCorrectionFieldChange}
+            fullWidth
+            size="small"
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            label="Reason"
+            name="reason"
+            value={correctionForm.reason}
+            onChange={handleCorrectionFieldChange}
+            fullWidth
+            size="small"
+            multiline
+            rows={3}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => setCorrectionOpen(false)}
+            disabled={correctionSaving}
+            variant="outlined"
+            sx={{ textTransform: "none", borderColor: "#d0d7e2", color: "#1a2434" }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleCorrectionSubmit}
+            disabled={correctionSaving}
+            variant="contained"
+            sx={{ textTransform: "none" }}
+          >
+            {correctionSaving ? "Submitting…" : "Submit"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
@@ -1232,6 +1321,8 @@ function StatusChipTeamLead({ status }) {
 
 
 function TeamPendingEntries() {
+  const toast = useToast();
+  const { confirm, ConfirmElement } = useConfirm();
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [reviewingId, setReviewingId] = useState(null);
@@ -1264,9 +1355,11 @@ function TeamPendingEntries() {
   const handleReview = async (entry) => {
     if (reviewingId !== null) return;
 
-    const confirmed = window.confirm(
-      `Have you checked entry #${entry.entry_id} from ${entry.employee_name}? Mark it as Reviewed?`
-    );
+    const confirmed = await confirm({
+      title: "Mark as reviewed?",
+      message: `Have you checked entry #${entry.entry_id} from ${entry.employee_name}?`,
+      confirmLabel: "Mark as reviewed",
+    });
 
     if (!confirmed) return;
 
@@ -1459,6 +1552,7 @@ function TeamPendingEntries() {
           )}
         </>
       )}
+      {ConfirmElement}
     </Card>
   );
 }
@@ -1467,6 +1561,7 @@ function TeamPendingEntries() {
 // =========================================================
 
 function TeamLeadDailyEntryTeamLead() {
+  const toast = useToast();
   const [projects, setProjects] = useState([]);
   const [saving, setSaving] = useState(false);
   const [entries, setEntries] = useState([]);
@@ -1508,12 +1603,12 @@ function TeamLeadDailyEntryTeamLead() {
           }));
         }
       } catch (error) {
-        alert(error.message || "Failed to load projects");
+        toast.error(error.message || "Failed to load projects");
       }
     };
 
     loadProjects();
-  }, []);
+  }, [toast]);
 
   const handleProjectChange = (event) => {
       const projectId = event.target.value;
@@ -1597,7 +1692,7 @@ function TeamLeadDailyEntryTeamLead() {
   if (saving) return;
 
   if (!formData.projectId || !formData.productionDate) {
-    alert("Select a project and production date.");
+    toast.warning("Select a project and production date.");
     return;
   }
 
@@ -1616,12 +1711,12 @@ function TeamLeadDailyEntryTeamLead() {
         value > 4294967295
     )
   ) {
-    alert("Enter valid non-negative whole numbers.");
+    toast.warning("Enter valid non-negative whole numbers.");
     return;
   }
 
   if (numbers.documentsCompleted > numbers.documentsReceived) {
-    alert("Completed documents cannot exceed received documents.");
+    toast.warning("Completed documents cannot exceed received documents.");
     return;
   }
 
@@ -1646,7 +1741,7 @@ function TeamLeadDailyEntryTeamLead() {
       throw new Error(data.message || "Failed to save draft");
     }
 
-    alert(`${data.message}. Entry ID: ${data.entryId}`);
+    toast.success(`${data.message}. Entry ID: ${data.entryId}`);
     setEditingEntryId(null);
     await loadEntries();
 
@@ -1660,7 +1755,7 @@ function TeamLeadDailyEntryTeamLead() {
       notes: "",
     }));
   } catch (error) {
-    alert(error.message || "Failed to save draft");
+    toast.error(error.message || "Failed to save draft");
   } finally {
     setSaving(false);
   }

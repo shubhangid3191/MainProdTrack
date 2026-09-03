@@ -4,6 +4,7 @@ import {
 } from "react";
 
 import apiRequest from "../Config/api.js";
+import { useToast } from "../components/ToastProvider.jsx";
 import {
   Alert,
   Avatar,
@@ -24,6 +25,7 @@ import {
 const tabs = ["Activity", "Change History", "Login Events"];
 
 export default function AuditLog() {
+  const toast = useToast();
   const [notice, setNotice] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [loginEvents, setLoginEvents] =
@@ -48,12 +50,12 @@ export default function AuditLog() {
         error
       );
 
-      alert(error.message);
+      toast.error(error.message);
     }
   };
 
   loadLoginEvents();
-}, [activeTab]);
+}, [activeTab, toast]);
 
 useEffect(() => {
   const loadAuditLogs = async () => {
@@ -69,12 +71,12 @@ useEffect(() => {
         error
       );
 
-      alert(error.message);
+      toast.error(error.message);
     }
   };
 
   loadAuditLogs();
-}, []);
+}, [toast]);
 
 const formatAuditRow = (log) => {
   const userName =
@@ -159,7 +161,7 @@ const changeRows = logs
 
 const handleExport = () => {
   if (rows.length === 0) {
-    alert(
+    toast.info(
       `No ${tabs[activeTab]} data is available`
     );
     return;

@@ -12,8 +12,10 @@ import Alert from "@mui/material/Alert";
 import Link from "@mui/material/Link";
 
 import { DEMO_ACCOUNTS } from "../Config/users.js";
+import { useToast } from "../components/ToastProvider.jsx";
 
 export default function SignIn({ onLogin }) {
+  const toast = useToast();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("demo123");
   const [keepSignedIn, setKeepSignedIn] = useState(true);
@@ -44,7 +46,7 @@ const handleSubmit = async (e) => {
     const data = await response.json();
 
     if (!response.ok) {
-      alert(data.message || "Login failed");
+      toast.error(data.message || "Login failed");
       return;
     }
 
@@ -90,7 +92,7 @@ const handleSubmit = async (e) => {
     }
   } catch (error) {
     console.error("Login error:", error);
-    alert("Cannot connect to the backend server");
+    toast.error("Cannot connect to the backend server");
   }
 };
 

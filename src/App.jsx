@@ -7,6 +7,7 @@ import SignIn from "./components/SignIn.jsx";
 import GuideUpdateModal from "./components/GuideUpdateModal.jsx";
 import DashboardLayout from "./Layouts/DashboardLayout.jsx";
 import AppRoutes from "./routes/AppRoutes.jsx";
+import { useToast } from "./components/ToastProvider.jsx";
 
 const getStoredUser = () => {
   const storedUser =
@@ -28,6 +29,7 @@ export default function App() {
   const [user, setUser] = useState(getStoredUser);
   const [page, setPage] = useState("dashboard");
   const [guideOpen, setGuideOpen] = useState(false);
+  const toast = useToast();
 
   const login = (authenticatedUser) => {
     setUser(authenticatedUser);
@@ -83,10 +85,7 @@ const logout = useCallback(() => {
   let timeoutId;
 
   const handleIdleLogout = () => {
-    window.alert(
-      "Your session ended because of inactivity."
-    );
-
+    toast.info("Your session ended because of inactivity.");
     logout();
   };
 

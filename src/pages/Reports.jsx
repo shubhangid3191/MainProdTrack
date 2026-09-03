@@ -11,6 +11,7 @@ import {
   Chip,
 } from "@mui/material";
 import apiRequest from "../Config/api.js";
+import { useToast } from "../components/ToastProvider.jsx";
 import { jsPDF } from "jspdf";
 import { autoTable } from "jspdf-autotable";
 
@@ -103,6 +104,7 @@ function SelectField({ label, children,value,onChange, }) {
 export default function Reports({
   roleKey = "indexer",
 }) {
+  const toast = useToast();
   const [summary, setSummary] = useState({
   totalReceived: 0,
   totalCompleted: 0,
@@ -239,7 +241,7 @@ useEffect(() => {
         error
       );
 
-      alert(error.message);
+      toast.error(error.message);
     }
   };
 
@@ -249,6 +251,7 @@ useEffect(() => {
   period,
   selectedProject,
   selectedEmployee,
+  toast,
 ]);
 
 const max = Math.max(
@@ -280,7 +283,7 @@ const max = Math.max(
 
   const handleCsvDownload = () => {
   if (employees.length === 0) {
-    alert("No report data is available to export");
+    toast.info("No report data is available to export");
     return;
   }
 
@@ -334,7 +337,7 @@ const max = Math.max(
 
 const handlePdfDownload = () => {
   if (employees.length === 0) {
-    alert("No report data is available to export");
+    toast.info("No report data is available to export");
     return;
   }
 
