@@ -85,7 +85,7 @@ const KPI_CARDS = [
     note: "acknowledged this cycle",
     color: "#15966a",
     action: "Details",
-    nav: "audit-log",
+    nav: "compliance"
   },
   {
     label: "Missing entries",
