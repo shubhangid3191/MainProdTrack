@@ -148,69 +148,162 @@ export default function Sidebar({
   mobileOpen = false,
   onMobileClose,
 }) {
-  const [notificationCount, setNotificationCount] =
-  useState(0);
+  // Stores the live unread notification count shown in the existing Notifications badge.
+  const [notificationCount, setNotificationCount] = useState(0);
 
-useEffect(() => {
-  const loadNotificationCount = async () => {
-    if (
-      !["indexer", "teamLead"].includes(roleKey)
-    ) {
-      return;
-    }
+  // Stores the live pending correction/approval count for Team Lead, Core Team and Administrator.
+  const [approvalCount, setApprovalCount] = useState(0);
 
-    try {
-      const data = await apiRequest(
-        "/notifications/my"
+  // Tracks whether the current user has at least one required guide that is still unacknowledged.
+  const [hasNewGuide, setHasNewGuide] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    // Loads every live sidebar badge that is relevant to the current role.
+    const loadSidebarBadges = async () => {
+      const requests = [];
+
+      // Notifications are available to all application roles.
+      requests.push(
+        apiRequest("/notifications/my")
+          .then((data) => {
+            if (!active) return;
+            setNotificationCount(Number(data.unreadCount || 0));
+          })
+          .catch((error) => {
+            console.error("Sidebar notification count error:", error);
+            if (active) setNotificationCount(0);
+          })
       );
 
-      setNotificationCount(
-        Number(data.unreadCount || 0)
-      );
-    } catch (error) {
-      console.error(
-        "Sidebar notification count error:",
-        error
-      );
-    }
-  };
+      // Team Lead, Core Team and Administrator use the existing approval summary for pending corrections.
+      if (["teamLead", "coreTeam", "administrator"].includes(roleKey)) {
+        requests.push(
+          apiRequest("/team-lead/approvals/summary")
+            .then((data) => {
+              if (!active) return;
+              setApprovalCount(Number(data.summary?.awaitingReview || 0));
+            })
+            .catch((error) => {
+              console.error("Sidebar approval count error:", error);
+              if (active) setApprovalCount(0);
+            })
+        );
+      } else if (active) {
+        setApprovalCount(0);
+      }
 
-  loadNotificationCount();
+      // Indexer and Team Lead show NEW only when a required guide still needs acknowledgement.
+      if (["indexer", "teamLead"].includes(roleKey)) {
+        requests.push(
+          apiRequest("/guides/latest")
+            .then((data) => {
+              if (!active) return;
 
-  window.addEventListener(
-    "prodtrack-notifications-updated",
-    loadNotificationCount
-  );
+              const guideNeedsAcknowledgement = (data.guides || []).some((guide) => {
+                const requiresAck =
+                  guide.requires_ack === true || Number(guide.requires_ack) === 1;
+                const acknowledged =
+                  guide.acknowledged === true || Number(guide.acknowledged) === 1;
 
-  return () => {
-    window.removeEventListener(
+                return requiresAck && !acknowledged;
+              });
+
+              setHasNewGuide(guideNeedsAcknowledgement);
+            })
+            .catch((error) => {
+              console.error("Sidebar guide badge error:", error);
+              if (active) setHasNewGuide(false);
+            })
+        );
+      } else if (active) {
+        setHasNewGuide(false);
+      }
+
+      await Promise.allSettled(requests);
+    };
+
+    loadSidebarBadges();
+
+    // Refreshes badges immediately when another page tells the sidebar that data changed.
+    const handleBadgeRefresh = () => loadSidebarBadges();
+
+    window.addEventListener(
       "prodtrack-notifications-updated",
-      loadNotificationCount
+      handleBadgeRefresh
     );
-  };
-}, [roleKey]);
+    window.addEventListener(
+      "prodtrack-sidebar-badges-updated",
+      handleBadgeRefresh
+    );
 
-const baseMenuItems =
-  sidebarConfig[roleKey] ||
-  sidebarConfig.indexer;
+    // Periodically refreshes counts so changes made elsewhere also appear without reloading the app.
+    const refreshTimer = window.setInterval(loadSidebarBadges, 30000);
 
-const menuItems = baseMenuItems.map((item) => {
-  if (item.page !== "notifications") {
+    return () => {
+      active = false;
+      window.clearInterval(refreshTimer);
+      window.removeEventListener(
+        "prodtrack-notifications-updated",
+        handleBadgeRefresh
+      );
+      window.removeEventListener(
+        "prodtrack-sidebar-badges-updated",
+        handleBadgeRefresh
+      );
+    };
+  }, [roleKey, currentPage]);
+
+  // Keeps the original role-specific menu configuration unchanged except for live badge values.
+  const baseMenuItems =
+    sidebarConfig[roleKey] ||
+    sidebarConfig.indexer;
+
+  // Injects live badge data into the existing menu items without changing any sidebar UI/styling.
+  const menuItems = baseMenuItems.map((item) => {
+    if (item.page === "notifications") {
+      return {
+        ...item,
+        badge:
+          notificationCount > 0
+            ? {
+                dot: true,
+                text: String(notificationCount),
+                color: "error",
+              }
+            : null,
+      };
+    }
+
+    if (item.page === "corrections") {
+      return {
+        ...item,
+        badge:
+          approvalCount > 0
+            ? {
+                dot: true,
+                text: String(approvalCount),
+                color: "error",
+              }
+            : null,
+      };
+    }
+
+    if (item.page === "indexing-guide") {
+      return {
+        ...item,
+        badge: hasNewGuide
+          ? {
+              text: "NEW",
+              color: "success",
+            }
+          : null,
+      };
+    }
+
     return item;
-  }
-
-  return {
-    ...item,
-    badge:
-      notificationCount > 0
-        ? {
-            dot: true,
-            text: String(notificationCount),
-            color: "error",
-          }
-        : null,
-  };
-});
+  });
 
   const handleNavigate = (page) => {
     onNavigate(page);
