@@ -76,10 +76,12 @@ function NavItem({
 
       <ListItemText
         primary={item.label}
-        primaryTypographyProps={{
-          fontSize: 12.5,
-          fontWeight: 600,
-          whiteSpace: "nowrap",
+        slotProps={{
+          primary: {
+            fontSize: 12.5,
+            fontWeight: 600,
+            whiteSpace: "nowrap",
+          },
         }}
       />
 
@@ -489,9 +491,11 @@ export default function Sidebar({
 
           <ListItemText
             primary="Sign out"
-            primaryTypographyProps={{
-              fontSize: 12.5,
-              fontWeight: 600,
+            slotProps={{
+              primary: {
+                fontSize: 12.5,
+                fontWeight: 600,
+              },
             }}
           />
         </ListItemButton>

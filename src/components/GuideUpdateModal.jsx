@@ -1,5 +1,4 @@
 import {
-  useEffect,
   useState,
 } from "react";
 
@@ -31,9 +30,8 @@ import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 // passed from App.jsx after the /pending-ack fetch.
 // ======================================================
 
-export default function GuideUpdateModal({ open, onClose }) {
+export default function GuideUpdateModal({ open, onClose,guide, }) {
   const [checked, setChecked] = useState(false);
-  const [guide, setGuide] = useState(null);
   const [submitting, setSubmitting] =
     useState(false);
   const [error, setError] = useState("");
@@ -65,7 +63,6 @@ const handleAcknowledge = async () => {
     );
 
     setChecked(false);
-    setGuide(null);
     onClose();
   } catch (error) {
     console.error(
@@ -98,31 +95,6 @@ const handleAcknowledge = async () => {
     ? `I have read and understood the updated indexing guide (${guide.version}).`
     : "I have read and understood the updated indexing guide.";
 
-    useEffect(() => {
-  if (!open) return;
-
-  const loadPendingGuide = async () => {
-    try {
-      const data = await apiRequest(
-        "/guides/pending-ack"
-      );
-
-      if (data.hasPending && data.guide) {
-        setGuide(data.guide);
-      } else {
-        setGuide(null);
-        onClose();
-      }
-    } catch (error) {
-      console.error(
-        "Load Pending Guide Error:",
-        error
-      );
-    }
-  };
-
-  loadPendingGuide();
-}, [open, onClose]);
   return (
     <Dialog
       open={open}
