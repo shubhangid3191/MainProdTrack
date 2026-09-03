@@ -200,7 +200,9 @@ function StatusChipIndexer({ status }) {
   // INDEXER DAILY ENTRY
   // =========================================================
 
-  function IndexerDailyEntryIndexer() {
+ function IndexerDailyEntryIndexer({
+  onNavigate,
+}) {
   const toast = useToast();
   const [entries, setEntries] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -467,8 +469,14 @@ function StatusChipIndexer({ status }) {
           reason: correctionForm.reason.trim(),
         }),
       });
-      toast.success(data.message);
+      toast.success(
+        data.message ||
+          "Correction request submitted successfully"
+      );
+
       setCorrectionOpen(false);
+
+      onNavigate?.("corrections");
     } catch (error) {
       toast.error(error.message);
     } finally {
@@ -1203,16 +1211,41 @@ function StatusChipIndexer({ status }) {
           <TextField
             select
             label="Field to correct"
-            name="fieldName"
             value={correctionForm.fieldName}
-            onChange={handleCorrectionFieldChange}
+            onChange={(event) => {
+              const selectedField =
+                event.target.value;
+
+              const selectedValue =
+                selectedField ===
+                "docs_completed"
+                  ? correctionEntry?.completed
+                  : selectedField ===
+                    "docs_received"
+                  ? correctionEntry?.received
+                  : "";
+
+              setCorrectionForm(
+                (previousForm) => ({
+                  ...previousForm,
+                  fieldName: selectedField,
+                  newValue: String(
+                    selectedValue ?? ""
+                  ),
+                })
+              );
+            }}
             fullWidth
             size="small"
             sx={{ mb: 2 }}
-            SelectProps={{ native: true }}
           >
-            <option value="docs_completed">Documents completed</option>
-            <option value="docs_received">Documents received</option>
+            <MenuItem value="docs_completed">
+              Documents completed
+            </MenuItem>
+
+            <MenuItem value="docs_received">
+              Documents received
+            </MenuItem>
           </TextField>
           <TextField
             label="Corrected value"

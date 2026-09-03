@@ -52,20 +52,49 @@ const [error, setError] = useState("");
       try {
         const data = await apiRequest("/projects/my");
 
-        const formattedProjects = data.projects.map((project) => ({
+    const projectList = Array.isArray(
+  data.projects
+)
+  ? data.projects
+  : [];
+
+    const formattedProjects =
+      projectList.map((project) => {
+        const backlog = Math.min(
+          100,
+          Math.max(
+            0,
+            Number(
+              project.backlog_percentage || 0
+            )
+          )
+        );
+
+        return {
           id: project.project_id,
-          name: project.project_name,
-          client: project.client_name || project.project_code,
-          reporting: project.reporting_category || "Not assigned",
-          status: project.status,
+          name:
+            project.project_name ||
+            "Unnamed project",
+
+          client:
+            project.client_name ||
+            project.project_code ||
+            "Not available",
+
+          reporting:
+            project.reporting_category ||
+            "Not assigned",
+
+          status:
+            project.status || "active",
+
           received: Number(
             project.total_received || 0
           ).toLocaleString(),
 
-          backlog: Number(
-            project.backlog_percentage || 0
-          ),
-        }));
+          backlog,
+        };
+      });
 
         setProjects(formattedProjects);
       } catch (requestError) {
@@ -135,9 +164,75 @@ const [error, setError] = useState("");
       {/* =================================================
           PROJECT CARDS
       ================================================= */}
+      {loading && (
+        <Card
+          elevation={0}
+          sx={{
+            p: 3,
+            mb: 2,
+            border: "1px solid #dce3ec",
+            borderRadius: "13px",
+          }}
+        >
+          <Typography
+            sx={{
+              color: "#718096",
+              fontSize: 14,
+            }}
+          >
+            Loading projects...
+          </Typography>
+        </Card>
+      )}
 
+      {!loading && error && (
+        <Card
+          elevation={0}
+          sx={{
+            p: 3,
+            mb: 2,
+            border: "1px solid #fecaca",
+            borderRadius: "13px",
+            bgcolor: "#fff7f7",
+          }}
+        >
+          <Typography
+            sx={{
+              color: "#dc2626",
+              fontSize: 14,
+            }}
+          >
+            {error}
+          </Typography>
+        </Card>
+      )}
+
+      {!loading &&
+        !error &&
+        visibleProjects.length === 0 && (
+          <Card
+            elevation={0}
+            sx={{
+              p: 3,
+              mb: 2,
+              border: "1px solid #dce3ec",
+              borderRadius: "13px",
+            }}
+          >
+            <Typography
+              sx={{
+                color: "#718096",
+                fontSize: 14,
+              }}
+            >
+              No projects are available.
+            </Typography>
+          </Card>
+        )}
       <Grid container spacing={2.25}>
-        {visibleProjects.map((project) => (
+      {!loading &&
+        !error &&
+        visibleProjects.map((project) => (
           <Grid
             key={project.id}
             size={{
@@ -317,10 +412,17 @@ const [error, setError] = useState("");
 
                 <Button
                   fullWidth
-                  variant="outlined"
-                  onClick={() =>
-                    onNavigate?.("daily-entry")
-                  }
+                 onClick={() => {
+                    const canEnterProduction =
+                      user?.roleKey === "indexer" ||
+                      user?.roleKey === "teamLead";
+
+                    onNavigate?.(
+                      canEnterProduction
+                        ? "daily-entry"
+                        : "reports"
+                    );
+                  }}
                   sx={{
                     mt: 1.8,
 
@@ -347,7 +449,10 @@ const [error, setError] = useState("");
                     },
                   }}
                 >
-                  Open daily entry
+                  {user?.roleKey === "indexer" ||
+                    user?.roleKey === "teamLead"
+                      ? "Open daily entry"
+                      : "View project reports"}
                 </Button>
               </CardContent>
             </Card>
