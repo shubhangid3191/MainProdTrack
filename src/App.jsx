@@ -8,6 +8,7 @@ import GuideUpdateModal from "./components/GuideUpdateModal.jsx";
 import DashboardLayout from "./Layouts/DashboardLayout.jsx";
 import AppRoutes from "./routes/AppRoutes.jsx";
 import { useToast } from "./components/ToastProvider.jsx";
+import { apiRequest } from "./Config/api.js";
 
 const getStoredUser = () => {
   const storedUser =
@@ -28,13 +29,36 @@ const getStoredUser = () => {
 export default function App() {
   const [user, setUser] = useState(getStoredUser);
   const [page, setPage] = useState("dashboard");
-  const [guideOpen, setGuideOpen] = useState(false);
+  // Stores the pending guide object returned by /api/guides/pending-ack.
+  // null  → not fetched yet or no pending guide.
+  // object → a guide is waiting for acknowledgement, open the modal.
+  const [pendingGuide, setPendingGuide] = useState(null);
   const toast = useToast();
+
+  // Fetches the pending-ack guide for indexer users and opens the modal
+  // when one is found. Called on login and when "Review now" is clicked.
+  const fetchPendingGuide = useCallback(async () => {
+    try {
+      const data = await apiRequest("/guides/pending-ack");
+      // Only store when the backend says there is a pending guide.
+      if (data.success && data.hasPending && data.guide) {
+        setPendingGuide(data.guide);
+      } else {
+        setPendingGuide(null);
+      }
+    } catch {
+      // Silently ignore — the modal simply won't open on error.
+      setPendingGuide(null);
+    }
+  }, []);
 
   const login = (authenticatedUser) => {
     setUser(authenticatedUser);
     setPage("dashboard");
-    setGuideOpen(authenticatedUser?.roleKey === "indexer");
+    // Trigger the pending-guide fetch only for indexers.
+    if (authenticatedUser?.roleKey === "indexer") {
+      fetchPendingGuide();
+    }
   };
 
 const logout = useCallback(() => {
@@ -54,7 +78,7 @@ const logout = useCallback(() => {
 
   setUser(null);
   setPage("dashboard");
-  setGuideOpen(false);
+  setPendingGuide(null);
 }, []);
 
 
@@ -140,13 +164,19 @@ if (!user) return <SignIn onLogin={login} />;
         onNavigate={setPage}
         onLogout={logout}
       >
-        <AppRoutes user={user} currentPage={page} onNavigate={setPage} />
+        <AppRoutes user={user} currentPage={page} onNavigate={setPage} onReviewGuide={fetchPendingGuide} />
       </DashboardLayout>
 
       {user.roleKey === "indexer" && (
         <GuideUpdateModal
-          open={guideOpen}
-          onClose={() => setGuideOpen(false)}
+          open={Boolean(pendingGuide)}
+          guide={pendingGuide}
+          onClose={(acknowledged) => {
+            // Clear the guide so the modal closes.
+            // acknowledged=true means the user confirmed; Later also clears it
+            // so it won't re-appear until they log in again.
+            setPendingGuide(null);
+          }}
         />
       )}
     </>

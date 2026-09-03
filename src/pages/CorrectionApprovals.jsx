@@ -18,6 +18,15 @@ import {
   TableRow,
   Alert,
   Snackbar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  MenuItem,
+  IconButton,
+  Divider,
+  CircularProgress,
 } from "@mui/material";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
@@ -25,10 +34,468 @@ import PendingActionsRoundedIcon from "@mui/icons-material/PendingActionsRounded
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import CancelRoundedIcon from "@mui/icons-material/CancelRounded";
 import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import CorePageShell, {
   CoreMetricCards,
   CoreTable,
 } from "../components/CorePageShell.jsx";
+
+const FONT =
+  '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+
+// ======================================================
+// NEW CORRECTION REQUEST DIALOG
+// ======================================================
+
+function NewCorrectionDialog({ open, onClose, onSubmitted }) {
+  const toast = useToast();
+
+  // All locked entries returned by the backend.
+  const [lockedEntries, setLockedEntries] = useState([]);
+  const [loadingEntries, setLoadingEntries] = useState(false);
+
+  // Two-step selection: pick project first, then date.
+  const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [pickedDate, setPickedDate] = useState(""); // "YYYY-MM-DD" string
+
+  // Other form fields.
+  const [fieldName, setFieldName] = useState("");
+  const [oldValue, setOldValue] = useState("");
+  const [newValue, setNewValue] = useState("");
+  const [reason, setReason] = useState("");
+
+  // Submission state.
+  const [submitting, setSubmitting] = useState(false);
+
+  // Field-level errors.
+  const [errors, setErrors] = useState({});
+
+  // Load locked entries whenever the dialog opens.
+  useEffect(() => {
+    if (!open) return;
+
+    const load = async () => {
+      setLoadingEntries(true);
+      try {
+        const data = await apiRequest(
+          "/indexer/corrections/locked-entries"
+        );
+        setLockedEntries(data.entries || []);
+      } catch (err) {
+        toast.error(err.message || "Failed to load locked entries");
+      } finally {
+        setLoadingEntries(false);
+      }
+    };
+
+    load();
+
+    // Reset entire form on open.
+    setSelectedProjectId("");
+    setPickedDate("");
+    setFieldName("");
+    setOldValue("");
+    setNewValue("");
+    setReason("");
+    setErrors({});
+  }, [open]);
+
+  // Unique projects from locked entries (deduplicated).
+  const uniqueProjects = lockedEntries.reduce((acc, entry) => {
+    if (!acc.find((p) => p.project_id === entry.project_id)) {
+      acc.push({ project_id: entry.project_id, project_name: entry.project_name });
+    }
+    return acc;
+  }, []);
+
+  // Entries that belong to the selected project.
+  const datesForProject = lockedEntries.filter(
+    (e) => String(e.project_id) === String(selectedProjectId)
+  );
+
+  // Set of valid date strings (YYYY-MM-DD) for the selected project — used to highlight/disable calendar days.
+  const validDateStrings = new Set(datesForProject.map((e) => e.production_date));
+
+  // Resolve the entry_id from the picked calendar date.
+  const resolvedEntry = pickedDate
+    ? datesForProject.find((e) => e.production_date === pickedDate)
+    : null;
+
+  const entryId = resolvedEntry?.entry_id ?? null;
+
+  // Format date: YYYY-MM-DD → DD/MM/YYYY.
+  const formatDisplayDate = (iso) => {
+    if (!iso) return "";
+    const [y, m, d] = iso.split("-");
+    return `${d}/${m}/${y}`;
+  };
+
+  const validate = () => {
+    const next = {};
+    if (!selectedProjectId) next.project = "Please select a project.";
+    if (!pickedDate) next.entryId = "Please select a production date.";
+    else if (!entryId) next.entryId = "No locked entry found for this date.";
+    if (!fieldName.trim()) next.fieldName = "Field name is required.";
+    if (!newValue.trim()) next.newValue = "New value is required.";
+    if (!reason.trim()) next.reason = "Reason for change is required.";
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!validate() || submitting) return;
+
+    try {
+      setSubmitting(true);
+
+      await apiRequest("/indexer/corrections", {
+        method: "POST",
+        body: JSON.stringify({
+          dailyEntryId: entryId,
+          fieldName: fieldName.trim(),
+          oldValue: oldValue.trim() || null,
+          newValue: newValue.trim(),
+          reason: reason.trim(),
+        }),
+      });
+
+      toast.success("Correction request submitted successfully");
+      onSubmitted?.();
+      onClose();
+    } catch (err) {
+      toast.error(err.message || "Failed to submit correction request");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleClose = () => {
+    if (submitting) return;
+    onClose();
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth={false}
+      sx={{
+        "& .MuiDialog-paper": {
+          width: 540,
+          maxWidth: "94vw",
+          borderRadius: "16px",
+          boxShadow: "0 8px 32px rgba(15,23,42,0.18)",
+          fontFamily: FONT,
+        },
+      }}
+      slotProps={{
+        backdrop: {
+          sx: {
+            backgroundColor: "rgba(15,23,42,0.35)",
+            backdropFilter: "blur(2px)",
+          },
+        },
+      }}
+    >
+      {/* HEADER */}
+      <DialogTitle
+        sx={{
+          px: 2.75,
+          py: 2.2,
+          fontFamily: FONT,
+          fontSize: 16,
+          fontWeight: 700,
+          color: "#1A2434",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        New correction request
+        <IconButton
+          size="small"
+          onClick={handleClose}
+          disabled={submitting}
+          sx={{ color: "#6A7585" }}
+        >
+          <CloseRoundedIcon fontSize="small" />
+        </IconButton>
+      </DialogTitle>
+
+      <Divider />
+
+      {/* BODY */}
+      <DialogContent sx={{ px: 2.75, py: 2.75 }}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2.2 }}>
+
+          {/* PROJECT */}
+          <Box>
+            <Typography
+              sx={{ fontFamily: FONT, fontSize: 13, fontWeight: 600, color: "#3B5068", mb: 0.7 }}
+            >
+              Project
+            </Typography>
+            <TextField
+              select
+              fullWidth
+              size="small"
+              value={selectedProjectId}
+              onChange={(e) => {
+                setSelectedProjectId(e.target.value);
+                setPickedDate(""); // reset date when project changes
+                setErrors((prev) => ({ ...prev, project: undefined, entryId: undefined }));
+              }}
+              disabled={loadingEntries || submitting}
+              error={Boolean(errors.project)}
+              helperText={errors.project}
+              SelectProps={{ displayEmpty: true }}
+              sx={{ "& .MuiOutlinedInput-root": { borderRadius: "8px", fontFamily: FONT, fontSize: 14 } }}
+            >
+              <MenuItem value="" disabled>
+                <Typography sx={{ fontFamily: FONT, fontSize: 14, color: "#9aa5b4" }}>
+                  {loadingEntries ? "Loading…" : "Select project"}
+                </Typography>
+              </MenuItem>
+              {uniqueProjects.map((p) => (
+                <MenuItem key={p.project_id} value={String(p.project_id)}>
+                  <Typography sx={{ fontFamily: FONT, fontSize: 14 }}>
+                    {p.project_name}
+                  </Typography>
+                </MenuItem>
+              ))}
+            </TextField>
+          </Box>
+
+          {/* PRODUCTION DATE + FIELD NAME */}
+          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
+            <Box>
+              <Typography
+                sx={{ fontFamily: FONT, fontSize: 13, fontWeight: 600, color: "#3B5068", mb: 0.7 }}
+              >
+                Production date
+              </Typography>
+              <Box
+                sx={{
+                  position: "relative",
+                  width: "100%",
+                }}
+              >
+                <input
+                  type="date"
+                  value={pickedDate || ""}
+                  min={
+                    validDateStrings.size > 0
+                      ? [...validDateStrings].sort()[0]
+                      : undefined
+                  }
+                  max={
+                    validDateStrings.size > 0
+                      ? [...validDateStrings].sort().at(-1)
+                      : undefined
+                  }
+                  disabled={!selectedProjectId || submitting}
+                  onChange={(e) => {
+                    setPickedDate(e.target.value);
+                    setErrors((prev) => ({ ...prev, entryId: undefined }));
+                  }}
+                  style={{
+                    width: "100%",
+                    height: "40px",
+                    padding: "0 14px",
+                    borderRadius: "8px",
+                    border: errors.entryId
+                      ? "1px solid #d32f2f"
+                      : "1px solid #c4cdd6",
+                    fontFamily: FONT,
+                    fontSize: "14px",
+                    color: !pickedDate ? "#9aa5b4" : "#1A2434",
+                    backgroundColor:
+                      !selectedProjectId ? "#f8fafc" : "#fff",
+                    cursor: !selectedProjectId ? "not-allowed" : "pointer",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                  onFocus={(e) =>
+                    (e.target.style.borderColor = errors.entryId
+                      ? "#d32f2f"
+                      : "#2f6df0")
+                  }
+                  onBlur={(e) =>
+                    (e.target.style.borderColor = errors.entryId
+                      ? "#d32f2f"
+                      : "#c4cdd6")
+                  }
+                />
+                {errors.entryId && (
+                  <Typography
+                    sx={{
+                      fontFamily: FONT,
+                      fontSize: 12,
+                      color: "#d32f2f",
+                      mt: 0.5,
+                      ml: 0.25,
+                    }}
+                  >
+                    {errors.entryId}
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+
+            <Box>
+              <Typography
+                sx={{ fontFamily: FONT, fontSize: 13, fontWeight: 600, color: "#3B5068", mb: 0.7 }}
+              >
+                Field name
+              </Typography>
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="e.g. Implant Name"
+                value={fieldName}
+                onChange={(e) => {
+                  setFieldName(e.target.value);
+                  setErrors((prev) => ({ ...prev, fieldName: undefined }));
+                }}
+                disabled={submitting}
+                error={Boolean(errors.fieldName)}
+                helperText={errors.fieldName}
+                sx={{ "& .MuiOutlinedInput-root": { borderRadius: "8px", fontFamily: FONT, fontSize: 14 } }}
+              />
+            </Box>
+          </Box>
+
+          {/* OLD VALUE + NEW VALUE */}
+          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
+            <Box>
+              <Typography
+                sx={{ fontFamily: FONT, fontSize: 13, fontWeight: 600, color: "#3B5068", mb: 0.7 }}
+              >
+                Old value
+              </Typography>
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="Current value"
+                value={oldValue}
+                onChange={(e) => setOldValue(e.target.value)}
+                disabled={submitting}
+                sx={{ "& .MuiOutlinedInput-root": { borderRadius: "8px", fontFamily: FONT, fontSize: 14 } }}
+              />
+            </Box>
+
+            <Box>
+              <Typography
+                sx={{ fontFamily: FONT, fontSize: 13, fontWeight: 600, color: "#3B5068", mb: 0.7 }}
+              >
+                New value
+              </Typography>
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="Corrected value"
+                value={newValue}
+                onChange={(e) => {
+                  setNewValue(e.target.value);
+                  setErrors((prev) => ({ ...prev, newValue: undefined }));
+                }}
+                disabled={submitting}
+                error={Boolean(errors.newValue)}
+                helperText={errors.newValue}
+                sx={{ "& .MuiOutlinedInput-root": { borderRadius: "8px", fontFamily: FONT, fontSize: 14 } }}
+              />
+            </Box>
+          </Box>
+
+          {/* REASON FOR CHANGE */}
+          <Box>
+            <Typography
+              sx={{ fontFamily: FONT, fontSize: 13, fontWeight: 600, color: "#3B5068", mb: 0.7 }}
+            >
+              Reason for change
+            </Typography>
+            <TextField
+              fullWidth
+              multiline
+              minRows={3}
+              placeholder="Why this correction is needed"
+              value={reason}
+              onChange={(e) => {
+                setReason(e.target.value);
+                setErrors((prev) => ({ ...prev, reason: undefined }));
+              }}
+              disabled={submitting}
+              error={Boolean(errors.reason)}
+              helperText={errors.reason}
+              sx={{ "& .MuiOutlinedInput-root": { borderRadius: "8px", fontFamily: FONT, fontSize: 14 } }}
+            />
+          </Box>
+
+        </Box>
+      </DialogContent>
+
+      <Divider />
+
+      {/* ACTIONS */}
+      <DialogActions
+        sx={{
+          px: 2.75,
+          py: 2,
+          backgroundColor: "#f8fafc",
+          gap: 1,
+          justifyContent: "flex-end",
+        }}
+      >
+        <Button
+          variant="outlined"
+          onClick={handleClose}
+          disabled={submitting}
+          sx={{
+            height: 42,
+            px: 2.5,
+            borderRadius: "9px",
+            textTransform: "none",
+            fontFamily: FONT,
+            fontSize: 13,
+            fontWeight: 600,
+            color: "#33415A",
+            borderColor: "#dbe3ec",
+            backgroundColor: "#fff",
+            "&:hover": { borderColor: "#c4cfd9" },
+          }}
+        >
+          Cancel
+        </Button>
+
+        <Button
+          variant="contained"
+          onClick={handleSubmit}
+          disabled={submitting}
+          startIcon={
+            submitting ? (
+              <CircularProgress size={14} sx={{ color: "#fff" }} />
+            ) : null
+          }
+          sx={{
+            height: 42,
+            px: 2.5,
+            borderRadius: "9px",
+            textTransform: "none",
+            fontFamily: FONT,
+            fontSize: 13,
+            fontWeight: 700,
+            backgroundColor: "#2f6df0",
+            boxShadow: "none",
+            "&:hover": { backgroundColor: "#255dd8", boxShadow: "none" },
+            "&.Mui-disabled": { backgroundColor: "#2f6df0", color: "#fff", opacity: 0.7 },
+          }}
+        >
+          {submitting ? "Submitting…" : "Submit request"}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
 
 
 const correctionStatusStyles = {
@@ -51,8 +518,8 @@ const correctionStatusStyles = {
 
 function IndexerCorrectionRequestsIndexer({ user , onNavigate,}) {
   const toast = useToast();
-  const [requestsIndexer, setRequestsIndexer] =
-    useState([]);
+  const [requestsIndexer, setRequestsIndexer] = useState([]);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const userName = user?.name || "Indexer";
 
@@ -64,8 +531,7 @@ function IndexerCorrectionRequestsIndexer({ user , onNavigate,}) {
     .slice(0, 2)
     .toUpperCase();
 
-  useEffect(() => {
-    const loadMyCorrectionRequests = async () => {
+  const loadMyCorrectionRequests = async () => {
       try {
         const data = await apiRequest(
           "/indexer/corrections/my"
@@ -96,6 +562,7 @@ function IndexerCorrectionRequestsIndexer({ user , onNavigate,}) {
       }
     };
 
+  useEffect(() => {
     loadMyCorrectionRequests();
   }, []);
 
@@ -154,7 +621,7 @@ function IndexerCorrectionRequestsIndexer({ user , onNavigate,}) {
         <Button
           variant="contained"
           startIcon={<AddRoundedIcon />}
-          onClick={() => onNavigate?.("daily-entry")}
+          onClick={() => setDialogOpen(true)}
           sx={{
             mt: 1,
             height: 38,
@@ -386,6 +853,13 @@ function IndexerCorrectionRequestsIndexer({ user , onNavigate,}) {
           </Box>
         ))}
       </Card>
+
+      {/* NEW CORRECTION REQUEST DIALOG */}
+      <NewCorrectionDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        onSubmitted={loadMyCorrectionRequests}
+      />
     </Box>
   );
 }

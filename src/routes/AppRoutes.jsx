@@ -73,13 +73,20 @@ const commonPages = {
   notifications: Notifications,
 };
 
-export default function AppRoutes({ user, currentPage, onNavigate }) {
+export default function AppRoutes({ user, currentPage, onNavigate, onReviewGuide }) {
   const roleKey = user.roleKey;
   const Dashboard = dashboards[roleKey] ?? IndexerDashboard;
   const Page = commonPages[currentPage] ?? rolePages[roleKey]?.[currentPage];
 
   if (!Page || currentPage === "dashboard") {
-    return <Dashboard user={user} roleKey={roleKey} onNavigate={onNavigate} />;
+    return (
+      <Dashboard
+        user={user}
+        roleKey={roleKey}
+        onNavigate={onNavigate}
+        onReviewGuide={onReviewGuide}
+      />
+    );
   }
 
   return (

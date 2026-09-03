@@ -61,7 +61,7 @@ const STAT_CONFIG = [
 // INDEXER DASHBOARD
 // =========================================================
 
-export default function IndexerDashboard({ onNavigate }) {
+export default function IndexerDashboard({ onNavigate, onReviewGuide }) {
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -168,7 +168,7 @@ export default function IndexerDashboard({ onNavigate }) {
         <AcknowledgementBanner
           title={banner.title}
           message={banner.message}
-          onReview={() => onNavigate("indexing-guide")}
+          onReview={onReviewGuide ?? (() => onNavigate("indexing-guide"))}
         />
       )}
 
