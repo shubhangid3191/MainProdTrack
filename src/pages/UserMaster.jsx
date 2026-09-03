@@ -62,22 +62,6 @@ const getRoleDisplayLabel = (role) => {
 
 
 // ============================================================
-// DEPARTMENT HELPERS
-// ============================================================
-
-// Maps the current database department names to their normalized department IDs.
-const departmentMap = {
-  "Indexing Ops": 1,
-  "Production Core": 2,
-  "IT / Admin": 3,
-};
-
-// Converts the entered department name into the backend department ID.
-const getDepartmentId = (departmentName) =>
-  departmentMap[departmentName] || null;
-
-
-// ============================================================
 // ACCOUNT HELPERS
 // ============================================================
 
@@ -128,6 +112,9 @@ function UserMasterPage({
 
   // Stores active projects used by the Assigned Projects dropdown.
   const [projects, setProjects] = useState([]);
+
+  // Stores departments loaded from the database for the Department dropdown.
+  const [departments, setDepartments] = useState([]);
 
   // Stores the user currently being edited; null means Add User mode.
   const [selectedUser, setSelectedUser] = useState(null);
@@ -206,6 +193,30 @@ function UserMasterPage({
     }
   };
 
+  // ==========================================================
+// LOAD DEPARTMENTS
+// ==========================================================
+
+// Loads departments from the database for the Add/Edit User dialog.
+const loadDepartments = async () => {
+  try {
+    // Calls the new backend Department API.
+    const response = await apiRequest(
+      "/core-team/users/departments"
+    );
+
+    // Stores the returned departments for the dropdown.
+    setDepartments(
+      response.departments || []
+    );
+  } catch (error) {
+    // Logs department loading errors without changing the existing UI.
+    console.error(
+      "Load departments error:",
+      error
+    );
+  }
+};
 
   // ==========================================================
   // INITIAL API LOAD
@@ -220,6 +231,7 @@ function UserMasterPage({
         loadUsers(),
         loadTeamLeads(),
         loadProjects(),
+        loadDepartments(),
       ]);
 
       setLoading(false);
@@ -289,15 +301,16 @@ function UserMasterPage({
         type: "email",
       },
       // Shows the available database departments as a dropdown.
+      // Shows departments loaded dynamically from the database.
       {
-        name: "department",
+         name: "department",
         label: "Department",
         placeholder: "Select department",
-        options: [
-          "Indexing Ops",
-          "Production Core",
-          "IT / Admin",
-        ],
+
+        // Converts API department objects into the existing dropdown's text options.
+        options: departments.map(
+        (department) => department.name
+        ),
       },
       {
         name: "designation",
@@ -345,7 +358,7 @@ function UserMasterPage({
         ],
       },
     ],
-    [teamLeads, projects]
+    [teamLeads, projects,departments]
   );
 
 
@@ -516,12 +529,16 @@ function UserMasterPage({
           values.role
         );
 
-      // Converts the visible department text into the normalized department ID.
-      const departmentId =
-        getDepartmentId(
-          values.department
-        );
+      // Finds the database department selected by its visible name.
+    const selectedDepartment =
+    departments.find(
+    (department) =>
+      department.name === values.department
+      );
 
+// Gets the real database department ID instead of using a hardcoded mapping.
+const departmentId =
+  selectedDepartment?.id || null;
       // Converts Team Lead selection into its user ID.
       const teamLeadId =
         getSelectedTeamLeadId(
