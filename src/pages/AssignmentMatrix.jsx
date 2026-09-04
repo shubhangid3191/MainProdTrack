@@ -181,12 +181,10 @@ function AccessDot({
           : onClick
       }
       sx={{
-        width: 8,
-        height: 8,
+        width: 11,
+        height: 11,
         p: 0,
-        border: on
-          ? "1.5px solid #15966a"
-          : `1.5px solid ${LINE}`,
+        border: "1.5px solid #7c7777",
         borderRadius: "50%",
         bgcolor: on
           ? "#15966a"
