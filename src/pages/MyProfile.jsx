@@ -99,6 +99,12 @@ export default function MyProfile({ user }) {
       setChangingPassword,
     ] = useState(false);
 
+    const [passwordErrors, setPasswordErrors] = useState({
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    });
+
     const [
       passwordData,
       setPasswordData,
@@ -205,6 +211,10 @@ export default function MyProfile({ user }) {
   const handlePasswordInputChange = (event) => {
     const { name, value } = event.target;
     setPasswordData((prev) => ({ ...prev, [name]: value }));
+    // Clear the error for this field as user types
+    if (passwordErrors[name]) {
+      setPasswordErrors((prev) => ({ ...prev, [name]: "" }));
+    }
   };
 
 const handleChangePassword = async () => {
@@ -214,46 +224,40 @@ const handleChangePassword = async () => {
     confirmPassword,
   } = passwordData;
 
-  if (
-    !currentPassword ||
-    !newPassword ||
-    !confirmPassword
-  ) {
-    toast.warning(
-      "Please complete all password fields"
-    );
+  // Inline validation — no toasts
+  const errs = { currentPassword: "", newPassword: "", confirmPassword: "" };
+  let hasError = false;
 
+  if (!currentPassword) {
+    errs.currentPassword = "Current password is required.";
+    hasError = true;
+  }
+
+  if (!newPassword) {
+    errs.newPassword = "New password is required.";
+    hasError = true;
+  } else if (newPassword.length < 8) {
+    errs.newPassword = "Password must contain at least 8 characters.";
+    hasError = true;
+  } else if (currentPassword && currentPassword === newPassword) {
+    errs.newPassword = "New password must be different from current password.";
+    hasError = true;
+  }
+
+  if (!confirmPassword) {
+    errs.confirmPassword = "Please confirm your new password.";
+    hasError = true;
+  } else if (newPassword && confirmPassword && newPassword !== confirmPassword) {
+    errs.confirmPassword = "Passwords do not match.";
+    hasError = true;
+  }
+
+  if (hasError) {
+    setPasswordErrors(errs);
     return;
   }
 
-  if (newPassword.length < 8) {
-    toast.warning(
-      "New password must contain at least 8 characters"
-    );
-
-    return;
-  }
-
-  if (
-    newPassword !== confirmPassword
-  ) {
-    toast.warning(
-      "New password and confirm password do not match"
-    );
-
-    return;
-  }
-
-  if (
-    currentPassword === newPassword
-  ) {
-    toast.warning(
-      "New password must be different from current password"
-    );
-
-    return;
-  }
-
+  setPasswordErrors({ currentPassword: "", newPassword: "", confirmPassword: "" });
   setChangingPassword(true);
 
   try {
@@ -332,7 +336,7 @@ const handleChangePassword = async () => {
               newPassword: "",
               confirmPassword: "",
             });
-
+            setPasswordErrors({ currentPassword: "", newPassword: "", confirmPassword: "" });
             setPasswordFieldsUnlocked(false);
             setPasswordDialogOpen(true);
           }}
@@ -471,12 +475,12 @@ const handleChangePassword = async () => {
         onClose={() => {
           if (!changingPassword) {
             setPasswordDialogOpen(false);
-
             setPasswordData({
               currentPassword: "",
               newPassword: "",
               confirmPassword: "",
             });
+            setPasswordErrors({ currentPassword: "", newPassword: "", confirmPassword: "" });
           }
         }}
         fullWidth
@@ -507,51 +511,45 @@ const handleChangePassword = async () => {
 
         <TextField
             name="currentPassword"
-            label="Current password"
+            label="Current password *"
             type="password"
             autoComplete="new-password"
             value={passwordData.currentPassword}
-            onFocus={() =>
-              setPasswordFieldsUnlocked(true)
-            }
+            onFocus={() => setPasswordFieldsUnlocked(true)}
             onChange={handlePasswordInputChange}
             slotProps={{
-              htmlInput: {
-                readOnly:
-                  !passwordFieldsUnlocked,
-              },
+              htmlInput: { readOnly: !passwordFieldsUnlocked },
             }}
             fullWidth
             margin="dense"
+            error={Boolean(passwordErrors.currentPassword)}
+            helperText={passwordErrors.currentPassword}
           />
 
           <TextField
             name="newPassword"
-            label="New password"
+            label="New password *"
             type="password"
             value={passwordData.newPassword}
-            onChange={
-              handlePasswordInputChange
-            }
+            onChange={handlePasswordInputChange}
             fullWidth
             margin="dense"
             autoComplete="new-password"
-            helperText="Password must contain at least 8 characters"
+            error={Boolean(passwordErrors.newPassword)}
+            helperText={passwordErrors.newPassword || "Password must contain at least 8 characters"}
           />
 
           <TextField
             name="confirmPassword"
-            label="Confirm new password"
+            label="Confirm new password *"
             type="password"
-            value={
-              passwordData.confirmPassword
-            }
-            onChange={
-              handlePasswordInputChange
-            }
+            value={passwordData.confirmPassword}
+            onChange={handlePasswordInputChange}
             fullWidth
             margin="dense"
             autoComplete="new-password"
+            error={Boolean(passwordErrors.confirmPassword)}
+            helperText={passwordErrors.confirmPassword}
           />
         </DialogContent>
 
@@ -559,18 +557,15 @@ const handleChangePassword = async () => {
           <Button
             onClick={() => {
               setPasswordDialogOpen(false);
-
               setPasswordData({
                 currentPassword: "",
                 newPassword: "",
                 confirmPassword: "",
               });
+              setPasswordErrors({ currentPassword: "", newPassword: "", confirmPassword: "" });
             }}
             disabled={changingPassword}
-            sx={{
-              fontFamily: FONT,
-              textTransform: "none",
-            }}
+            sx={{ fontFamily: FONT, textTransform: "none" }}
           >
             Cancel
           </Button>

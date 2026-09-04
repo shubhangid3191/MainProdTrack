@@ -43,6 +43,11 @@ export default function SignIn({ onLogin }) {
   const [forgotError, setForgotError] =
     useState("");
 
+  const [fieldErrors, setFieldErrors] = useState({
+    username: "",
+    password: "",
+  });
+
   const handleDemoUse = (account) => {
     setUsername(account.username);
     setPassword("demo123");
@@ -51,28 +56,18 @@ export default function SignIn({ onLogin }) {
 const handleSubmit = async (event) => {
   event.preventDefault();
 
-  const enteredUsername =
-    username.trim();
-
-  if (!enteredUsername) {
-    if (forgotMode) {
-      setForgotError(
-        "Please enter your email or username."
-      );
-    } else {
-      toast.warning(
-        "Please enter your username."
-      );
-    }
-
-    return;
-  }
+  const enteredUsername = username.trim();
 
   // =============================================
   // FORGOT PASSWORD SUBMIT
   // =============================================
 
   if (forgotMode) {
+    if (!enteredUsername) {
+      setForgotError("Please enter your email or username.");
+      return;
+    }
+
     setSubmitting(true);
     setForgotMessage("");
     setForgotError("");
@@ -132,14 +127,23 @@ const handleSubmit = async (event) => {
   // NORMAL LOGIN SUBMIT
   // =============================================
 
-  if (!password) {
-    toast.warning(
-      "Please enter your password."
-    );
+  const errs = { username: "", password: "" };
+  let hasError = false;
 
+  if (!enteredUsername) {
+    errs.username = "Username is required.";
+    hasError = true;
+  }
+  if (!password) {
+    errs.password = "Password is required.";
+    hasError = true;
+  }
+  if (hasError) {
+    setFieldErrors(errs);
     return;
   }
 
+  setFieldErrors({ username: "", password: "" });
   setSubmitting(true);
 
   try {
@@ -535,9 +539,7 @@ const handleSubmit = async (event) => {
               mb: 0.6,
             }}
           >
-            {forgotMode
-              ? "Email or username"
-              : "Username"}
+            {forgotMode ? "Email or username" : "Username *"}
           </Typography>
 
           <TextField
@@ -546,15 +548,16 @@ const handleSubmit = async (event) => {
             fullWidth
             placeholder="Enter Username"
             value={username}
-            onFocus={() =>
-                setLoginFieldsUnlocked(true)
-              }
-            onChange={(e) => setUsername(e.target.value)}
-            slotProps={{
-              htmlInput: {
-                readOnly: !loginFieldsUnlocked,
-              },
+            onFocus={() => setLoginFieldsUnlocked(true)}
+            onChange={(e) => {
+              setUsername(e.target.value);
+              if (fieldErrors.username) setFieldErrors((p) => ({ ...p, username: "" }));
             }}
+            slotProps={{
+              htmlInput: { readOnly: !loginFieldsUnlocked },
+            }}
+            error={!forgotMode && Boolean(fieldErrors.username)}
+            helperText={!forgotMode ? fieldErrors.username : ""}
             sx={{
                 mb: 0.6,
 
@@ -598,7 +601,7 @@ const handleSubmit = async (event) => {
                     mb: 0.6,
                   }}
                 >
-                  Password
+                  Password *
                 </Typography>
                 
                 <TextField
@@ -642,11 +645,12 @@ const handleSubmit = async (event) => {
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter password"
                   value={password}
-                  onChange={(event) =>
-                    setPassword(
-                      event.target.value
-                    )
-                  }
+                  onChange={(event) => {
+                    setPassword(event.target.value);
+                    if (fieldErrors.password) setFieldErrors((p) => ({ ...p, password: "" }));
+                  }}
+                  error={Boolean(fieldErrors.password)}
+                  helperText={fieldErrors.password}
                   sx={{
                     mb: 0.6,
 
