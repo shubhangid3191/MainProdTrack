@@ -484,141 +484,111 @@ export function CoreFormDialog({
   // Stores the current values entered or selected inside the form.
   const [values, setValues] = useState({});
 
-  // Updates one form field whenever the user types or selects an option.
+  // Stores inline field-level validation errors.
+  const [errors, setErrors] = useState({});
+
+  // Updates one form field and clears its error.
   const update = (name, value) => {
-    setValues((current) => ({
-      ...current,
-      [name]: value,
-    }));
+    setValues((current) => ({ ...current, [name]: value }));
+    if (errors[name]) {
+      setErrors((current) => ({ ...current, [name]: false }));
+    }
   };
 
   // Initializes the form whenever the dialog opens.
   useEffect(() => {
     if (open) {
       setValues(initialValues || {});
+      setErrors({});
     }
   }, [open, initialValues]);
 
-  // Submits the current form values to the parent page.
+  // Validates required fields and submits.
   const submit = async () => {
-    // Calls the supplied API submit handler when one exists.
+    const newErrors = {};
+    (fields || []).forEach((field) => {
+      if (field.required) {
+        const val = values[field.name];
+        if (!val || String(val).trim() === "") {
+          newErrors[field.name] = true;
+        }
+      }
+    });
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
     if (onSubmit) {
       await onSubmit(values);
       return;
     }
 
-    // Keeps old dialogs working when they do not provide an API submit handler.
     onClose();
-
-    // Clears the local form after the old-style dialog closes.
     setValues({});
   };
 
   return (
-        <Dialog
-        open={open}
-        onClose={onClose}
-        fullWidth
-        maxWidth="sm"
-        slotProps={{
-          paper: {
-            sx: {
-              borderRadius: 2,
-            },
-          },
-        }}
-      >
-      {/* Keeps the existing dialog title UI unchanged. */}
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="sm"
+      slotProps={{ paper: { sx: { borderRadius: 2 } } }}
+    >
       <DialogTitle
-        sx={{
-          fontWeight: 800,
-          display: "flex",
-          justifyContent: "space-between",
-        }}
+        sx={{ fontWeight: 800, display: "flex", justifyContent: "space-between" }}
       >
         {title}
-
-        {/* Keeps the existing close button unchanged. */}
-        <IconButton
-          onClick={onClose}
-          size="small"
-        >
+        <IconButton onClick={onClose} size="small">
           <CloseRoundedIcon fontSize="small" />
         </IconButton>
       </DialogTitle>
 
       <Divider />
 
-      {/* Keeps the existing two-column form layout unchanged. */}
       <DialogContent
         sx={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
           gap: 2,
           pt: 2,
-          "@media (max-width: 560px)": {
-            gridTemplateColumns: "1fr",
-          },
+          "@media (max-width: 560px)": { gridTemplateColumns: "1fr" },
         }}
       >
-        {fields.map((field) => (
+        {(fields || []).map((field) => (
           <TextField
             key={field.name}
-            label={field.label}
+            label={field.required ? `${field.label} *` : field.label}
             placeholder={field.placeholder}
-            type={field.type || "text"}
+            type={field.options ? "text" : (field.type || "text")}
             value={values[field.name] || ""}
-            onChange={(event) =>
-              update(
-                field.name,
-                event.target.value,
-              )
-            }
+            onChange={(event) => update(field.name, event.target.value)}
             select={Boolean(field.options)}
             fullWidth
+            error={Boolean(errors[field.name])}
+            helperText={errors[field.name] ? `${field.label} is required.` : ""}
           >
-            {/* Shows the field placeholder as the first dropdown option. */}
             {field.options && (
               <MenuItem value="">
-                {field.placeholder ||
-                  "Select..."}
+                {field.placeholder || "Select..."}
               </MenuItem>
             )}
-
-            {/* Creates a selectable MUI dropdown item for every supplied option. */}
-            {field.options?.map(
-              (option) => (
-                <MenuItem
-                  key={option}
-                  value={option}
-                >
-                  {option}
-                </MenuItem>
-              ),
-            )}
+            {field.options?.map((option) => (
+              <MenuItem key={option} value={option}>
+                {option}
+              </MenuItem>
+            ))}
           </TextField>
         ))}
       </DialogContent>
 
       <Divider />
 
-      {/* Keeps the existing dialog action area unchanged. */}
-      <DialogActions
-        sx={{
-          p: 2,
-          bgcolor: "#f8fafc",
-        }}
-      >
-        {/* Keeps the existing Cancel button unchanged. */}
-        <Button onClick={onClose}>
-          Cancel
-        </Button>
-
-        {/* Sends the entered form values to ProjectMaster.jsx. */}
-        <Button
-          variant="contained"
-          onClick={submit}
-        >
+      <DialogActions sx={{ p: 2, bgcolor: "#f8fafc" }}>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="contained" onClick={submit}>
           {submitLabel}
         </Button>
       </DialogActions>
