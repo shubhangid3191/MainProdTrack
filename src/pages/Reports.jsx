@@ -988,7 +988,15 @@ const handlePdfDownload = () => {
               }`}
           </Typography>
         </Box>
-
+        {/* RESPONSIVE TABLE AREA */}
+        <Box
+          sx={{
+            width: "100%",
+            overflowX: "auto",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
+        <Box sx={{ minWidth: 900 }}>
         {/* TABLE HEADER */}
 
         <Box
@@ -1028,7 +1036,7 @@ const handlePdfDownload = () => {
 
         <Box
           sx={{
-            overflowX: "auto",
+            overflowX: "visible",
             width: "100%",
           }}
         >
@@ -1075,7 +1083,9 @@ const handlePdfDownload = () => {
                   sx={{
                     fontSize: 13,
                     color: "#6A7585",
-                    whiteSpace: "nowrap",
+                    whiteSpace: "normal",
+                    overflowWrap: "anywhere",
+                    pr: 2,
                   }}
                 >
                   {employee[1]}
@@ -1084,11 +1094,13 @@ const handlePdfDownload = () => {
 
               {/* PROJECT */}
 
-              <Typography
+             <Typography
                 sx={{
                   fontSize: 13,
                   color: "#6A7585",
-                  whiteSpace: "nowrap",
+                  whiteSpace: "normal",
+                  overflowWrap: "anywhere",
+                  pr: 2,
                 }}
               >
                 {employee[2]}
@@ -1146,9 +1158,13 @@ const handlePdfDownload = () => {
                   borderRadius: "15px",
                 }}
               />
+              
             </Box>
+            
           ))}
         </Box>
+        </Box>
+      </Box>
       </Card>
     </Box>
   );

@@ -556,9 +556,18 @@ const handleSubmit = async (event) => {
               },
             }}
             sx={{
-              mb: 1.7,
+                mb: 0.6,
 
-              "& .MuiOutlinedInput-root": {
+                // Removes the browser/Edge default eye icon
+                "& input::-ms-reveal": {
+                  display: "none",
+                },
+
+                "& input::-ms-clear": {
+                  display: "none",
+                },
+
+                "& .MuiOutlinedInput-root": {
                 bgcolor: "#ffffff",
                 height: 40,
                 fontSize: 13,
