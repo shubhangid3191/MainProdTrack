@@ -119,11 +119,16 @@ function GuideManagerCoreTeam() {
   // Tracks whether the Guide Manager table is loading.
   const [loading, setLoading] = useState(false);
 
+  // Stores field-level validation errors for the upload dialog.
+  const [uploadErrors, setUploadErrors] = useState({
+    guideId: false,
+    guideFile: false,
+    version: false,
+  });
+
   // Tracks whether a PDF upload is currently running.
   const [uploading, setUploading] =
     useState(false);
-
-  // Tracks whether compliance information is loading.
   const [
     complianceLoading,
     setComplianceLoading,
@@ -362,19 +367,11 @@ function GuideManagerCoreTeam() {
 
   // Opens the upload dialog and clears previous form values.
   const openUploadDialog = () => {
-    // Clears the previous guide selection.
     setGuideId("");
-
-    // Clears the previous version.
     setVersion("");
-
-    // Clears the previous selected file.
     setGuideFile(null);
-
-    // Clears the previous displayed filename.
     setSelectedFileName("");
-
-    // Opens the existing upload dialog.
+    setUploadErrors({ guideId: false, guideFile: false, version: false });
     setUploadOpen(true);
   };
 
@@ -436,35 +433,19 @@ function GuideManagerCoreTeam() {
 
   // Uploads a new version of the selected existing guide.
   const upload = async () => {
-    // Validates the guide selection.
-    if (!guideId) {
-      setNoticeMessage(
-        "Please select a guide"
-      );
-      setNoticeSeverity("error");
-      setNotice(true);
+    // Inline field-level validation.
+    const errors = {
+      guideId: !guideId,
+      guideFile: !guideFile,
+      version: !version.trim(),
+    };
+
+    if (errors.guideId || errors.guideFile || errors.version) {
+      setUploadErrors(errors);
       return;
     }
 
-    // Validates the selected PDF.
-    if (!guideFile) {
-      setNoticeMessage(
-        "Please choose a guide PDF"
-      );
-      setNoticeSeverity("error");
-      setNotice(true);
-      return;
-    }
-
-    // Validates the version label.
-    if (!version.trim()) {
-      setNoticeMessage(
-        "Please enter a version"
-      );
-      setNoticeSeverity("error");
-      setNotice(true);
-      return;
-    }
+    setUploadErrors({ guideId: false, guideFile: false, version: false });
 
     try {
       // Disables the Upload button while the request is running.
@@ -1259,9 +1240,8 @@ const plainTextToHtml = (text = "") => {
         open={uploadOpen}
         onClose={() => {
           if (!uploading) {
-            setUploadOpen(
-              false
-            );
+            setUploadOpen(false);
+            setUploadErrors({ guideId: false, guideFile: false, version: false });
           }
         }}
         fullWidth
@@ -1284,14 +1264,11 @@ const plainTextToHtml = (text = "") => {
 
           <IconButton
             size="small"
-            disabled={
-              uploading
-            }
-            onClick={() =>
-              setUploadOpen(
-                false
-              )
-            }
+            disabled={uploading}
+            onClick={() => {
+              setUploadOpen(false);
+              setUploadErrors({ guideId: false, guideFile: false, version: false });
+            }}
           >
             <CloseRoundedIcon fontSize="small" />
           </IconButton>
@@ -1309,73 +1286,78 @@ const plainTextToHtml = (text = "") => {
           {/* Uses the existing Guide name field as a live guide selector. */}
           <TextField
             select
-            label="Guide name"
+            label="Guide name *"
             value={guideId}
-            onChange={(
-              event
-            ) =>
-              setGuideId(
-                event.target
-                  .value
-              )
-            }
+            onChange={(event) => {
+              setGuideId(event.target.value);
+              setUploadErrors((prev) => ({ ...prev, guideId: false }));
+            }}
             fullWidth
+            error={uploadErrors.guideId}
+            helperText={uploadErrors.guideId ? "Please select a guide." : ""}
           >
-            {guides.map(
-              (guide) => (
-                <MenuItem
-                  key={
-                    guide.guide_id
-                  }
-                  value={
-                    guide.guide_id
-                  }
-                >
-                  {
-                    guide.guide
-                  }
-                </MenuItem>
-              )
-            )}
+            {guides.map((guide) => (
+              <MenuItem key={guide.guide_id} value={guide.guide_id}>
+                {guide.guide}
+              </MenuItem>
+            ))}
           </TextField>
 
           {/* Keeps the same Choose guide file button UI. */}
-          <Button
-            component="label"
-            variant="outlined"
-            sx={{
-              justifyContent:
-                "flex-start",
-              py: 1.5,
-            }}
-          >
-            {selectedFileName ||
-              "Choose guide file"}
-
-            <input
-              hidden
-              type="file"
-              accept=".pdf,application/pdf"
-              onChange={
-                handleFileChange
-              }
-            />
-          </Button>
+          <Box>
+            <Button
+              component="label"
+              variant="outlined"
+              sx={{
+                justifyContent: "flex-start",
+                py: 1.5,
+                width: "100%",
+                borderColor: uploadErrors.guideFile ? "error.main" : "#c4cdd6",
+                color: uploadErrors.guideFile
+                  ? "error.main"
+                  : selectedFileName
+                  ? "text.primary"
+                  : "text.secondary",
+                "&:hover": {
+                  borderColor: uploadErrors.guideFile ? "error.main" : "#888",
+                },
+              }}
+            >
+              {selectedFileName || (
+                <Box component="span">
+                  Choose guide file{" "}
+                  <Box component="span" sx={{ color: "error.main" }}>*</Box>
+                </Box>
+              )}
+              <input
+                hidden
+                type="file"
+                accept=".pdf,application/pdf"
+                onChange={(e) => {
+                  handleFileChange(e);
+                  setUploadErrors((prev) => ({ ...prev, guideFile: false }));
+                }}
+              />
+            </Button>
+            {uploadErrors.guideFile && (
+              <Typography sx={{ fontSize: 12, color: "error.main", mt: 0.5, ml: 1.5 }}>
+                Please choose a guide PDF.
+              </Typography>
+            )}
+          </Box>
 
           {/* Keeps the same Version field UI. */}
           <TextField
-            label="Version"
+            label="Version *"
             placeholder="e.g. v2.4"
             value={version}
-            onChange={(
-              event
-            ) =>
-              setVersion(
-                event.target
-                  .value
-              )
-            }
+            onChange={(event) => {
+              setVersion(event.target.value);
+              setUploadErrors((prev) => ({ ...prev, version: false }));
+            }}
             fullWidth
+            error={uploadErrors.version}
+            helperText={uploadErrors.version ? "Please enter a version." : ""}
           />
         </DialogContent>
 
@@ -1388,14 +1370,11 @@ const plainTextToHtml = (text = "") => {
           }}
         >
           <Button
-            disabled={
-              uploading
-            }
-            onClick={() =>
-              setUploadOpen(
-                false
-              )
-            }
+            disabled={uploading}
+            onClick={() => {
+              setUploadOpen(false);
+              setUploadErrors({ guideId: false, guideFile: false, version: false });
+            }}
           >
             Cancel
           </Button>
