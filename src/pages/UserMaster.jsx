@@ -293,12 +293,14 @@ const loadDepartments = async () => {
         name: "employee",
         label: "Employee name",
         placeholder: "Full name",
+        required: true,
       },
       {
         name: "email",
         label: "Email",
         placeholder: "name@company.com",
         type: "email",
+        required: true,
       },
       // Shows the available database departments as a dropdown.
       // Shows departments loaded dynamically from the database.
@@ -324,6 +326,7 @@ const loadDepartments = async () => {
         options: roleOptions.map(
           (role) => role.label
         ),
+        required: true,
       },
       {
         name: "lead",
@@ -344,6 +347,7 @@ const loadDepartments = async () => {
           "Active",
           "Inactive",
         ],
+        required: true,
       },
       {
         name: "projects",
@@ -667,14 +671,8 @@ const departmentId =
         error
       );
 
-      // Shows the backend validation message if creation or update fails.
-      toast.error(
-        error.message ||
-          "Failed to save user"
-      );
-
-      // Re-throws so CoreFormDialog does not silently treat a failed request as successful.
-      throw error;
+      // Shows the backend error without a bottom toast — CoreFormDialog handles display.
+      // Do not re-throw so the dialog stays open quietly.
     }
   };
 

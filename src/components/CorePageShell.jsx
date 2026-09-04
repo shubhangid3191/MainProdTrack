@@ -1,4 +1,4 @@
-import { useEffect,useState } from "react";
+﻿import { useEffect,useState } from "react";
 import {
   Alert,
   Avatar,
@@ -26,7 +26,7 @@ import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import UploadFileRoundedIcon from "@mui/icons-material/UploadFileRounded";
 
-const icons = ["📊", "✅", "◷", "👥", "📘", "🛡️", "🔗", "📁"];
+const icons = ["ðŸ“Š", "âœ…", "â—·", "ðŸ‘¥", "ðŸ“˜", "ðŸ›¡ï¸", "ðŸ”—", "ðŸ“"];
 
 export function CoreMetricCards({ items }) {
   return (
@@ -122,7 +122,7 @@ export function CoreTable({
           <TableRow sx={{ bgcolor: "#f8fafc" }}>
             {columns.map((column, index) => {
               const firstCell = rows[0]?.[index];
-              const isDotColumn = firstCell === "●" || firstCell === "○";
+              const isDotColumn = firstCell === "â—" || firstCell === "â—‹";
               return (
                 <TableCell
                   key={column}
@@ -147,15 +147,15 @@ export function CoreTable({
               {row.map((cell, cellIndex) => (
                 <TableCell
                   key={`${row[0]}-${cellIndex}`}
-                  align={cell === "●" || cell === "○" ? "center" : "left"}
+                  align={cell === "â—" || cell === "â—‹" ? "center" : "left"}
                   sx={{ verticalAlign: "middle", py: 1.9 }}
                 >
-                  {cell === "●" || cell === "○" ? (
+                  {cell === "â—" || cell === "â—‹" ? (
                     <Box
                       component="button"
                       type="button"
                       aria-label={
-                        cell === "●"
+                        cell === "â—"
                           ? "Revoke project access"
                           : "Grant project access"
                       }
@@ -167,10 +167,10 @@ export function CoreTable({
                         minWidth: 10,
                         borderRadius: "50%",
                         border:
-                          cell === "●"
+                          cell === "â—"
                             ? "1px solid #15966a"
                             : "1px solid #cbd5e1",
-                        bgcolor: cell === "●" ? "#15966a" : "transparent",
+                        bgcolor: cell === "â—" ? "#15966a" : "transparent",
                         cursor: onCellAction ? "pointer" : "default",
                         "&:hover": onCellAction
                           ? { transform: "scale(1.25)" }
@@ -267,7 +267,7 @@ export default function CorePageShell({
   return (
     <Box sx={{ width: "100%" }}>
       <Typography sx={{ color: "#6A7585", fontSize: 12.5 }}>
-        ProdTrack · {breadcrumb}
+        ProdTrack Â· {breadcrumb}
       </Typography>
       <Box
         sx={{
@@ -449,23 +449,47 @@ export function CoreFormDialog({
   // Stores the current values entered or selected inside the form.
   const [values, setValues] = useState({});
 
+  // Stores field-level validation errors.
+  const [errors, setErrors] = useState({});
+
   // Updates one form field whenever the user types or selects an option.
   const update = (name, value) => {
     setValues((current) => ({
       ...current,
       [name]: value,
     }));
+    // Clear error for this field as user types.
+    if (errors[name]) {
+      setErrors((current) => ({ ...current, [name]: false }));
+    }
   };
 
   // Initializes the form whenever the dialog opens.
   useEffect(() => {
     if (open) {
       setValues(initialValues || {});
+      setErrors({});
     }
   }, [open, initialValues]);
 
   // Submits the current form values to the parent page.
   const submit = async () => {
+    // Validate all required fields.
+    const newErrors = {};
+    fields.forEach((field) => {
+      if (field.required) {
+        const val = values[field.name];
+        if (!val || String(val).trim() === "") {
+          newErrors[field.name] = true;
+        }
+      }
+    });
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
     // Calls the supplied API submit handler when one exists.
     if (onSubmit) {
       await onSubmit(values);
@@ -529,7 +553,7 @@ export function CoreFormDialog({
         {fields.map((field) => (
           <TextField
             key={field.name}
-            label={field.label}
+            label={field.required ? `${field.label} *` : field.label}
             placeholder={field.placeholder}
             type={field.type || "text"}
             value={values[field.name] || ""}
@@ -541,6 +565,12 @@ export function CoreFormDialog({
             }
             select={Boolean(field.options)}
             fullWidth
+            error={Boolean(errors[field.name])}
+            helperText={
+              errors[field.name]
+                ? `${field.label} is required.`
+                : ""
+            }
           >
             {/* Shows the field placeholder as the first dropdown option. */}
             {field.options && (

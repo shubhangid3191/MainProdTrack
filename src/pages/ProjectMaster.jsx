@@ -250,6 +250,7 @@ function ProjectMasterCoreTeam({
         name: "code",
         label: "Project code",
         placeholder: "e.g. ABC",
+        required: true,
       },
 
       // Project name field.
@@ -258,6 +259,7 @@ function ProjectMasterCoreTeam({
         label: "Project name",
         placeholder:
           "e.g. ABC Medical Imaging",
+        required: true,
       },
 
       // Client name field.
@@ -275,6 +277,7 @@ function ProjectMasterCoreTeam({
         options: categories.map(
           (category) => category.name,
         ),
+        required: true,
       },
 
       // Auto-lock timing field.
@@ -295,20 +298,13 @@ function ProjectMasterCoreTeam({
         ),
       },
 
-      // Project start date field.
-      {
-        name: "start",
-        label: "Start date",
-        placeholder: "dd-mm-yyyy",
-        type: "date",
-      },
-
       // Project status field.
       {
         name: "status",
         label: "Status",
         placeholder: "Active",
         options: ["Active", "Inactive"],
+        required: true,
       },
     ],
     [categories, teamLeads],
@@ -423,7 +419,6 @@ function ProjectMasterCoreTeam({
         category: "",
         lock: "",
         team: "",
-        start: "",
         status: "Active",
       };
     }
@@ -453,9 +448,6 @@ function ProjectMasterCoreTeam({
 
       // Team Lead is left empty because the current projects API returns team size rather than assigned lead ID/name.
       team: "",
-
-      start:
-        selectedProject.start_date || "",
 
       status:
         selectedProject.status === "inactive"
@@ -489,20 +481,6 @@ function ProjectMasterCoreTeam({
             teamLead.name === formValues.team,
         );
 
-      // Validates required fields before calling the backend.
-      if (
-        !formValues.code ||
-        !formValues.name ||
-        !selectedCategory ||
-        !formValues.status
-      ) {
-        setErrorMessage(
-          "Project code, project name, reporting category and status are required.",
-        );
-
-        return;
-      }
-
       // Builds the request body expected by the Project Master backend.
       const requestBody = {
         // Sends the project code.
@@ -534,10 +512,6 @@ function ProjectMasterCoreTeam({
                 selectedTeamLead?.id || null,
             }
           : {}),
-
-        // Sends the project start date.
-        startDate:
-          formValues.start || null,
 
         // Converts the UI status into the backend ENUM format.
         status:

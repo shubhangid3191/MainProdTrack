@@ -45,13 +45,23 @@ function GuideChip({ value }) {
 
 function StatusChip({ value }) {
   const present = value === "PRESENT";
+  const leave   = value === "LEAVE";
+
+  const chipStyle = present
+    ? { bgcolor: "#e4f6ee", color: "#177a53", border: "1.5px solid #b7e3cc" }
+    : leave
+    ? { bgcolor: "#fdecea", color: "#c0392b", border: "1.5px solid #f5b7b1" }
+    : { bgcolor: "#f3f4f6", color: "#6a7585", border: `1.5px solid ${LINE}` };
+
   return (
     <Box
       sx={{
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        width: 80,
+        textAlign: "center",
+        minWidth: 90,
+        px: "6px",
         fontFamily: FONT,
         fontSize: 11,
         fontWeight: 800,
@@ -60,9 +70,7 @@ function StatusChip({ value }) {
         letterSpacing: "0.4px",
         textTransform: "uppercase",
         lineHeight: 1.4,
-        ...(present
-          ? { bgcolor: "#e4f6ee", color: "#177a53", border: "1.5px solid #b7e3cc" }
-          : { bgcolor: "#f3f4f6", color: "#6a7585", border: `1.5px solid ${LINE}` }),
+        ...chipStyle,
       }}
     >
       {value}
