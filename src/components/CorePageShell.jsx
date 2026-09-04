@@ -148,7 +148,7 @@ export function CoreTable({
                 <TableCell
                   key={`${row[0]}-${cellIndex}`}
                   align={cell === "●" || cell === "○" ? "center" : "left"}
-                  sx={{ verticalAlign: "middle" }}
+                  sx={{ verticalAlign: "middle", py: 1.9 }}
                 >
                   {cell === "●" || cell === "○" ? (
                     <Box
@@ -222,7 +222,7 @@ export function CoreTable({
                 </TableCell>
               ))}
               {actionLabel && (
-                <TableCell>
+                <TableCell sx={{ py: 1.9 }}>
                   <Button
                     size="small"
                     variant={actionVariant}

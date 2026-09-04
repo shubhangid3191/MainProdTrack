@@ -873,6 +873,7 @@ const handleExportAnalytics = () => {
               justifyContent: "space-around",
               px: 2,
               pb: 2,
+              mb:3,
             }}
           >
             {/* Renders live project values with the original bar-chart layout. */}
@@ -937,68 +938,67 @@ const handleExportAnalytics = () => {
           </Box>
         </SectionCard>
         <SectionCard title="Top performers — this month">
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: "1fr 90px 105px",
-              bgcolor: "#f8fafc",
-              px: 2,
-              py: 1,
-              color: "#526581",
-              fontSize: 11,
-              fontWeight: 700,
-            }}
-          >
-            <span>EMPLOYEE</span>
-            <span>COMPLETED</span>
-            <span>PRODUCTIVITY</span>
-          </Box>
-          {/* Displays live top performers with the original table UI. */}
-          {topPerformers.map((performer) => {
-            // Creates initials from the employee name for the existing avatar.
-            const initials = performer.name
-              ? performer.name
-                  .split(" ")
-                  .map((part) => part[0])
-                  .join("")
-                  .slice(0, 2)
-                  .toUpperCase()
-              : "";
+  <Box
+    sx={{
+      display: "grid",
+      gridTemplateColumns: "repeat(3, minmax(max-content, 1fr))",
+      bgcolor: "#f8fafc",
+      px: 2,
+      py: 1,
+      color: "#526581",
+      fontSize: 11,
+      fontWeight: 700,
+      alignItems: "center",
+      gap: 1,
+    }}
+  >
+    <span>EMPLOYEE</span>
+    <span>COMPLETED</span>
+    <span>PRODUCTIVITY</span>
+  </Box>
 
-            return (
-              <Box
-                key={performer.id}
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 90px 105px",
-                  alignItems: "center",
-                  px: 2,
-                  py: 1.1,
-                  borderTop: "1px solid #e3e8ef",
-                  fontSize: 12,
-                }}
-              >
-                {/* Uses the existing Person component for avatar and employee name. */}
-                <Person initials={initials} name={performer.name} />
+  {topPerformers.map((performer) => {
+    const initials = performer.name
+      ? performer.name
+          .split(" ")
+          .map((part) => part[0])
+          .join("")
+          .slice(0, 2)
+          .toUpperCase()
+      : "";
 
-                {/* Shows the live completed-production count. */}
-                <span>{performer.completed}</span>
+    return (
+      <Box
+        key={performer.id}
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, minmax(max-content, 1fr))",
+          alignItems: "center",
+          px: 2,
+          py: 1.1,
+          borderTop: "1px solid #e3e8ef",
+          fontSize: 12,
+          gap: 1,
+        }}
+      >
+        <Person initials={initials} name={performer.name} />
 
-                {/* Shows the live productivity percentage using the original chip UI. */}
-                <Chip
-                  label={`${performer.productivity}%`}
-                  size="small"
-                  color="success"
-                  sx={{
-                    width: 43,
-                    fontSize: 10,
-                    fontWeight: 800,
-                  }}
-                />
-              </Box>
-            );
-          })}
-        </SectionCard>
+        <span>{performer.completed}</span>
+
+        <Chip
+          label={`${performer.productivity}%`}
+          size="small"
+          color="success"
+          sx={{
+            width: 43,
+            fontSize: 10,
+            fontWeight: 800,
+          }}
+        />
+      </Box>
+    );
+  })}
+</SectionCard>
       </Box>
       <Snackbar
         open={notice}
