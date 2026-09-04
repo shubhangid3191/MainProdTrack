@@ -19,34 +19,146 @@ export default function SignIn({ onLogin }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("demo123");
   const [keepSignedIn, setKeepSignedIn] = useState(true);
+  const [forgotMode, setForgotMode] =
+  useState(false);
+
+  const [submitting, setSubmitting] =
+    useState(false);
+
+  const [forgotMessage, setForgotMessage] =
+    useState("");
+
+  const [forgotError, setForgotError] =
+    useState("");
 
   const handleDemoUse = (account) => {
     setUsername(account.username);
     setPassword("demo123");
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+const handleSubmit = async (event) => {
+  event.preventDefault();
+
+  const enteredUsername =
+    username.trim();
+
+  if (!enteredUsername) {
+    if (forgotMode) {
+      setForgotError(
+        "Please enter your email or username."
+      );
+    } else {
+      toast.warning(
+        "Please enter your username."
+      );
+    }
+
+    return;
+  }
+
+  // =============================================
+  // FORGOT PASSWORD SUBMIT
+  // =============================================
+
+  if (forgotMode) {
+    setSubmitting(true);
+    setForgotMessage("");
+    setForgotError("");
+
+    try {
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_URL
+        }/auth/forgot-password`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+
+          body: JSON.stringify({
+            email: enteredUsername,
+          }),
+        }
+      );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        setForgotError(
+          data.message ||
+            "Failed to send new password."
+        );
+
+        return;
+      }
+
+      setForgotMessage(
+        data.message ||
+          "A new password has been sent to your email."
+      );
+    } catch (error) {
+      console.error(
+        "Forgot password error:",
+        error
+      );
+
+      setForgotError(
+        "Cannot connect to the backend server."
+      );
+    } finally {
+      setSubmitting(false);
+    }
+
+    return;
+  }
+
+  // =============================================
+  // NORMAL LOGIN SUBMIT
+  // =============================================
+
+  if (!password) {
+    toast.warning(
+      "Please enter your password."
+    );
+
+    return;
+  }
+
+  setSubmitting(true);
 
   try {
     const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/auth/login`,
+      `${
+        import.meta.env.VITE_API_URL
+      }/auth/login`,
       {
         method: "POST",
+
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type":
+            "application/json",
         },
+
         body: JSON.stringify({
-          email: username.trim(),
+          email: enteredUsername,
           password,
         }),
       }
     );
 
-    const data = await response.json();
+    const data =
+      await response.json();
 
     if (!response.ok) {
-      toast.error(data.message || "Login failed");
+      toast.error(
+        data.message ||
+          "Login failed"
+      );
+
       return;
     }
 
@@ -54,45 +166,54 @@ const handleSubmit = async (e) => {
       ? localStorage
       : sessionStorage;
 
-      const otherStorage = keepSignedIn
-          ? sessionStorage
-          : localStorage;
+    const otherStorage = keepSignedIn
+      ? sessionStorage
+      : localStorage;
 
-        otherStorage.removeItem(
-          "prodtrackToken"
-        );
+    otherStorage.removeItem(
+      "prodtrackToken"
+    );
 
-        otherStorage.removeItem(
-          "prodtrackUser"
-        );
+    otherStorage.removeItem(
+      "prodtrackUser"
+    );
 
-        otherStorage.removeItem(
-          "prodtrackSessionTimeout"
-        );
+    otherStorage.removeItem(
+      "prodtrackSessionTimeout"
+    );
 
-        storage.setItem(
-          "prodtrackToken",
-          data.token
-        );
+    storage.setItem(
+      "prodtrackToken",
+      data.token
+    );
 
-    storage.setItem("prodtrackToken", data.token);
     storage.setItem(
       "prodtrackUser",
       JSON.stringify(data.user)
     );
-    
+
     storage.setItem(
-        "prodtrackSessionTimeout",
-        String(
-          data.sessionTimeoutMinutes || 30
-        )
-      );
+      "prodtrackSessionTimeout",
+      String(
+        data.sessionTimeoutMinutes ||
+          30
+      )
+    );
+
     if (onLogin) {
       onLogin(data.user);
     }
   } catch (error) {
-    console.error("Login error:", error);
-    toast.error("Cannot connect to the backend server");
+    console.error(
+      "Login error:",
+      error
+    );
+
+    toast.error(
+      "Cannot connect to the backend server"
+    );
+  } finally {
+    setSubmitting(false);
   }
 };
 
@@ -374,7 +495,9 @@ const handleSubmit = async (e) => {
               mb: 0.6,
             }}
           >
-            Sign in
+           {forgotMode
+            ? "Forgot password"
+            : "Sign in"}
           </Typography>
 
           <Typography
@@ -384,7 +507,9 @@ const handleSubmit = async (e) => {
               mb: 2.5,
             }}
           >
-            Use your work account or a demo login below.
+            {forgotMode
+              ? "Enter your email or username. We will send your new password to your registered email."
+              : "Use your work account or a demo login below."}
           </Typography>
 
           {/* USERNAME */}
@@ -397,12 +522,14 @@ const handleSubmit = async (e) => {
               mb: 0.6,
             }}
           >
-            Username
+            {forgotMode
+              ? "Email or username"
+              : "Username"}
           </Typography>
 
           <TextField
             fullWidth
-            placeholder="e.g. priya.indexer"
+            placeholder="Enter Username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             sx={{
@@ -429,90 +556,117 @@ const handleSubmit = async (e) => {
           />
 
           {/* PASSWORD */}
+            {!forgotMode && (
+              <>
+                <Typography
+                  sx={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: "#10233d",
+                    mb: 0.6,
+                  }}
+                >
+                  Password
+                </Typography>
 
-          <Typography
-            sx={{
-              fontSize: 12,
-              fontWeight: 600,
-              color: "#10233d",
-              mb: 0.6,
-            }}
-          >
-            Password
-          </Typography>
+                <TextField
+                  fullWidth
+                  type="password"
+                  placeholder="Enter password"
+                  value={password}
+                  onChange={(event) =>
+                    setPassword(
+                      event.target.value
+                    )
+                  }
+                  sx={{
+                    mb: 0.6,
 
-          <TextField
-            fullWidth
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            sx={{
-              mb: 0.6,
+                    "& .MuiOutlinedInput-root": {
+                      bgcolor: "#ffffff",
+                      height: 40,
+                      fontSize: 13,
 
-              "& .MuiOutlinedInput-root": {
-                bgcolor: "#ffffff",
-                height: 40,
-                fontSize: 13,
+                      "& fieldset": {
+                        borderColor: "#d9e0ea",
+                      },
 
-                "& fieldset": {
-                  borderColor: "#d9e0ea",
-                },
+                      "&:hover fieldset": {
+                        borderColor: "#b9c3d0",
+                      },
 
-                "&:hover fieldset": {
-                  borderColor: "#b9c3d0",
-                },
-
-                "&.Mui-focused fieldset": {
-                  borderColor: "#2f6df0",
-                },
-              },
-            }}
-          />
-
+                      "&.Mui-focused fieldset": {
+                        borderColor: "#2f6df0",
+                      },
+                    },
+                  }}
+                />
+              </>
+            )}
           {/* KEEP SIGNED IN */}
 
-          <Box
+            <Box
             sx={{
               display: "flex",
               alignItems: "center",
-              justifyContent: "space-between",
+
+              justifyContent: forgotMode
+                ? "flex-end"
+                : "space-between",
+
               mb: 1.6,
             }}
           >
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={keepSignedIn}
-                  onChange={(e) => setKeepSignedIn(e.target.checked)}
-                  size="small"
-                />
-              }
-              label={
-                <Typography
-                  sx={{
-                    fontSize: 12.5,
-                    color: "#475467",
-                  }}
-                >
-                  Keep me signed in
-                </Typography>
-              }
-              sx={{
-                m: 0,
-              }}
-            />
+            {!forgotMode && (
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={keepSignedIn}
+                    onChange={(event) =>
+                      setKeepSignedIn(
+                        event.target.checked
+                      )
+                    }
+                    size="small"
+                  />
+                }
+                label={
+                  <Typography
+                    sx={{
+                      fontSize: 12.5,
+                      color: "#475467",
+                    }}
+                  >
+                    Keep me signed in
+                  </Typography>
+                }
+                sx={{ m: 0 }}
+              />
+            )}
 
             <Link
               component="button"
               type="button"
               underline="none"
+              onClick={() => {
+                setForgotMode(
+                  (currentMode) =>
+                    !currentMode
+                );
+
+                setForgotMessage("");
+                setForgotError("");
+              }}
               sx={{
                 fontSize: 12.5,
                 fontWeight: 500,
                 color: "#2f6df0",
+                cursor: "pointer",
               }}
             >
-              Forgot password?
+              {forgotMode
+                ? "Back to sign in"
+                : "Forgot password?"}
             </Link>
           </Box>
 
@@ -522,6 +676,7 @@ const handleSubmit = async (e) => {
             fullWidth
             variant="contained"
             type="submit"
+            disabled={submitting}
             sx={{
               height: 40,
               mb: 1.4,
@@ -535,11 +690,40 @@ const handleSubmit = async (e) => {
               },
             }}
           >
-            Sign in
+            {submitting
+              ? forgotMode
+                ? "Sending..."
+                : "Signing in..."
+              : forgotMode
+              ? "Send new password"
+              : "Sign in"}
           </Button>
+          {forgotMessage && (
+              <Alert
+                severity="success"
+                sx={{
+                  mb: 1.5,
+                  fontSize: 12.5,
+                }}
+              >
+                {forgotMessage}
+              </Alert>
+            )}
 
+            {forgotError && (
+              <Alert
+                severity="error"
+                sx={{
+                  mb: 1.5,
+                  fontSize: 12.5,
+                }}
+              >
+                {forgotError}
+              </Alert>
+            )}
           {/* INFO */}
-
+          {false && (
+          <>
           <Alert
             severity="info"
             sx={{
@@ -564,9 +748,11 @@ const handleSubmit = async (e) => {
             SSO via Microsoft Entra ID is the preferred method in production.
             Username &amp; password shown here for the prototype.
           </Alert>
+            </>
+          )}
 
           {/* DEMO ACCOUNTS */}
-
+          {false && (
           <Paper
             elevation={0}
             sx={{
@@ -677,6 +863,7 @@ const handleSubmit = async (e) => {
               </Box>
             ))}
           </Paper>
+          )}
         </Box>
       </Box>
     </Box>

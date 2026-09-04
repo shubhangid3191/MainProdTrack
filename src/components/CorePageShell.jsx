@@ -319,7 +319,13 @@ export default function CorePageShell({
         onClose={closeAction}
         fullWidth
         maxWidth="sm"
-        PaperProps={{ sx: { borderRadius: 2 } }}
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: 2,
+            },
+          },
+        }}
       >
         <DialogTitle
           sx={{
@@ -400,7 +406,12 @@ export function SectionCard({ title, action, children }) {
           alignItems: "center",
         }}
       >
-        <Typography sx={{ fontWeight: 800 }}>{title}</Typography>
+        <Typography
+            component="div"
+            sx={{ fontWeight: 800 }}
+          >
+            {title}
+          </Typography>
         {action}
       </Box>
       {children}
@@ -469,17 +480,19 @@ export function CoreFormDialog({
   };
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      fullWidth
-      maxWidth="sm"
-      PaperProps={{
-        sx: {
-          borderRadius: 2,
-        },
-      }}
-    >
+        <Dialog
+        open={open}
+        onClose={onClose}
+        fullWidth
+        maxWidth="sm"
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: 2,
+            },
+          },
+        }}
+      >
       {/* Keeps the existing dialog title UI unchanged. */}
       <DialogTitle
         sx={{
