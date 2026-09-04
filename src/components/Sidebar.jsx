@@ -87,25 +87,40 @@ function NavItem({
 
       {/* NEW BADGE */}
 
-      {item.badge && !item.badge.dot && (
-        <Chip
-          label={item.badge.text}
-          size="small"
-          color={item.badge.color}
-          sx={{
-            height: 19,
+      {/* Shows the NEW badge using the original green sidebar design. */}
+{item.badge && !item.badge.dot && (
+  <Chip
+    label={item.badge.text}
+    size="small"
+    sx={{
+      // Keeps the badge compact like the original design.
+      height: 19,
 
-            color: "#fff",
+      // Forces the NEW badge to stay green even when the menu item is selected.
+      bgcolor: "#18a879",
 
-            fontSize: 9,
-            fontWeight: 800,
+      // Keeps NEW text white.
+      color: "#ffffff",
 
-            "& .MuiChip-label": {
-              px: 0.8,
-            },
-          }}
-        />
-      )}
+      // Keeps the compact text size and weight.
+      fontSize: 9,
+      fontWeight: 800,
+
+      // Creates the rounded pill shape.
+      borderRadius: "10px",
+
+      // Prevents MUI hover/selected styles from changing the badge.
+      "&:hover": {
+        bgcolor: "#18a879",
+      },
+
+      // Controls horizontal spacing inside the badge.
+      "& .MuiChip-label": {
+        px: 0.8,
+      },
+    }}
+  />
+)}
 
       {/* NUMBER BADGE */}
 
