@@ -26,7 +26,32 @@ import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import UploadFileRoundedIcon from "@mui/icons-material/UploadFileRounded";
 
-const icons = ["ðŸ“Š", "âœ…", "â—·", "ðŸ‘¥", "ðŸ“˜", "ðŸ›¡ï¸", "ðŸ”—", "ðŸ“"];
+// Provides the MUI icon set used inside the metric cards, replacing the previous emoji icons.
+import MoveToInboxRoundedIcon from "@mui/icons-material/MoveToInboxRounded";
+import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
+import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
+import BoltRoundedIcon from "@mui/icons-material/BoltRounded";
+import GroupsRoundedIcon from "@mui/icons-material/GroupsRounded";
+import MenuBookRoundedIcon from "@mui/icons-material/MenuBookRounded";
+import ShieldRoundedIcon from "@mui/icons-material/ShieldRounded";
+import LinkRoundedIcon from "@mui/icons-material/LinkRounded";
+import FolderRoundedIcon from "@mui/icons-material/FolderRounded";
+
+// Maps each metric-card position to a real MUI icon component instead of an emoji.
+const icons = [
+  MoveToInboxRoundedIcon,
+  CheckRoundedIcon,
+  AccessTimeRoundedIcon,
+  BoltRoundedIcon,
+  GroupsRoundedIcon,
+  MenuBookRoundedIcon,
+  ShieldRoundedIcon,
+  LinkRoundedIcon,
+  FolderRoundedIcon,
+];
+
+// Colors each icon to match its card's background tint, cycling every 4 cards like the backgrounds do.
+const iconColors = ["#3478ed", "#20a36f", "#e09a22", "#7c3aed"];
 
 export function CoreMetricCards({ items }) {
   return (
@@ -40,7 +65,11 @@ export function CoreMetricCards({ items }) {
         "@media (max-width: 480px)": { gridTemplateColumns: "1fr" },
       }}
     >
-      {items.map(([label, value, note], index) => (
+      {items.map(([label, value, note], index) => {
+        // Selects the MUI icon component for this card's position.
+        const IconComponent = icons[index % icons.length];
+
+        return (
         <Paper
           key={label}
           elevation={0}
@@ -67,7 +96,12 @@ export function CoreMetricCards({ items }) {
               fontSize: 22,
             }}
           >
-            {icons[index % icons.length]}
+            <IconComponent
+              sx={{
+                fontSize: 22,
+                color: iconColors[index % 4],
+              }}
+            />
           </Box>
           <Box>
             <Typography sx={{ color: "#667085", fontSize: 12 }}>
@@ -90,7 +124,8 @@ export function CoreMetricCards({ items }) {
             )}
           </Box>
         </Paper>
-      ))}
+        );
+      })}
     </Box>
   );
 }
@@ -122,7 +157,7 @@ export function CoreTable({
           <TableRow sx={{ bgcolor: "#f8fafc" }}>
             {columns.map((column, index) => {
               const firstCell = rows[0]?.[index];
-              const isDotColumn = firstCell === "â—" || firstCell === "â—‹";
+              const isDotColumn = firstCell === "●" || firstCell === "○";
               return (
                 <TableCell
                   key={column}
@@ -147,15 +182,15 @@ export function CoreTable({
               {row.map((cell, cellIndex) => (
                 <TableCell
                   key={`${row[0]}-${cellIndex}`}
-                  align={cell === "â—" || cell === "â—‹" ? "center" : "left"}
+                  align={cell === "●" || cell === "○" ? "center" : "left"}
                   sx={{ verticalAlign: "middle", py: 1.9 }}
                 >
-                  {cell === "â—" || cell === "â—‹" ? (
+                  {cell === "●" || cell === "○" ? (
                     <Box
                       component="button"
                       type="button"
                       aria-label={
-                        cell === "â—"
+                        cell === "●"
                           ? "Revoke project access"
                           : "Grant project access"
                       }
@@ -167,10 +202,10 @@ export function CoreTable({
                         minWidth: 10,
                         borderRadius: "50%",
                         border:
-                          cell === "â—"
+                          cell === "●"
                             ? "1px solid #15966a"
                             : "1px solid #cbd5e1",
-                        bgcolor: cell === "â—" ? "#15966a" : "transparent",
+                        bgcolor: cell === "●" ? "#15966a" : "transparent",
                         cursor: onCellAction ? "pointer" : "default",
                         "&:hover": onCellAction
                           ? { transform: "scale(1.25)" }
@@ -267,7 +302,7 @@ export default function CorePageShell({
   return (
     <Box sx={{ width: "100%" }}>
       <Typography sx={{ color: "#6A7585", fontSize: 12.5 }}>
-        ProdTrack Â· {breadcrumb}
+        ProdTrack · {breadcrumb}
       </Typography>
       <Box
         sx={{
@@ -449,47 +484,23 @@ export function CoreFormDialog({
   // Stores the current values entered or selected inside the form.
   const [values, setValues] = useState({});
 
-  // Stores field-level validation errors.
-  const [errors, setErrors] = useState({});
-
   // Updates one form field whenever the user types or selects an option.
   const update = (name, value) => {
     setValues((current) => ({
       ...current,
       [name]: value,
     }));
-    // Clear error for this field as user types.
-    if (errors[name]) {
-      setErrors((current) => ({ ...current, [name]: false }));
-    }
   };
 
   // Initializes the form whenever the dialog opens.
   useEffect(() => {
     if (open) {
       setValues(initialValues || {});
-      setErrors({});
     }
   }, [open, initialValues]);
 
   // Submits the current form values to the parent page.
   const submit = async () => {
-    // Validate all required fields.
-    const newErrors = {};
-    fields.forEach((field) => {
-      if (field.required) {
-        const val = values[field.name];
-        if (!val || String(val).trim() === "") {
-          newErrors[field.name] = true;
-        }
-      }
-    });
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
     // Calls the supplied API submit handler when one exists.
     if (onSubmit) {
       await onSubmit(values);
@@ -553,7 +564,7 @@ export function CoreFormDialog({
         {fields.map((field) => (
           <TextField
             key={field.name}
-            label={field.required ? `${field.label} *` : field.label}
+            label={field.label}
             placeholder={field.placeholder}
             type={field.type || "text"}
             value={values[field.name] || ""}
@@ -565,12 +576,6 @@ export function CoreFormDialog({
             }
             select={Boolean(field.options)}
             fullWidth
-            error={Boolean(errors[field.name])}
-            helperText={
-              errors[field.name]
-                ? `${field.label} is required.`
-                : ""
-            }
           >
             {/* Shows the field placeholder as the first dropdown option. */}
             {field.options && (
