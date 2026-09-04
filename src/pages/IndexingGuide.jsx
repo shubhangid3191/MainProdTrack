@@ -27,14 +27,6 @@ import FileDownloadRoundedIcon from "@mui/icons-material/FileDownloadRounded";
 const FONT =
   '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 
-const sections = [
-  "1. Overview",
-  "2. General guidelines",
-  "3. Indexing rules",
-  "4. Field mapping",
-  "5. Examples",
-  "6. Appendices",
-];
 
 const defaultGuide = {
   name: "ABC Medical Imaging Indexing Guide v2.3",
@@ -53,7 +45,7 @@ export default function IndexingGuide({
   onViewGuide,
   roleLabel = "Indexer",
 }) {
-  const [selected, setSelected] = useState(2);
+  const [selected, setSelected] = useState(0);
   const [guides, setGuides] = useState([]);
   const [selectedVersionId, setSelectedVersionId] = useState("");
   const [loading, setLoading] = useState(true);
@@ -66,6 +58,9 @@ export default function IndexingGuide({
   const [historyError, setHistoryError] = useState("");
   const [historyProject, setHistoryProject] = useState("");
   const { confirm, ConfirmElement } = useConfirm();
+  const [sectionsError, setSectionsError] = useState("");
+  const [sectionsLoading, setSectionsLoading] = useState(false);
+  const [guideSections, setGuideSections] = useState([]);
 
 
   useEffect(() => {
@@ -121,6 +116,79 @@ export default function IndexingGuide({
       active = false;
     };
   }, [variant]);
+  // =========================================================
+// LOAD GUIDE SECTIONS
+// =========================================================
+
+// Loads the preview sections whenever the selected guide version changes.
+useEffect(() => {
+  // Does not load sections for the compact dashboard card.
+  if (variant === "card") return;
+
+  // Clears section data when no guide version is selected.
+  if (!selectedVersionId) {
+    setGuideSections([]);
+    return;
+  }
+
+  let active = true;
+
+  // Loads all sections configured for the selected guide version.
+  const loadGuideSections = async () => {
+    try {
+      // Shows the loading state inside the guide preview.
+      setSectionsLoading(true);
+
+      // Clears any previous section-loading error.
+      setSectionsError("");
+
+      // Gets the sections for the currently selected guide version.
+      const data = await apiRequest(
+        `/guides/${selectedVersionId}/sections`
+      );
+
+      // Stops if the backend reports an unsuccessful request.
+      if (!data.success) {
+        throw new Error(
+          data.message || "Failed to load guide sections"
+        );
+      }
+
+      // Stops state updates if the component has already changed/unmounted.
+      if (!active) return;
+
+      // Stores all backend-driven guide sections.
+      setGuideSections(data.sections || []);
+
+      // Automatically selects Overview/the first available section.
+      setSelected(0);
+    } catch (err) {
+      // Stops state updates if this request is no longer active.
+      if (!active) return;
+
+      // Clears old sections when loading fails.
+      setGuideSections([]);
+
+      // Stores the error for the preview area.
+      setSectionsError(
+        err.message || "Failed to load guide sections"
+      );
+    } finally {
+      // Ends loading only while this request is still active.
+      if (active) {
+        setSectionsLoading(false);
+      }
+    }
+  };
+
+  // Starts loading the selected guide's sections.
+  loadGuideSections();
+
+  // Prevents an old request from updating the page after selection changes.
+  return () => {
+    active = false;
+  };
+}, [selectedVersionId, variant]);
 
   const guide =
     variant === "card"
@@ -532,109 +600,186 @@ export default function IndexingGuide({
               flexShrink: 0,
             }}
           >
-            {sections.map((section, index) => (
-              <Box
-                key={section}
-                onClick={() => setSelected(index)}
+            {/* Shows loading text while guide sections are coming from the backend. */}
+            {sectionsLoading ? (
+              <Typography
                 sx={{
                   px: 1.25,
                   py: 1,
-                  mb: 0.5,
-                  borderRadius: "7px",
-                  cursor: "pointer",
-                  backgroundColor: selected === index ? "#e6efff" : "transparent",
-                  color: selected === index ? "#2563eb" : "#48566D",
-                  fontWeight: selected === index ? 700 : 500,
+                  color: "#6A7585",
                   fontSize: 13,
                 }}
               >
-                {section}
-              </Box>
-            ))}
+                Loading sections...
+              </Typography>
+            ) : sectionsError ? (
+              // Shows the section API error without changing the existing page layout.
+              <Typography
+                sx={{
+                  px: 1.25,
+                  py: 1,
+                  color: "#d32f2f",
+                  fontSize: 13,
+                }}
+              >
+                {sectionsError}
+              </Typography>
+            ) : guideSections.length === 0 ? (
+              // Shows a message when this guide version has no configured sections.
+              <Typography
+                sx={{
+                  px: 1.25,
+                  py: 1,
+                  color: "#6A7585",
+                  fontSize: 13,
+                }}
+              >
+                No sections available.
+              </Typography>
+            ) : (
+              // Renders all guide sections returned by the backend.
+              guideSections.map((section, index) => (
+                <Box
+                  key={section.section_id}
+                  onClick={() => setSelected(index)}
+                  sx={{
+                    px: 1.25,
+                    py: 1,
+                    mb: 0.5,
+                    borderRadius: "7px",
+                    cursor: "pointer",
+
+                    // Keeps the original selected-section background.
+                    backgroundColor:
+                      selected === index
+                        ? "#e6efff"
+                        : "transparent",
+
+                    // Keeps the original selected-section text color.
+                    color:
+                      selected === index
+                        ? "#2563eb"
+                        : "#48566D",
+
+                    // Keeps the original selected-section font weight.
+                    fontWeight:
+                      selected === index
+                        ? 700
+                        : 500,
+
+                    fontSize: 13,
+                  }}
+                >
+                  {/* Displays the section title stored in guide_section.title. */}
+                  {section.title}
+                </Box>
+              ))
+            )}
           </Box>
 
-          {/* CONTENT */}
-          <Box sx={{ flex: 1, px: 2.75, py: 2.5, minWidth: 0 }}>
-            <Typography sx={{ fontSize: 18, fontWeight: 800, color: "#1A2434", mb: 2 }}>
-              3. Indexing rules
-            </Typography>
+                    {/* CONTENT */}
+          <Box
+            sx={{
+              flex: 1,
+              px: 2.75,
+              py: 2.5,
+              minWidth: 0,
 
-            <Typography sx={{ fontSize: 14, fontWeight: 800, color: "#1A2434", mb: 0.7 }}>
-              3.1 Implant indexing
-            </Typography>
+              // Styles backend HTML tables inside the existing preview block.
+              "& table": {
+                width: "100%",
+                borderCollapse: "collapse",
+                marginTop: "16px",
+                marginBottom: "16px",
+              },
 
-            <Box
-              component="ul"
-              sx={{ mt: 0, pl: 2.2, color: "#3A4648", fontSize: 13.5, lineHeight: 1.9 }}
-            >
-              <li>Check the implant name and manufacturer.</li>
-              <li>Index as per the latest field mapping.</li>
-              <li>Ensure all mandatory fields are captured.</li>
-            </Box>
-
-            <Typography sx={{ fontSize: 14, fontWeight: 800, color: "#1A2434", mb: 0.7, mt: 2 }}>
-              3.2 Page identification
-            </Typography>
-
-            <Box
-              component="ul"
-              sx={{ mt: 0, pl: 2.2, color: "#3A4648", fontSize: 13.5, lineHeight: 1.9 }}
-            >
-              <li>Identify the page type correctly.</li>
-              <li>Follow the rules mentioned in section 4.</li>
-            </Box>
-
-            <Typography sx={{ mt: 2.5, mb: 1, fontSize: 14, fontWeight: 800, color: "#1A2434" }}>
-              Example
-            </Typography>
-
-            <Table
-              size="small"
-              sx={{
+              // Styles table headings like the original UI.
+              "& th": {
                 border: "1px solid #e2e8f0",
-                "& th": {
-                  backgroundColor: "#f8fafc",
-                  fontSize: 11,
-                  fontWeight: 700,
-                  lineHeight:3,
+                backgroundColor: "#f8fafc",
+                padding: "10px 12px",
+                textAlign: "left",
+                fontSize: 11,
+                fontWeight: 700,
+                color: "#6A7585",
+                textTransform: "uppercase",
+              },
+
+              // Styles table values like the original UI.
+              "& td": {
+                border: "1px solid #e6ebf1",
+                padding: "10px 12px",
+                fontSize: 12,
+                color: "#1A2434",
+              },
+
+              // Styles main section headings.
+              "& h2": {
+                marginTop: 0,
+                marginBottom: "16px",
+                fontSize: 18,
+                fontWeight: 800,
+                color: "#1A2434",
+              },
+
+              // Styles subsection headings.
+              "& h3": {
+                marginTop: "18px",
+                marginBottom: "6px",
+                fontSize: 14,
+                fontWeight: 800,
+                color: "#1A2434",
+              },
+
+              // Styles paragraph content.
+              "& p": {
+                fontSize: 13.5,
+                lineHeight: 1.8,
+                color: "#3A4648",
+              },
+
+              // Styles bullet-list content.
+              "& ul": {
+                paddingLeft: "22px",
+                fontSize: 13.5,
+                lineHeight: 1.9,
+                color: "#3A4648",
+              },
+            }}
+          >
+            {/* Shows loading state while guide sections are loading. */}
+            {sectionsLoading ? (
+              <Typography
+                sx={{
                   color: "#6A7585",
-                  textTransform: "uppercase",
-                },
-                "& td": {
-                  fontSize: 12,
-                  color: "#1A2434",
-                  borderColor: "#e6ebf1",
-                },
-              }}
-            >
-              <TableHead>
-                <TableRow>
-                  <TableCell>Field name</TableCell>
-                  <TableCell>Description</TableCell>
-                  <TableCell>Example</TableCell>
-                </TableRow>
-              </TableHead>
-
-              <TableBody>
-                <TableRow>
-                  <TableCell>Implant Name</TableCell>
-                  <TableCell>Name of the implant</TableCell>
-                  <TableCell>ABC Screw 5.0mm</TableCell>
-                </TableRow>
-
-                <TableRow>
-                  <TableCell>Manufacturer</TableCell>
-                  <TableCell>Maker of the implant</TableCell>
-                  <TableCell>ABC Medical</TableCell>
-                </TableRow>
-
-                <TableRow>
-                  <TableCell>Lot Number</TableCell>
-                  <TableCell>Batch/lot identifier</TableCell>
-                  <TableCell>LT-4471</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
+                  fontSize: 13.5,
+                }}
+              >
+                Loading preview...
+              </Typography>
+            ) : sectionsError ? (
+              // Shows an API error inside the existing preview block.
+              <Alert severity="error">
+                {sectionsError}
+              </Alert>
+            ) : guideSections.length === 0 ? (
+              // Shows when this guide version has no configured sections.
+              <Alert severity="info">
+                No preview content is available for this guide version.
+              </Alert>
+            ) : guideSections[selected] ? (
+              // Displays the selected backend section in this same block.
+              <Box
+                dangerouslySetInnerHTML={{
+                  __html: guideSections[selected].content,
+                }}
+              />
+            ) : (
+              // Safe fallback when no section is selected.
+              <Alert severity="info">
+                Select a section to preview its content.
+              </Alert>
+            )}
           </Box>
         </Box>
       </Card>

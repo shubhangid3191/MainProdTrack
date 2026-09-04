@@ -89,43 +89,90 @@ function GuideManagerCoreTeam() {
   const [guides, setGuides] = useState([]);
 
   // Controls the existing Upload Guide dialog.
-  const [uploadOpen, setUploadOpen] = useState(false);
+  const [uploadOpen, setUploadOpen] =
+    useState(false);
 
   // Controls the Compliance details dialog.
-  const [complianceOpen, setComplianceOpen] = useState(false);
+  const [complianceOpen, setComplianceOpen] =
+    useState(false);
 
   // Stores the selected guide's compliance response.
-  const [complianceData, setComplianceData] = useState(null);
+  const [complianceData, setComplianceData] =
+    useState(null);
 
   // Stores the selected guide ID for the upload request.
   const [guideId, setGuideId] = useState("");
 
   // Stores the selected PDF file.
-  const [guideFile, setGuideFile] = useState(null);
+  const [guideFile, setGuideFile] =
+    useState(null);
 
   // Stores the new guide version label.
   const [version, setVersion] = useState("");
 
   // Stores the selected PDF filename for display.
-  const [selectedFileName, setSelectedFileName] = useState("");
+  const [
+    selectedFileName,
+    setSelectedFileName,
+  ] = useState("");
 
   // Tracks whether the Guide Manager table is loading.
   const [loading, setLoading] = useState(false);
 
   // Tracks whether a PDF upload is currently running.
-  const [uploading, setUploading] = useState(false);
+  const [uploading, setUploading] =
+    useState(false);
 
   // Tracks whether compliance information is loading.
-  const [complianceLoading, setComplianceLoading] = useState(false);
+  const [
+    complianceLoading,
+    setComplianceLoading,
+  ] = useState(false);
 
   // Controls the success/error Snackbar.
   const [notice, setNotice] = useState(false);
 
   // Stores the Snackbar message.
-  const [noticeMessage, setNoticeMessage] = useState("");
+  const [
+    noticeMessage,
+    setNoticeMessage,
+  ] = useState("");
 
   // Stores the Snackbar severity.
-  const [noticeSeverity, setNoticeSeverity] = useState("success");
+  const [
+    noticeSeverity,
+    setNoticeSeverity,
+  ] = useState("success");
+
+  // Stores the six sections belonging to the selected guide version.
+  const [
+    guideSections,
+    setGuideSections,
+  ] = useState([]);
+
+  // Stores the guide version whose sections are currently being managed.
+  const [
+    sectionVersionId,
+    setSectionVersionId,
+  ] = useState(null);
+
+  // Tracks section loading while data is fetched from the backend.
+  const [
+    sectionsLoading,
+    setSectionsLoading,
+  ] = useState(false);
+
+  // Stores the currently selected section in the section editor.
+  const [
+    selectedSectionId,
+    setSelectedSectionId,
+  ] = useState(null);
+
+  // Tracks whether the selected guide section is currently being saved.
+  const [
+    sectionSaving,
+    setSectionSaving,
+  ] = useState(false);
 
   // ======================================================
   // LOAD GUIDE MANAGER DATA
@@ -138,17 +185,23 @@ function GuideManagerCoreTeam() {
       setLoading(true);
 
       // Calls the Core Team Guide Manager API.
-      const data = await apiRequest("/guides/manage");
+      const data = await apiRequest(
+        "/guides/manage"
+      );
 
       // Stores the returned guide list.
       setGuides(data.guides || []);
     } catch (error) {
       // Logs the complete error for development debugging.
-      console.error("Load Guide Manager Error:", error);
+      console.error(
+        "Load Guide Manager Error:",
+        error
+      );
 
       // Shows the API error in the existing Snackbar.
       setNoticeMessage(
-        error.message || "Failed to load guides"
+        error.message ||
+          "Failed to load guides"
       );
 
       // Changes the Snackbar to error mode.
@@ -159,6 +212,86 @@ function GuideManagerCoreTeam() {
     } finally {
       // Stops the loading state.
       setLoading(false);
+    }
+  };
+
+  // ======================================================
+  // LOAD GUIDE SECTIONS
+  // ======================================================
+
+  // Loads all editable sections for one selected guide version.
+  const loadGuideSections = async (
+    versionId
+  ) => {
+    // Stops when no valid version ID was supplied.
+    if (!versionId) {
+      setGuideSections([]);
+      setSectionVersionId(null);
+      setSelectedSectionId(null);
+      return;
+    }
+
+    try {
+      // Shows loading state while section data is requested.
+      setSectionsLoading(true);
+
+      // Remembers which guide version is currently being managed.
+      setSectionVersionId(
+        Number(versionId)
+      );
+
+      // Calls the backend section API for the selected guide version.
+      const data = await apiRequest(
+        `/guides/${versionId}/sections`
+      );
+
+      // Stops when the backend reports failure.
+      if (!data.success) {
+        throw new Error(
+          data.message ||
+            "Failed to load guide sections"
+        );
+      }
+
+      // Stores the complete section list returned by the backend.
+      const sections =
+        data.sections || [];
+
+      setGuideSections(sections);
+
+      // Automatically selects the first section, normally Overview.
+      setSelectedSectionId(
+        sections.length
+          ? Number(
+              sections[0].section_id
+            )
+          : null
+      );
+    } catch (error) {
+      // Logs the loading error for debugging.
+      console.error(
+        "Load Guide Sections Error:",
+        error
+      );
+
+      // Clears stale section data when loading fails.
+      setGuideSections([]);
+      setSelectedSectionId(null);
+
+      // Shows the error using the existing Snackbar.
+      setNoticeMessage(
+        error.message ||
+          "Failed to load guide sections"
+      );
+
+      // Uses error Snackbar styling.
+      setNoticeSeverity("error");
+
+      // Opens the existing Snackbar.
+      setNotice(true);
+    } finally {
+      // Ends section loading state.
+      setSectionsLoading(false);
     }
   };
 
@@ -179,7 +312,9 @@ function GuideManagerCoreTeam() {
     }
 
     // Converts the backend timestamp into a readable date.
-    return new Date(dateValue).toLocaleDateString(
+    return new Date(
+      dateValue
+    ).toLocaleDateString(
       "en-GB",
       {
         day: "2-digit",
@@ -190,30 +325,36 @@ function GuideManagerCoreTeam() {
   };
 
   // Converts live backend guide objects into the existing CoreTable row format.
-  const rows = guides.map((guide) => [
-    // Shows the project name in the PROJECT column.
-    guide.project,
+  const rows = guides.map(
+    (guide) => [
+      // Shows the project name in the PROJECT column.
+      guide.project,
 
-    // Shows the actual guide title in the GUIDE column.
-    guide.guide,
+      // Shows the actual guide title in the GUIDE column.
+      guide.guide,
 
-    // Keeps the existing bold version appearance.
-    <strong key={`version-${guide.version_id}`}>
-      {guide.version}
-    </strong>,
+      // Keeps the existing bold version appearance.
+      <strong
+        key={`version-${guide.version_id}`}
+      >
+        {guide.version}
+      </strong>,
 
-    // Shows the latest upload date.
-    formatDate(guide.updated),
+      // Shows the latest upload date.
+      formatDate(guide.updated),
 
-    // Keeps the existing acknowledgement progress UI.
-    <AcknowledgementCoreTeam
-      key={`ack-${guide.version_id}`}
-      value={guide.acknowledgement_percentage}
-    />,
+      // Keeps the existing acknowledgement progress UI.
+      <AcknowledgementCoreTeam
+        key={`ack-${guide.version_id}`}
+        value={
+          guide.acknowledgement_percentage
+        }
+      />,
 
-    // Shows the backend project status.
-    guide.status,
-  ]);
+      // Shows the backend project status.
+      guide.status,
+    ]
+  );
 
   // ======================================================
   // OPEN UPLOAD DIALOG
@@ -242,9 +383,12 @@ function GuideManagerCoreTeam() {
   // ======================================================
 
   // Handles PDF selection from the existing Choose guide file button.
-  const handleFileChange = (event) => {
+  const handleFileChange = (
+    event
+  ) => {
     // Gets the first selected file.
-    const file = event.target.files?.[0];
+    const file =
+      event.target.files?.[0];
 
     // Stops when no file was selected.
     if (!file) {
@@ -252,7 +396,11 @@ function GuideManagerCoreTeam() {
     }
 
     // Verifies that the selected file has a PDF extension.
-    if (!file.name.toLowerCase().endsWith(".pdf")) {
+    if (
+      !file.name
+        .toLowerCase()
+        .endsWith(".pdf")
+    ) {
       // Clears the invalid file.
       setGuideFile(null);
 
@@ -277,7 +425,9 @@ function GuideManagerCoreTeam() {
     setGuideFile(file);
 
     // Displays the selected filename.
-    setSelectedFileName(file.name);
+    setSelectedFileName(
+      file.name
+    );
   };
 
   // ======================================================
@@ -288,7 +438,9 @@ function GuideManagerCoreTeam() {
   const upload = async () => {
     // Validates the guide selection.
     if (!guideId) {
-      setNoticeMessage("Please select a guide");
+      setNoticeMessage(
+        "Please select a guide"
+      );
       setNoticeSeverity("error");
       setNotice(true);
       return;
@@ -296,7 +448,9 @@ function GuideManagerCoreTeam() {
 
     // Validates the selected PDF.
     if (!guideFile) {
-      setNoticeMessage("Please choose a guide PDF");
+      setNoticeMessage(
+        "Please choose a guide PDF"
+      );
       setNoticeSeverity("error");
       setNotice(true);
       return;
@@ -304,7 +458,9 @@ function GuideManagerCoreTeam() {
 
     // Validates the version label.
     if (!version.trim()) {
-      setNoticeMessage("Please enter a version");
+      setNoticeMessage(
+        "Please enter a version"
+      );
       setNoticeSeverity("error");
       setNotice(true);
       return;
@@ -315,28 +471,42 @@ function GuideManagerCoreTeam() {
       setUploading(true);
 
       // Creates multipart/form-data for the PDF upload.
-      const formData = new FormData();
+      const formData =
+        new FormData();
 
       // Sends the selected existing guide ID.
-      formData.append("guideId", guideId);
+      formData.append(
+        "guideId",
+        guideId
+      );
 
       // Sends the new version label.
-      formData.append("version", version.trim());
+      formData.append(
+        "version",
+        version.trim()
+      );
 
       // Requires acknowledgement for Core Team guide uploads.
-      formData.append("requiresAck", "true");
+      formData.append(
+        "requiresAck",
+        "true"
+      );
 
       // Sends the selected PDF using the exact backend Multer field name.
-      formData.append("file", guideFile);
+      formData.append(
+        "file",
+        guideFile
+      );
 
       // Sends the multipart upload request to the backend.
-      const data = await apiRequest(
-        "/guides/manage/upload",
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
+      const data =
+        await apiRequest(
+          "/guides/manage/upload",
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
 
       // Closes the existing upload dialog after successful upload.
       setUploadOpen(false);
@@ -348,7 +518,9 @@ function GuideManagerCoreTeam() {
       );
 
       // Uses success Snackbar styling.
-      setNoticeSeverity("success");
+      setNoticeSeverity(
+        "success"
+      );
 
       // Opens the Snackbar.
       setNotice(true);
@@ -357,11 +529,15 @@ function GuideManagerCoreTeam() {
       await loadGuides();
     } catch (error) {
       // Logs the upload error for development debugging.
-      console.error("Guide Upload Error:", error);
+      console.error(
+        "Guide Upload Error:",
+        error
+      );
 
       // Shows the backend error to the user.
       setNoticeMessage(
-        error.message || "Failed to upload guide"
+        error.message ||
+          "Failed to upload guide"
       );
 
       // Uses error Snackbar styling.
@@ -376,62 +552,253 @@ function GuideManagerCoreTeam() {
   };
 
   // ======================================================
+  // MANAGE GUIDE SECTIONS
+  // ======================================================
+
+  // Loads the selected guide version so its six sections can be managed.
+  const handleManageSections =
+    async (row, rowIndex) => {
+      // Gets the original backend guide object for the selected table row.
+      const selectedGuide =
+        guides[rowIndex];
+
+      // Stops when the selected guide cannot be found.
+      if (!selectedGuide) {
+        return;
+      }
+
+      // Loads all sections belonging to this exact guide version.
+      await loadGuideSections(
+        selectedGuide.version_id
+      );
+    };
+
+  // ======================================================
   // COMPLIANCE
   // ======================================================
 
   // Loads detailed compliance for the selected table row.
-  const handleCompliance = async (row, rowIndex) => {
-    // Gets the original guide object using the CoreTable row index.
-    const selectedGuide = guides[rowIndex];
+  const handleCompliance =
+    async (row, rowIndex) => {
+      // Gets the original guide object using the CoreTable row index.
+      const selectedGuide =
+        guides[rowIndex];
 
-    // Stops if the selected guide cannot be found.
-    if (!selectedGuide) {
-      return;
-    }
+      // Stops if the selected guide cannot be found.
+      if (!selectedGuide) {
+        return;
+      }
 
-    try {
-      // Opens the dialog immediately so loading feedback is visible.
-      setComplianceOpen(true);
+      try {
+        // Opens the dialog immediately so loading feedback is visible.
+        setComplianceOpen(true);
 
-      // Clears old compliance information.
-      setComplianceData(null);
+        // Clears old compliance information.
+        setComplianceData(null);
 
-      // Starts the compliance loading state.
-      setComplianceLoading(true);
+        // Starts the compliance loading state.
+        setComplianceLoading(
+          true
+        );
 
-      // Calls the compliance API using the selected version ID.
-      const data = await apiRequest(
-        `/guides/manage/${selectedGuide.version_id}/compliance`
-      );
+        // Calls the compliance API using the selected version ID.
+        const data =
+          await apiRequest(
+            `/guides/manage/${selectedGuide.version_id}/compliance`
+          );
 
-      // Stores the complete compliance response.
-      setComplianceData(data);
-    } catch (error) {
-      // Closes the compliance dialog when loading fails.
-      setComplianceOpen(false);
+        // Stores the complete compliance response.
+        setComplianceData(data);
+      } catch (error) {
+        // Closes the compliance dialog when loading fails.
+        setComplianceOpen(false);
 
-      // Logs the complete compliance error.
-      console.error(
-        "Guide Compliance Error:",
-        error
-      );
+        // Logs the complete compliance error.
+        console.error(
+          "Guide Compliance Error:",
+          error
+        );
 
-      // Shows the backend error.
-      setNoticeMessage(
-        error.message ||
-          "Failed to load guide compliance"
-      );
+        // Shows the backend error.
+        setNoticeMessage(
+          error.message ||
+            "Failed to load guide compliance"
+        );
 
-      // Uses error Snackbar styling.
-      setNoticeSeverity("error");
+        // Uses error Snackbar styling.
+        setNoticeSeverity(
+          "error"
+        );
 
-      // Opens the Snackbar.
-      setNotice(true);
-    } finally {
-      // Stops the compliance loading state.
-      setComplianceLoading(false);
-    }
-  };
+        // Opens the Snackbar.
+        setNotice(true);
+      } finally {
+        // Stops the compliance loading state.
+        setComplianceLoading(
+          false
+        );
+      }
+    };
+
+  // Gets the currently selected guide section from the loaded section list.
+  const selectedGuideSection =
+    guideSections.find(
+      (section) =>
+        Number(
+          section.section_id
+        ) ===
+        Number(selectedSectionId)
+    ) || null;
+
+  // ======================================================
+  // SAVE GUIDE SECTION
+  // ======================================================
+// Converts stored HTML into normal readable text for the Core Team editor.
+const htmlToPlainText = (html = "") => {
+  // Creates a temporary browser element so HTML tags are not shown to the user.
+  const element = document.createElement("div");
+
+  // Loads the stored HTML into the temporary element.
+  element.innerHTML = html;
+
+  // Converts block elements into readable line breaks.
+  element.querySelectorAll(
+    "p, h1, h2, h3, h4, h5, h6, li"
+  ).forEach((node) => {
+    node.insertAdjacentText("beforeend", "\n");
+  });
+
+  // Returns only the readable text.
+  return (element.textContent || "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+};
+
+// Converts normal text entered by Core Team back into safe basic HTML paragraphs.
+const plainTextToHtml = (text = "") => {
+  // Escapes special HTML characters so typed content cannot become HTML code.
+  const escapeHtml = (value) =>
+    value
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+
+  // Converts separate text paragraphs into paragraph HTML for the Indexer preview.
+  return text
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .map(
+      (paragraph) =>
+        `<p>${escapeHtml(paragraph).replace(
+          /\n/g,
+          "<br>"
+        )}</p>`
+    )
+    .join("");
+};
+  // Saves the currently selected guide section to the backend.
+  const handleSaveSection =
+    async () => {
+      // Stops when no guide version or section is selected.
+      if (
+        !sectionVersionId ||
+        !selectedGuideSection ||
+        sectionSaving
+      ) {
+        return;
+      }
+
+      try {
+        // Disables the save action while the request is running.
+        setSectionSaving(true);
+
+        // Sends the edited section data to the backend.
+        const data =
+          await apiRequest(
+            `/guides/${sectionVersionId}/sections/${selectedGuideSection.section_id}`,
+            {
+              method: "PUT",
+
+              // Sends the section title and HTML content.
+              body: JSON.stringify(
+                {
+                  title:
+                    selectedGuideSection.title,
+                  content:
+                    selectedGuideSection.content,
+                }
+              ),
+            }
+          );
+
+        // Stops when backend reports failure.
+        if (!data.success) {
+          throw new Error(
+            data.message ||
+              "Failed to update guide section"
+          );
+        }
+
+        // Replaces only the saved section with backend-confirmed data.
+        setGuideSections(
+          (currentSections) =>
+            currentSections.map(
+              (section) =>
+                Number(
+                  section.section_id
+                ) ===
+                Number(
+                  data.section
+                    .section_id
+                )
+                  ? data.section
+                  : section
+            )
+        );
+
+        // Shows success message using the existing Snackbar.
+        setNoticeMessage(
+          data.message ||
+            "Guide section updated successfully"
+        );
+
+        // Uses existing success Snackbar styling.
+        setNoticeSeverity(
+          "success"
+        );
+
+        // Opens existing Snackbar.
+        setNotice(true);
+      } catch (error) {
+        // Logs save errors.
+        console.error(
+          "Save Guide Section Error:",
+          error
+        );
+
+        // Shows backend error using existing Snackbar.
+        setNoticeMessage(
+          error.message ||
+            "Failed to update guide section"
+        );
+
+        // Uses existing error Snackbar styling.
+        setNoticeSeverity(
+          "error"
+        );
+
+        // Opens existing Snackbar.
+        setNotice(true);
+      } finally {
+        // Re-enables the save button.
+        setSectionSaving(
+          false
+        );
+      }
+    };
 
   // ======================================================
   // CORE TEAM UI
@@ -444,8 +811,12 @@ function GuideManagerCoreTeam() {
         title="Guide manager"
         description="Upload guide versions, track acknowledgements and send updates to assigned indexers."
         actionLabel="Upload new version"
-        actionIcon={<UploadAction />}
-        actionHandler={openUploadDialog}
+        actionIcon={
+          <UploadAction />
+        }
+        actionHandler={
+          openUploadDialog
+        }
       >
         <Typography
           sx={{
@@ -454,7 +825,8 @@ function GuideManagerCoreTeam() {
             mb: 1.2,
           }}
         >
-          Mandatory acknowledgement workflow
+          Mandatory acknowledgement
+          workflow
         </Typography>
 
         <Box
@@ -472,62 +844,177 @@ function GuideManagerCoreTeam() {
             "Shown on login",
             "Read & acknowledge",
             "System records",
-          ].map((step, index) => (
-            <Box
-              key={step}
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-              }}
-            >
-              <Button
-                variant={
-                  index === 4
-                    ? "contained"
-                    : "outlined"
-                }
-                size="small"
+          ].map(
+            (step, index) => (
+              <Box
+                key={step}
                 sx={{
-                  minHeight: 38,
-                  px: 1.7,
+                  display:
+                    "flex",
+                  alignItems:
+                    "center",
+                  gap: 1,
                 }}
               >
-                {step}
-              </Button>
-
-              {index < 4 && (
-                <Typography
+                <Button
+                  variant={
+                    index === 4
+                      ? "contained"
+                      : "outlined"
+                  }
+                  size="small"
                   sx={{
-                    color: "#94a3b8",
-                    fontSize: 18,
+                    minHeight: 38,
+                    px: 1.7,
                   }}
                 >
-                  →
-                </Typography>
-              )}
-            </Box>
-          ))}
+                  {step}
+                </Button>
+
+                {index < 4 && (
+                  <Typography
+                    sx={{
+                      color:
+                        "#94a3b8",
+                      fontSize: 18,
+                    }}
+                  >
+                    →
+                  </Typography>
+                )}
+              </Box>
+            )
+          )}
         </Box>
 
         <Box
           sx={{
-            border: "1px solid #dbe3ec",
+            border:
+              "1px solid #dbe3ec",
             borderRadius: 1.5,
             overflow: "hidden",
             bgcolor: "#fff",
           }}
         >
-          <Typography
+          {/* Keeps the existing Guides heading and adds section management without changing the table. */}
+          <Box
             sx={{
               px: 2,
-              py: 1.5,
-              fontWeight: 800,
-              borderBottom: "1px solid #e3e8ef",
+              py: 1.2,
+              borderBottom:
+                "1px solid #e3e8ef",
+              display: "flex",
+              alignItems:
+                "center",
+              justifyContent:
+                "space-between",
+              gap: 2,
+              flexWrap:
+                "wrap",
             }}
           >
-            Guides
-          </Typography>
+            {/* Keeps the original Guides heading. */}
+            <Typography
+              sx={{
+                fontWeight: 800,
+              }}
+            >
+              Guides
+            </Typography>
+
+            {/* Selects a guide version whose sections should be managed. */}
+            <TextField
+              select
+              label="Manage guide"
+              size="small"
+              value={
+                sectionVersionId ||
+                ""
+              }
+              onChange={async (
+                event
+              ) => {
+                // Gets the selected guide version ID.
+                const versionId =
+                  Number(
+                    event.target
+                      .value
+                  );
+
+                // Clears section manager when placeholder is selected.
+                if (
+                  !versionId
+                ) {
+                  setSectionVersionId(
+                    null
+                  );
+                  setGuideSections(
+                    []
+                  );
+                  setSelectedSectionId(
+                    null
+                  );
+                  return;
+                }
+
+                // Finds the selected guide's table index.
+                const rowIndex =
+                  guides.findIndex(
+                    (guide) =>
+                      Number(
+                        guide.version_id
+                      ) ===
+                      versionId
+                  );
+
+                // Loads that guide version through the prepared handler.
+                if (
+                  rowIndex >= 0
+                ) {
+                  await handleManageSections(
+                    rows[
+                      rowIndex
+                    ],
+                    rowIndex
+                  );
+                }
+              }}
+              sx={{
+                minWidth: 260,
+                bgcolor: "#fff",
+              }}
+              SelectProps={{
+                displayEmpty:
+                  true,
+              }}
+            >
+              {/* Default selector option. */}
+              <MenuItem value="">
+                Manage guide
+                sections
+              </MenuItem>
+
+              {/* Shows every currently loaded guide/version. */}
+              {guides.map(
+                (guide) => (
+                  <MenuItem
+                    key={`sections-${guide.version_id}`}
+                    value={
+                      guide.version_id
+                    }
+                  >
+                    {
+                      guide.project
+                    }{" "}
+                    —{" "}
+                    {
+                      guide.version
+                    }
+                  </MenuItem>
+                )
+              )}
+            </TextField>
+          </Box>
 
           <CoreTable
             columns={[
@@ -540,11 +1027,230 @@ function GuideManagerCoreTeam() {
             ]}
             rows={rows}
             actionLabel={
-              loading ? "Loading..." : "Compliance"
+              loading
+                ? "Loading..."
+                : "Compliance"
             }
             actionVariant="text"
-            onAction={handleCompliance}
+            onAction={
+              handleCompliance
+            }
           />
+
+          {/* Shows the section editor only after a guide version has been selected. */}
+          {sectionVersionId && (
+            <Box
+              sx={{
+                borderTop:
+                  "1px solid #e3e8ef",
+                p: 2,
+              }}
+            >
+              {/* Section editor heading. */}
+              <Typography
+                sx={{
+                  fontSize: 15,
+                  fontWeight: 800,
+                  mb: 1.5,
+                }}
+              >
+                Guide sections
+              </Typography>
+
+              {/* Shows loading feedback while sections are fetched. */}
+              {sectionsLoading ? (
+                <Typography
+                  sx={{
+                    color:
+                      "#64748b",
+                    fontSize: 13,
+                  }}
+                >
+                  Loading guide
+                  sections...
+                </Typography>
+              ) : guideSections.length ===
+                0 ? (
+                <Alert severity="info">
+                  No guide sections
+                  are available for
+                  this version.
+                </Alert>
+              ) : (
+                <>
+                  {/* Displays all six section buttons using backend data. */}
+                  <Box
+                    sx={{
+                      display:
+                        "flex",
+                      flexWrap:
+                        "wrap",
+                      gap: 1,
+                      mb: 2,
+                    }}
+                  >
+                    {guideSections.map(
+                      (
+                        section
+                      ) => (
+                        <Button
+                          key={
+                            section.section_id
+                          }
+                          type="button"
+                          size="small"
+                          variant={
+                            Number(
+                              selectedSectionId
+                            ) ===
+                            Number(
+                              section.section_id
+                            )
+                              ? "contained"
+                              : "outlined"
+                          }
+                          onClick={() =>
+                            setSelectedSectionId(
+                              Number(
+                                section.section_id
+                              )
+                            )
+                          }
+                          sx={{
+                            textTransform:
+                              "none",
+                            borderRadius:
+                              "8px",
+                          }}
+                        >
+                          {
+                            section.title
+                          }
+                        </Button>
+                      )
+                    )}
+                  </Box>
+
+                  {/* Shows the currently selected section. */}
+                  {selectedGuideSection && (
+                    <Box
+                      sx={{
+                        display:
+                          "grid",
+                        gap: 1.5,
+                      }}
+                    >
+                      {/* Edits the selected section title locally. */}
+                      <TextField
+                        label="Section title"
+                        value={
+                          selectedGuideSection.title ||
+                          ""
+                        }
+                        onChange={(
+                          event
+                        ) => {
+                          // Updates only the selected section title in local state.
+                          setGuideSections(
+                            (
+                              currentSections
+                            ) =>
+                              currentSections.map(
+                                (
+                                  section
+                                ) =>
+                                  Number(
+                                    section.section_id
+                                  ) ===
+                                  Number(
+                                    selectedSectionId
+                                  )
+                                    ? {
+                                        ...section,
+                                        title:
+                                          event
+                                            .target
+                                            .value,
+                                      }
+                                    : section
+                              )
+                          );
+                        }}
+                        fullWidth
+                      />
+
+                      {/* Edits the selected section content locally. */}
+                      <TextField
+                        label="Section content"
+                        value={htmlToPlainText(
+                          selectedGuideSection.content ||""
+                  )}
+                        onChange={(
+                          event
+                        ) => {
+                          // Updates only the selected section content in local state.
+                          setGuideSections(
+                            (
+                              currentSections
+                            ) =>
+                              currentSections.map(
+                                (
+                                  section
+                                ) =>
+                                  Number(
+                                    section.section_id
+                                  ) ===
+                                  Number(
+                                    selectedSectionId
+                                  )
+                                    ? {
+                                        ...section,
+                                        content:plainTextToHtml( event.target.value),
+                                      }
+                                    : section
+                              )
+                          );
+                        }}
+                        multiline
+                        minRows={8}
+                        fullWidth
+                      />
+
+                      {/* Saves the selected guide section to the backend. */}
+                      <Box
+                        sx={{
+                          display:
+                            "flex",
+                          justifyContent:
+                            "flex-end",
+                        }}
+                      >
+                        <Button
+                          variant="contained"
+                          disabled={
+                            sectionSaving
+                          }
+                          onClick={
+                            handleSaveSection
+                          }
+                          sx={{
+                            textTransform:
+                              "none",
+                            borderRadius:
+                              "8px",
+                          }}
+                        >
+                          {sectionSaving
+                            ? "Saving..."
+                            : "Save section"}
+                        </Button>
+                      </Box>
+                    </Box>
+                  )}
+                </>
+              )}
+            </Box>
+          )}
         </Box>
       </CorePageShell>
 
@@ -553,7 +1259,9 @@ function GuideManagerCoreTeam() {
         open={uploadOpen}
         onClose={() => {
           if (!uploading) {
-            setUploadOpen(false);
+            setUploadOpen(
+              false
+            );
           }
         }}
         fullWidth
@@ -568,15 +1276,22 @@ function GuideManagerCoreTeam() {
           sx={{
             fontWeight: 800,
             display: "flex",
-            justifyContent: "space-between",
+            justifyContent:
+              "space-between",
           }}
         >
           Upload guide
 
           <IconButton
             size="small"
-            disabled={uploading}
-            onClick={() => setUploadOpen(false)}
+            disabled={
+              uploading
+            }
+            onClick={() =>
+              setUploadOpen(
+                false
+              )
+            }
           >
             <CloseRoundedIcon fontSize="small" />
           </IconButton>
@@ -596,19 +1311,32 @@ function GuideManagerCoreTeam() {
             select
             label="Guide name"
             value={guideId}
-            onChange={(event) =>
-              setGuideId(event.target.value)
+            onChange={(
+              event
+            ) =>
+              setGuideId(
+                event.target
+                  .value
+              )
             }
             fullWidth
           >
-            {guides.map((guide) => (
-              <MenuItem
-                key={guide.guide_id}
-                value={guide.guide_id}
-              >
-                {guide.guide}
-              </MenuItem>
-            ))}
+            {guides.map(
+              (guide) => (
+                <MenuItem
+                  key={
+                    guide.guide_id
+                  }
+                  value={
+                    guide.guide_id
+                  }
+                >
+                  {
+                    guide.guide
+                  }
+                </MenuItem>
+              )
+            )}
           </TextField>
 
           {/* Keeps the same Choose guide file button UI. */}
@@ -616,7 +1344,8 @@ function GuideManagerCoreTeam() {
             component="label"
             variant="outlined"
             sx={{
-              justifyContent: "flex-start",
+              justifyContent:
+                "flex-start",
               py: 1.5,
             }}
           >
@@ -627,7 +1356,9 @@ function GuideManagerCoreTeam() {
               hidden
               type="file"
               accept=".pdf,application/pdf"
-              onChange={handleFileChange}
+              onChange={
+                handleFileChange
+              }
             />
           </Button>
 
@@ -636,8 +1367,13 @@ function GuideManagerCoreTeam() {
             label="Version"
             placeholder="e.g. v2.4"
             value={version}
-            onChange={(event) =>
-              setVersion(event.target.value)
+            onChange={(
+              event
+            ) =>
+              setVersion(
+                event.target
+                  .value
+              )
             }
             fullWidth
           />
@@ -652,15 +1388,23 @@ function GuideManagerCoreTeam() {
           }}
         >
           <Button
-            disabled={uploading}
-            onClick={() => setUploadOpen(false)}
+            disabled={
+              uploading
+            }
+            onClick={() =>
+              setUploadOpen(
+                false
+              )
+            }
           >
             Cancel
           </Button>
 
           <Button
             variant="contained"
-            disabled={uploading}
+            disabled={
+              uploading
+            }
             onClick={upload}
           >
             {uploading
@@ -672,9 +1416,13 @@ function GuideManagerCoreTeam() {
 
       {/* Shows live acknowledgement details when Compliance is clicked. */}
       <Dialog
-        open={complianceOpen}
+        open={
+          complianceOpen
+        }
         onClose={() =>
-          setComplianceOpen(false)
+          setComplianceOpen(
+            false
+          )
         }
         fullWidth
         maxWidth="sm"
@@ -688,7 +1436,8 @@ function GuideManagerCoreTeam() {
           sx={{
             fontWeight: 800,
             display: "flex",
-            justifyContent: "space-between",
+            justifyContent:
+              "space-between",
           }}
         >
           Guide compliance
@@ -696,7 +1445,9 @@ function GuideManagerCoreTeam() {
           <IconButton
             size="small"
             onClick={() =>
-              setComplianceOpen(false)
+              setComplianceOpen(
+                false
+              )
             }
           >
             <CloseRoundedIcon fontSize="small" />
@@ -714,11 +1465,13 @@ function GuideManagerCoreTeam() {
           {complianceLoading && (
             <Typography
               sx={{
-                color: "#64748b",
+                color:
+                  "#64748b",
                 py: 2,
               }}
             >
-              Loading compliance...
+              Loading
+              compliance...
             </Typography>
           )}
 
@@ -732,23 +1485,38 @@ function GuideManagerCoreTeam() {
                     fontSize: 15,
                   }}
                 >
-                  {complianceData.guide?.guide}
+                  {
+                    complianceData
+                      .guide
+                      ?.guide
+                  }
                 </Typography>
 
                 <Typography
                   sx={{
-                    color: "#64748b",
+                    color:
+                      "#64748b",
                     fontSize: 13,
                     mt: 0.4,
                   }}
                 >
-                  {complianceData.guide?.project} •{" "}
-                  {complianceData.guide?.version}
+                  {
+                    complianceData
+                      .guide
+                      ?.project
+                  }{" "}
+                  •{" "}
+                  {
+                    complianceData
+                      .guide
+                      ?.version
+                  }
                 </Typography>
 
                 <Box
                   sx={{
-                    display: "grid",
+                    display:
+                      "grid",
                     gridTemplateColumns:
                       "repeat(3, 1fr)",
                     gap: 1.5,
@@ -761,13 +1529,15 @@ function GuideManagerCoreTeam() {
                       p: 1.5,
                       border:
                         "1px solid #dbe3ec",
-                      borderRadius: 1.5,
+                      borderRadius:
+                        1.5,
                     }}
                   >
                     <Typography
                       sx={{
                         fontSize: 12,
-                        color: "#64748b",
+                        color:
+                          "#64748b",
                       }}
                     >
                       Assigned
@@ -776,7 +1546,8 @@ function GuideManagerCoreTeam() {
                     <Typography
                       sx={{
                         fontSize: 20,
-                        fontWeight: 800,
+                        fontWeight:
+                          800,
                       }}
                     >
                       {
@@ -793,13 +1564,15 @@ function GuideManagerCoreTeam() {
                       p: 1.5,
                       border:
                         "1px solid #dbe3ec",
-                      borderRadius: 1.5,
+                      borderRadius:
+                        1.5,
                     }}
                   >
                     <Typography
                       sx={{
                         fontSize: 12,
-                        color: "#64748b",
+                        color:
+                          "#64748b",
                       }}
                     >
                       Acknowledged
@@ -808,7 +1581,8 @@ function GuideManagerCoreTeam() {
                     <Typography
                       sx={{
                         fontSize: 20,
-                        fontWeight: 800,
+                        fontWeight:
+                          800,
                       }}
                     >
                       {
@@ -825,13 +1599,15 @@ function GuideManagerCoreTeam() {
                       p: 1.5,
                       border:
                         "1px solid #dbe3ec",
-                      borderRadius: 1.5,
+                      borderRadius:
+                        1.5,
                     }}
                   >
                     <Typography
                       sx={{
                         fontSize: 12,
-                        color: "#64748b",
+                        color:
+                          "#64748b",
                       }}
                     >
                       Pending
@@ -840,28 +1616,38 @@ function GuideManagerCoreTeam() {
                     <Typography
                       sx={{
                         fontSize: 20,
-                        fontWeight: 800,
+                        fontWeight:
+                          800,
                       }}
                     >
                       {
                         complianceData
-                          .compliance?.pending
+                          .compliance
+                          ?.pending
                       }
                     </Typography>
                   </Paper>
                 </Box>
 
-                <Divider sx={{ mb: 1 }} />
+                <Divider
+                  sx={{
+                    mb: 1,
+                  }}
+                />
 
                 {/* Shows each active Indexer's acknowledgement status. */}
                 {complianceData.users?.map(
                   (user) => (
                     <Box
-                      key={user.user_id}
+                      key={
+                        user.user_id
+                      }
                       sx={{
                         py: 1.2,
-                        display: "flex",
-                        alignItems: "center",
+                        display:
+                          "flex",
+                        alignItems:
+                          "center",
                         justifyContent:
                           "space-between",
                         borderBottom:
@@ -871,27 +1657,36 @@ function GuideManagerCoreTeam() {
                       <Box>
                         <Typography
                           sx={{
-                            fontSize: 14,
-                            fontWeight: 700,
+                            fontSize:
+                              14,
+                            fontWeight:
+                              700,
                           }}
                         >
-                          {user.full_name}
+                          {
+                            user.full_name
+                          }
                         </Typography>
 
                         <Typography
                           sx={{
-                            fontSize: 12,
-                            color: "#64748b",
+                            fontSize:
+                              12,
+                            color:
+                              "#64748b",
                           }}
                         >
-                          {user.emp_code}
+                          {
+                            user.emp_code
+                          }
                         </Typography>
                       </Box>
 
                       <Typography
                         sx={{
                           fontSize: 12,
-                          fontWeight: 800,
+                          fontWeight:
+                            800,
                           color:
                             user.acknowledgement_status ===
                             "ACKNOWLEDGED"
@@ -920,7 +1715,9 @@ function GuideManagerCoreTeam() {
         >
           <Button
             onClick={() =>
-              setComplianceOpen(false)
+              setComplianceOpen(
+                false
+              )
             }
           >
             Close
@@ -931,17 +1728,25 @@ function GuideManagerCoreTeam() {
       {/* Reuses the existing Snackbar for API success and error messages. */}
       <Snackbar
         open={notice}
-        autoHideDuration={2800}
-        onClose={() => setNotice(false)}
+        autoHideDuration={
+          2800
+        }
+        onClose={() =>
+          setNotice(false)
+        }
         anchorOrigin={{
           vertical: "bottom",
           horizontal: "right",
         }}
       >
         <Alert
-          severity={noticeSeverity}
+          severity={
+            noticeSeverity
+          }
           variant="filled"
-          onClose={() => setNotice(false)}
+          onClose={() =>
+            setNotice(false)
+          }
         >
           {noticeMessage}
         </Alert>
@@ -998,12 +1803,14 @@ const fieldsAdministrator = [
   {
     name: "title",
     label: "Guide title",
-    placeholder: "e.g. ABC Medical v2.4",
+    placeholder:
+      "e.g. ABC Medical v2.4",
   },
   {
     name: "project",
     label: "Project",
-    placeholder: "Select project",
+    placeholder:
+      "Select project",
     options: [
       "ABC Medical Imaging",
       "Ortho Kids",
@@ -1015,13 +1822,17 @@ const fieldsAdministrator = [
   {
     name: "version",
     label: "Version",
-    placeholder: "e.g. 2.4",
+    placeholder:
+      "e.g. 2.4",
   },
   {
     name: "status",
     label: "Status",
     placeholder: "Active",
-    options: ["Active", "Inactive"],
+    options: [
+      "Active",
+      "Inactive",
+    ],
   },
 ];
 
@@ -1032,10 +1843,12 @@ const fieldsAdministrator = [
 
 function GuideManagerAdministrator() {
   // Controls the existing Administrator form dialog.
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] =
+    useState(false);
 
   // Controls the Administrator success Snackbar.
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] =
+    useState(false);
 
   return (
     <>
@@ -1044,22 +1857,29 @@ function GuideManagerAdministrator() {
         title="Guide Manager"
         description="Manage guide versions and acknowledgement rules."
         actionLabel="Upload guide"
-        actionHandler={() => setOpen(true)}
+        actionHandler={() =>
+          setOpen(true)
+        }
       >
         {/* Keeps the existing Administrator compliance summary UI. */}
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: {
-              xs: "1fr",
-              sm: "repeat(3, 1fr)",
-            },
+            gridTemplateColumns:
+              {
+                xs: "1fr",
+                sm: "repeat(3, 1fr)",
+              },
             gap: 2,
             mb: 2,
           }}
         >
           {[
-            ["Total guides", "5", "#3475ee"],
+            [
+              "Total guides",
+              "5",
+              "#3475ee",
+            ],
             [
               "Fully acknowledged",
               "4",
@@ -1070,47 +1890,62 @@ function GuideManagerAdministrator() {
               "1",
               "#e09a22",
             ],
-          ].map(([label, value, color]) => (
-            <Paper
-              key={label}
-              elevation={0}
-              sx={{
-                p: 2,
-                border:
-                  "1px solid #dbe3ec",
-                borderRadius: 1.5,
-                bgcolor: "#fff",
-                display: "flex",
-                alignItems: "center",
-                gap: 2,
-              }}
-            >
-              <Typography
+          ].map(
+            ([
+              label,
+              value,
+              color,
+            ]) => (
+              <Paper
+                key={label}
+                elevation={0}
                 sx={{
-                  fontSize: 28,
-                  fontWeight: 800,
-                  color,
+                  p: 2,
+                  border:
+                    "1px solid #dbe3ec",
+                  borderRadius:
+                    1.5,
+                  bgcolor:
+                    "#fff",
+                  display:
+                    "flex",
+                  alignItems:
+                    "center",
+                  gap: 2,
                 }}
               >
-                {value}
-              </Typography>
+                <Typography
+                  sx={{
+                    fontSize:
+                      28,
+                    fontWeight:
+                      800,
+                    color,
+                  }}
+                >
+                  {value}
+                </Typography>
 
-              <Typography
-                sx={{
-                  fontSize: 13,
-                  color: "#526581",
-                }}
-              >
-                {label}
-              </Typography>
-            </Paper>
-          ))}
+                <Typography
+                  sx={{
+                    fontSize:
+                      13,
+                    color:
+                      "#526581",
+                  }}
+                >
+                  {label}
+                </Typography>
+              </Paper>
+            )
+          )}
         </Box>
 
         <Box
           sx={{
             width: "100%",
-            overflowX: "auto",
+            overflowX:
+              "auto",
           }}
         >
           <CoreTable
@@ -1121,7 +1956,9 @@ function GuideManagerAdministrator() {
               "ACKNOWLEDGED",
               "STATUS",
             ]}
-            rows={rowsAdministrator}
+            rows={
+              rowsAdministrator
+            }
             actionLabel="View"
             actionVariant="text"
             onAction={() => {}}
@@ -1137,15 +1974,21 @@ function GuideManagerAdministrator() {
           setSaved(true);
         }}
         title="Upload guide"
-        fields={fieldsAdministrator}
+        fields={
+          fieldsAdministrator
+        }
         submitLabel="Upload"
       />
 
       {/* Keeps the existing Administrator success Snackbar. */}
       <Snackbar
         open={saved}
-        autoHideDuration={2500}
-        onClose={() => setSaved(false)}
+        autoHideDuration={
+          2500
+        }
+        onClose={() =>
+          setSaved(false)
+        }
         anchorOrigin={{
           vertical: "bottom",
           horizontal: "right",
@@ -1154,9 +1997,12 @@ function GuideManagerAdministrator() {
         <Alert
           severity="success"
           variant="filled"
-          onClose={() => setSaved(false)}
+          onClose={() =>
+            setSaved(false)
+          }
         >
-          Guide uploaded successfully
+          Guide uploaded
+          successfully
         </Alert>
       </Snackbar>
     </>
@@ -1171,21 +2017,29 @@ void GuideManagerAdministrator;
 // Keeps your existing role routing behavior unchanged.
 // ======================================================
 
-export default function GuideManager(props) {
+export default function GuideManager(
+  props
+) {
   switch (props.roleKey) {
     case "coreTeam":
       return (
-        <GuideManagerCoreTeam {...props} />
+        <GuideManagerCoreTeam
+          {...props}
+        />
       );
 
     case "administrator":
       return (
-        <GuideManagerCoreTeam {...props} />
+        <GuideManagerCoreTeam
+          {...props}
+        />
       );
 
     default:
       return (
-        <GuideManagerCoreTeam {...props} />
+        <GuideManagerCoreTeam
+          {...props}
+        />
       );
   }
 }
