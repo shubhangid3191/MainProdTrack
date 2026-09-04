@@ -191,6 +191,13 @@ export default function Attendance({ roleLabel = "Indexer", roleKey, }) {
   const [attendanceError, setAttendanceError] = useState("");
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [leaveSaving, setLeaveSaving] = useState(false);
+  const [leaveErrors, setLeaveErrors] = useState({
+    leaveType: false,
+    startDate: false,
+    endDate: false,
+    dateRange: false,
+    reason: false,
+  });
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [leaveLoading, setLeaveLoading] = useState(true);
   const [leaveError, setLeaveError] = useState("");
@@ -295,23 +302,25 @@ useEffect(() => {
   const handleSubmitLeave = async () => {
   if (leaveSaving) return;
 
-  if (
-    !leaveForm.leaveType ||
-    !leaveForm.startDate ||
-    !leaveForm.endDate ||
-    !leaveForm.reason.trim()
-  ) {
-    toast.warning("Please complete all leave fields.");
+  const errors = {
+    leaveType: !leaveForm.leaveType,
+    startDate: !leaveForm.startDate,
+    endDate: !leaveForm.endDate,
+    dateRange: false,
+    reason: !leaveForm.reason.trim(),
+  };
+
+  if (!errors.startDate && !errors.endDate && leaveForm.startDate > leaveForm.endDate) {
+    errors.dateRange = true;
+  }
+
+  if (errors.leaveType || errors.startDate || errors.endDate || errors.dateRange || errors.reason) {
+    setLeaveErrors(errors);
     return;
   }
 
-  if (leaveForm.startDate > leaveForm.endDate) {
-    toast.warning("Start date cannot be after end date.");
-    return;
-  }
-
+  setLeaveErrors({ leaveType: false, startDate: false, endDate: false, dateRange: false, reason: false });
   setLeaveSaving(true);
-  // await loadLeaveRequests();
 
   try {
     const data = await apiRequest("/leave-requests", {
@@ -335,6 +344,8 @@ useEffect(() => {
     reason: "",
   });
 
+  setLeaveErrors({ leaveType: false, startDate: false, endDate: false, dateRange: false, reason: false });
+
   await loadLeaveRequests();
 
   toast.success(
@@ -348,7 +359,7 @@ useEffect(() => {
 };
 
     const [leaveForm, setLeaveForm] = useState({
-      leaveType: "planned_leave",
+      leaveType: "",
       startDate: "",
       endDate: "",
       reason: "",
@@ -1136,7 +1147,10 @@ useEffect(() => {
       
             open={leaveOpen}
             onClose={() => {
-                if (!leaveSaving) setLeaveOpen(false);
+                if (!leaveSaving) {
+                  setLeaveOpen(false);
+                  setLeaveErrors({ leaveType: false, startDate: false, endDate: false, dateRange: false, reason: false });
+                }
               }}
             fullWidth
             maxWidth="sm"
@@ -1150,48 +1164,74 @@ useEffect(() => {
               <Box sx={{ display: "grid", gap: 2 }}>
                 <TextField
                   select
-                  label="Leave type"
+                  label={<>Leave type <Box component="span" sx={{ color: "error.main" }}>*</Box></>}
                   name="leaveType"
                   value={leaveForm.leaveType}
-                  onChange={handleLeaveChange}
+                  onChange={(e) => {
+                    handleLeaveChange(e);
+                    setLeaveErrors((prev) => ({ ...prev, leaveType: false }));
+                  }}
                   fullWidth
                   size="small"
+                  error={leaveErrors.leaveType}
+                  helperText={leaveErrors.leaveType ? "Leave type is required." : ""}
                 >
                   <MenuItem value="planned_leave">Planned Leave</MenuItem>
                   <MenuItem value="sick_leave">Sick Leave</MenuItem>
                 </TextField>
 
                 <TextField
-                  label="Start date"
+                  label={<>Start date <Box component="span" sx={{ color: "error.main" }}>*</Box></>}
                   type="date"
                   name="startDate"
                   value={leaveForm.startDate}
-                  onChange={handleLeaveChange}
+                  onChange={(e) => {
+                    handleLeaveChange(e);
+                    setLeaveErrors((prev) => ({ ...prev, startDate: false, dateRange: false }));
+                  }}
                   slotProps={{ inputLabel: { shrink: true } }}
                   fullWidth
                   size="small"
+                  error={leaveErrors.startDate}
+                  helperText={leaveErrors.startDate ? "Start date is required." : ""}
                 />
 
                 <TextField
-                  label="End date"
+                  label={<>End date <Box component="span" sx={{ color: "error.main" }}>*</Box></>}
                   type="date"
                   name="endDate"
                   value={leaveForm.endDate}
-                  onChange={handleLeaveChange}
+                  onChange={(e) => {
+                    handleLeaveChange(e);
+                    setLeaveErrors((prev) => ({ ...prev, endDate: false, dateRange: false }));
+                  }}
                   slotProps={{ inputLabel: { shrink: true } }}
                   fullWidth
                   size="small"
+                  error={leaveErrors.endDate || leaveErrors.dateRange}
+                  helperText={
+                    leaveErrors.endDate
+                      ? "End date is required."
+                      : leaveErrors.dateRange
+                      ? "End date cannot be before start date."
+                      : ""
+                  }
                 />
 
                 <TextField
-                  label="Reason"
+                  label={<>Reason <Box component="span" sx={{ color: "error.main" }}>*</Box></>}
                   name="reason"
                   value={leaveForm.reason}
-                  onChange={handleLeaveChange}
+                  onChange={(e) => {
+                    handleLeaveChange(e);
+                    setLeaveErrors((prev) => ({ ...prev, reason: false }));
+                  }}
                   multiline
                   rows={3}
                   slotProps={{ htmlInput: { maxLength: 500 } }}
                   fullWidth
+                  error={leaveErrors.reason}
+                  helperText={leaveErrors.reason ? "Reason is required." : ""}
                 />
               </Box>
             </DialogContent>
@@ -1200,7 +1240,10 @@ useEffect(() => {
               <Button
                   type="button"
                   disabled={leaveSaving}
-                  onClick={() => setLeaveOpen(false)}
+                  onClick={() => {
+                    setLeaveOpen(false);
+                    setLeaveErrors({ leaveType: false, startDate: false, endDate: false, dateRange: false, reason: false });
+                  }}
                 >
                   Cancel
                 </Button>

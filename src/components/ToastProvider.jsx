@@ -43,8 +43,8 @@ const SEVERITY_CONFIG = {
 
 // ─── Slide transition (top-center) ───────────────────────────────────────────
 
-function SlideDown(props) {
-  return <Slide {...props} direction="down" />;
+function SlideLeft(props) {
+  return <Slide {...props} direction="left" />;
 }
 
 // ─── Single toast item ────────────────────────────────────────────────────────
@@ -65,23 +65,25 @@ function ToastItem({ toast, onClose }) {
         onClose(toast.id);
       }}
       anchorOrigin={{
-        vertical: "top",
-        horizontal: "center",
+        vertical: "bottom",
+        horizontal: "right",
       }}
-      TransitionComponent={SlideDown}
+      TransitionComponent={SlideLeft}
       /*
-       * Stack multiple toasts vertically.
-       * Each toast is offset by its index (passed via toast.offset).
+       * Stack multiple toasts upward from the bottom-right corner.
+       * Each toast is offset upward by its index (passed via toast.offset).
+       * Inline style ensures viewport-fixed positioning regardless of any
+       * positioned ancestor in the layout.
        */
-      sx={{
-        top: `${16 + (toast.offset ?? 0) * 68}px !important`,
-        left: "50% !important",
-        transform: "translateX(-50%) !important",
-        width: {
-          xs: "calc(100vw - 32px)",
-          sm: 440,
-        },
-        maxWidth: 480,
+      style={{
+        position: "fixed",
+        bottom: `${16 + (toast.offset ?? 0) * 68}px`,
+        top: "auto",
+        right: 16,
+        left: "auto",
+        transform: "none",
+        width: "min(380px, calc(100vw - 32px))",
+        zIndex: 1400,
       }}
     >
       {/* Custom dark-navy toast surface */}

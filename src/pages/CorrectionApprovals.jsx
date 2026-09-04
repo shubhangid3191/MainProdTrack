@@ -233,7 +233,7 @@ function NewCorrectionDialog({ open, onClose, onSubmitted }) {
             <Typography
               sx={{ fontFamily: FONT, fontSize: 13, fontWeight: 600, color: "#3B5068", mb: 0.7 }}
             >
-              Project
+              Project <Box component="span" sx={{ color: "error.main" }}>*</Box>
             </Typography>
             <TextField
               select
@@ -272,7 +272,7 @@ function NewCorrectionDialog({ open, onClose, onSubmitted }) {
               <Typography
                 sx={{ fontFamily: FONT, fontSize: 13, fontWeight: 600, color: "#3B5068", mb: 0.7 }}
               >
-                Production date
+                Production date <Box component="span" sx={{ color: "error.main" }}>*</Box>
               </Typography>
               <Box
                 sx={{
@@ -346,12 +346,12 @@ function NewCorrectionDialog({ open, onClose, onSubmitted }) {
               <Typography
                 sx={{ fontFamily: FONT, fontSize: 13, fontWeight: 600, color: "#3B5068", mb: 0.7 }}
               >
-                Field name
+                Field name <Box component="span" sx={{ color: "error.main" }}>*</Box>
               </Typography>
               <TextField
+                select
                 fullWidth
                 size="small"
-                placeholder="e.g. Implant Name"
                 value={fieldName}
                 onChange={(e) => {
                   setFieldName(e.target.value);
@@ -360,8 +360,21 @@ function NewCorrectionDialog({ open, onClose, onSubmitted }) {
                 disabled={submitting}
                 error={Boolean(errors.fieldName)}
                 helperText={errors.fieldName}
+                SelectProps={{ displayEmpty: true }}
                 sx={{ "& .MuiOutlinedInput-root": { borderRadius: "8px", fontFamily: FONT, fontSize: 14 } }}
-              />
+              >
+                <MenuItem value="" disabled>
+                  <Typography sx={{ fontFamily: FONT, fontSize: 14, color: "#9aa5b4" }}>
+                    Select field
+                  </Typography>
+                </MenuItem>
+                <MenuItem value="docs_received">
+                  <Typography sx={{ fontFamily: FONT, fontSize: 14 }}>Documents received</Typography>
+                </MenuItem>
+                <MenuItem value="docs_completed">
+                  <Typography sx={{ fontFamily: FONT, fontSize: 14 }}>Documents completed</Typography>
+                </MenuItem>
+              </TextField>
             </Box>
           </Box>
 
@@ -388,7 +401,7 @@ function NewCorrectionDialog({ open, onClose, onSubmitted }) {
               <Typography
                 sx={{ fontFamily: FONT, fontSize: 13, fontWeight: 600, color: "#3B5068", mb: 0.7 }}
               >
-                New value
+                New value <Box component="span" sx={{ color: "error.main" }}>*</Box>
               </Typography>
               <TextField
                 fullWidth
@@ -412,7 +425,7 @@ function NewCorrectionDialog({ open, onClose, onSubmitted }) {
             <Typography
               sx={{ fontFamily: FONT, fontSize: 13, fontWeight: 600, color: "#3B5068", mb: 0.7 }}
             >
-              Reason for change
+              Reason for change <Box component="span" sx={{ color: "error.main" }}>*</Box>
             </Typography>
             <TextField
               fullWidth
