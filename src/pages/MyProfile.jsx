@@ -91,6 +91,10 @@ export default function MyProfile({ user }) {
       )}@company.com`;
       const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
       const [
+          passwordFieldsUnlocked,
+          setPasswordFieldsUnlocked,
+        ] = useState(false);
+      const [
       changingPassword,
       setChangingPassword,
     ] = useState(false);
@@ -322,7 +326,16 @@ const handleChangePassword = async () => {
 
         <Button
           variant="outlined"
-          onClick={() => setPasswordDialogOpen(true)}
+          onClick={() => {
+            setPasswordData({
+              currentPassword: "",
+              newPassword: "",
+              confirmPassword: "",
+            });
+
+            setPasswordFieldsUnlocked(false);
+            setPasswordDialogOpen(true);
+          }}
           sx={{
             fontFamily: FONT,
             fontSize: 13,
@@ -492,19 +505,24 @@ const handleChangePassword = async () => {
             also be sent to your registered email.
           </Typography>
 
-          <TextField
+        <TextField
             name="currentPassword"
             label="Current password"
             type="password"
-            value={
-              passwordData.currentPassword
+            autoComplete="new-password"
+            value={passwordData.currentPassword}
+            onFocus={() =>
+              setPasswordFieldsUnlocked(true)
             }
-            onChange={
-              handlePasswordInputChange
-            }
+            onChange={handlePasswordInputChange}
+            slotProps={{
+              htmlInput: {
+                readOnly:
+                  !passwordFieldsUnlocked,
+              },
+            }}
             fullWidth
             margin="dense"
-            autoComplete="current-password"
           />
 
           <TextField
