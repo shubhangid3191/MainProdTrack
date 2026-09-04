@@ -10,6 +10,10 @@ import Paper from "@mui/material/Paper";
 import Divider from "@mui/material/Divider";
 import Alert from "@mui/material/Alert";
 import Link from "@mui/material/Link";
+import IconButton from "@mui/material/IconButton";
+import InputAdornment from "@mui/material/InputAdornment";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 
 import { DEMO_ACCOUNTS } from "../Config/users.js";
 import { useToast } from "../components/ToastProvider.jsx";
@@ -17,7 +21,15 @@ import { useToast } from "../components/ToastProvider.jsx";
 export default function SignIn({ onLogin }) {
   const toast = useToast();
   const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("demo123");
+  const [password, setPassword] =
+  useState("");
+
+  const [showPassword, setShowPassword] =
+    useState(false);
+  const [
+    loginFieldsUnlocked,
+    setLoginFieldsUnlocked,
+  ] = useState(false);
   const [keepSignedIn, setKeepSignedIn] = useState(true);
   const [forgotMode, setForgotMode] =
   useState(false);
@@ -480,6 +492,7 @@ const handleSubmit = async (event) => {
         <Box
           component="form"
           onSubmit={handleSubmit}
+          autoComplete="off"
           sx={{
             width: "100%",
             maxWidth: 420,
@@ -528,10 +541,20 @@ const handleSubmit = async (event) => {
           </Typography>
 
           <TextField
+           name="prodtrackLoginUsername"
+            autoComplete="new-password"
             fullWidth
             placeholder="Enter Username"
             value={username}
+            onFocus={() =>
+                setLoginFieldsUnlocked(true)
+              }
             onChange={(e) => setUsername(e.target.value)}
+            slotProps={{
+              htmlInput: {
+                readOnly: !loginFieldsUnlocked,
+              },
+            }}
             sx={{
               mb: 1.7,
 
@@ -568,10 +591,46 @@ const handleSubmit = async (event) => {
                 >
                   Password
                 </Typography>
-
+                
                 <TextField
+                slotProps={{
+                  htmlInput: {
+                    readOnly: !loginFieldsUnlocked,
+                  },
+
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          type="button"
+                          edge="end"
+                          aria-label={
+                            showPassword
+                              ? "Hide password"
+                              : "Show password"
+                          }
+                          onClick={() =>
+                            setShowPassword(
+                              (current) => !current
+                            )
+                          }
+                        >
+                          {showPassword ? (
+                            <VisibilityOffOutlinedIcon
+                              fontSize="small"
+                            />
+                          ) : (
+                            <VisibilityOutlinedIcon
+                              fontSize="small"
+                            />
+                          )}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  },
+                }}
                   fullWidth
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="Enter password"
                   value={password}
                   onChange={(event) =>
