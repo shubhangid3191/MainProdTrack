@@ -3,6 +3,7 @@ import {
 } from "react";
 
 import apiRequest from "../Config/api.js";
+import { useToast } from "./ToastProvider.jsx";
 
 import {
   Dialog,
@@ -30,7 +31,8 @@ import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 // passed from App.jsx after the /pending-ack fetch.
 // ======================================================
 
-export default function GuideUpdateModal({ open, onClose,guide, }) {
+export default function GuideUpdateModal({ open, onClose, guide }) {
+  const toast = useToast();
   const [checked, setChecked] = useState(false);
   const [submitting, setSubmitting] =
     useState(false);
@@ -70,7 +72,7 @@ const handleAcknowledge = async () => {
       error
     );
 
-    window.alert(
+    toast.error(
       error.message ||
         "Failed to acknowledge guide"
     );

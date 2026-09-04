@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import apiRequest from "../Config/api.js";
+import { useToast } from "../components/ToastProvider.jsx";
 import {
   Box,
   Button,
@@ -83,6 +84,7 @@ function Field({ label, name, value, onChange }) {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function MyProfile({ user }) {
+  const toast = useToast();
   const defaultEmail = `${(user.username || "user").replace(
     ".",
     ""
@@ -149,12 +151,12 @@ const [passwordData, setPasswordData]             = useState({
         "Load Profile Error:",
         error
       );
-      alert(error.message);
+      toast.error(error.message);
     }
   };
 
   loadProfile();
-}, []);
+}, [toast]);
 
   const fields = [
     {
@@ -202,7 +204,7 @@ const [passwordData, setPasswordData]             = useState({
       setResetToken(data.resetToken);
       setResetStep(2);
     } catch (error) {
-      alert(error.message);
+      toast.error(error.message);
     } finally {
       setChangingPassword(false);
     }
@@ -211,11 +213,11 @@ const [passwordData, setPasswordData]             = useState({
   // Step 2 — Set new password using the token received
   const handleResetWithToken = async () => {
     if (!passwordData.newPassword || !passwordData.confirmPassword) {
-      alert("Enter new password and confirm password");
+      toast.warning("Enter new password and confirm password");
       return;
     }
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert("New password and confirm password do not match");
+      toast.warning("New password and confirm password do not match");
       return;
     }
     setChangingPassword(true);
@@ -228,13 +230,13 @@ const [passwordData, setPasswordData]             = useState({
           confirmPassword: passwordData.confirmPassword,
         }),
       });
-      alert(data.message);
+      toast.success(data.message);
       setPasswordDialogOpen(false);
       setResetStep(1);
       setResetToken("");
       setPasswordData({ newPassword: "", confirmPassword: "" });
     } catch (error) {
-      alert(error.message);
+      toast.error(error.message);
     } finally {
       setChangingPassword(false);
     }
