@@ -342,7 +342,7 @@ const loadDepartments = async () => {
       {
         name: "status",
         label: "Status",
-        placeholder: "Active",
+        placeholder: "Select status",
         options: [
           "Active",
           "Inactive",
@@ -411,7 +411,7 @@ const loadDepartments = async () => {
         designation: "",
         role: "Indexer",
         lead: "None",
-        status: "Active",
+        status: "",
         projects: "",
       };
     }

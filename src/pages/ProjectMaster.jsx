@@ -302,7 +302,7 @@ function ProjectMasterCoreTeam({
       {
         name: "status",
         label: "Status",
-        placeholder: "Active",
+        placeholder: "Select status",
         options: ["Active", "Inactive"],
         required: true,
       },
@@ -419,7 +419,7 @@ function ProjectMasterCoreTeam({
         category: "",
         lock: "",
         team: "",
-        status: "Active",
+        status: "",
       };
     }
 
