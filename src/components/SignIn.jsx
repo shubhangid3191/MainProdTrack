@@ -30,7 +30,7 @@ export default function SignIn({ onLogin }) {
     loginFieldsUnlocked,
     setLoginFieldsUnlocked,
   ] = useState(false);
-  const [keepSignedIn, setKeepSignedIn] = useState(true);
+  const [keepSignedIn, setKeepSignedIn] = useState(false);
   const [forgotMode, setForgotMode] =
   useState(false);
 
@@ -605,42 +605,42 @@ const handleSubmit = async (event) => {
                 </Typography>
                 
                 <TextField
-                slotProps={{
-                  htmlInput: {
-                    readOnly: !loginFieldsUnlocked,
-                  },
+                // slotProps={{
+                //   htmlInput: {
+                //     readOnly: !loginFieldsUnlocked,
+                //   },
 
-                  input: {
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          type="button"
-                          edge="end"
-                          aria-label={
-                            showPassword
-                              ? "Hide password"
-                              : "Show password"
-                          }
-                          onClick={() =>
-                            setShowPassword(
-                              (current) => !current
-                            )
-                          }
-                        >
-                          {showPassword ? (
-                            <VisibilityOffOutlinedIcon
-                              fontSize="small"
-                            />
-                          ) : (
-                            <VisibilityOutlinedIcon
-                              fontSize="small"
-                            />
-                          )}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  },
-                }}
+                //   input: {
+                //     endAdornment: (
+                //       <InputAdornment position="end">
+                //         <IconButton
+                //           type="button"
+                //           edge="end"
+                //           aria-label={
+                //             showPassword
+                //               ? "Hide password"
+                //               : "Show password"
+                //           }
+                //           onClick={() =>
+                //             setShowPassword(
+                //               (current) => !current
+                //             )
+                //           }
+                //         >
+                //           {showPassword ? (
+                //             <VisibilityOffOutlinedIcon
+                //               fontSize="small"
+                //             />
+                //           ) : (
+                //             <VisibilityOutlinedIcon
+                //               fontSize="small"
+                //             />
+                //           )}
+                //         </IconButton>
+                //       </InputAdornment>
+                //     ),
+                //   },
+                // }}
                   fullWidth
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter password"

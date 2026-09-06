@@ -100,6 +100,127 @@ function SelectField({ label, children,value,onChange, }) {
 // =========================================================
 // REPORTS PAGE
 // =========================================================
+function SimpleReportTable({
+  title,
+  columns,
+  rows,
+}) {
+  const minWidth = Math.max(
+    720,
+    columns.length * 150
+  );
+
+  return (
+    <Card
+      elevation={0}
+      sx={{
+        border: "1px solid #dce3ec",
+        borderRadius: "10px",
+        overflow: "hidden",
+        backgroundColor: "#fff",
+      }}
+    >
+      <Box
+        sx={{
+          px: 2,
+          py: 1.5,
+          minHeight: 54,
+          display: "flex",
+          alignItems: "center",
+          borderBottom:
+            "1px solid #e2e7ee",
+        }}
+      >
+        <Typography
+          sx={{
+            fontSize: 14,
+            fontWeight: 800,
+            color: "#17233a",
+          }}
+        >
+          {title}
+        </Typography>
+      </Box>
+
+      <Box
+        sx={{
+          width: "100%",
+          overflowX: "auto",
+        }}
+      >
+        <Box sx={{ minWidth }}>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: `repeat(${columns.length}, minmax(140px, 1fr))`,
+              px: 2,
+              py: 1.5,
+              backgroundColor: "#f8fafc",
+            }}
+          >
+            {columns.map((column) => (
+              <Typography
+                key={column.key}
+                sx={{
+                  fontSize: 12,
+                  color: "#6A7585",
+                  fontWeight: 700,
+                }}
+              >
+                {column.label}
+              </Typography>
+            ))}
+          </Box>
+
+          {rows.length === 0 ? (
+            <Typography
+              sx={{
+                px: 2,
+                py: 3,
+                color: "#6A7585",
+                fontSize: 13,
+              }}
+            >
+              No report data found.
+            </Typography>
+          ) : (
+            rows.map((row, index) => (
+              <Box
+                key={row.id || index}
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: `repeat(${columns.length}, minmax(140px, 1fr))`,
+                  px: 2,
+                  py: 1.5,
+                  minHeight: 58,
+                  alignItems: "center",
+                  borderTop:
+                    "1px solid #e7ebf0",
+                }}
+              >
+                {columns.map((column) => (
+                  <Typography
+                    key={column.key}
+                    sx={{
+                      fontSize: 13,
+                      color: "#1A2434",
+                      pr: 1.5,
+                      overflowWrap: "anywhere",
+                    }}
+                  >
+                    {column.render
+                      ? column.render(row)
+                      : row[column.key] ?? "—"}
+                  </Typography>
+                ))}
+              </Box>
+            ))
+          )}
+        </Box>
+      </Box>
+    </Card>
+  );
+}
 
 export default function Reports({
   roleKey = "indexer",
@@ -120,6 +241,11 @@ const [selectedProject, setSelectedProject] = useState("all");
 const [selectedEmployee, setSelectedEmployee] = useState("all");
 const [reportType, setReportType] =
   useState("employee");
+const [projectReportRows, setProjectReportRows] =
+  useState([]);
+
+const [correctionReportRows, setCorrectionReportRows] =
+  useState([]);
 
 
 useEffect(() => {
@@ -163,6 +289,8 @@ useEffect(() => {
         employeeData,
         employeeOptionsData,
         projectData,
+        projectReportData,
+        correctionReportData,
       ] = await Promise.all([
         apiRequest(
           `/reports/my-summary?${reportQuery}`
@@ -182,10 +310,33 @@ useEffect(() => {
         ),
 
         apiRequest("/projects/my"),
+        reportType === "project"
+        ? apiRequest(
+            `/reports/project-production?${reportQuery}`
+          )
+        : Promise.resolve({
+            projects: [],
+          }),
+
+      reportType === "correction"
+        ? apiRequest(
+            `/reports/correction-log?${reportQuery}`
+          )
+        : Promise.resolve({
+            corrections: [],
+          }),
       ]);
 
       setSummary(summaryData.summary);
       setProjects(projectData.projects || []);
+
+      setProjectReportRows(
+        projectReportData.projects || []
+      );
+
+      setCorrectionReportRows(
+        correctionReportData.corrections || []
+      );
 
       const formattedBars = (
         productionData.production || []
@@ -252,6 +403,7 @@ useEffect(() => {
   selectedProject,
   selectedEmployee,
   toast,
+  reportType,
 ]);
 
 const max = Math.max(
@@ -945,7 +1097,9 @@ const handlePdfDownload = () => {
       {/* =================================================
           EMPLOYEE TABLE
       ================================================= */}
-
+      {["employee", "pending"].includes(
+        reportType
+      ) && (
       <Card
         elevation={0}
         sx={{
@@ -1161,11 +1315,149 @@ const handlePdfDownload = () => {
               
             </Box>
             
+            
           ))}
         </Box>
         </Box>
       </Box>
       </Card>
+      )}
+      {/* PROJECT-WISE REPORT */}
+
+      {reportType === "project" && (
+        <SimpleReportTable
+          title={`Project-wise production — ${
+            period === "month"
+              ? "this month"
+              : "this week"
+          }`}
+          columns={[
+            {
+              key: "project_name",
+              label: "PROJECT",
+            },
+            {
+              key: "project_code",
+              label: "CODE",
+            },
+            {
+              key: "client_name",
+              label: "CLIENT",
+            },
+            {
+              key: "received",
+              label: "RECEIVED",
+            },
+            {
+              key: "completed",
+              label: "COMPLETED",
+            },
+            {
+              key: "pending",
+              label: "PENDING",
+            },
+            {
+              key: "productivity",
+              label: "PRODUCTIVITY",
+              render: (row) =>
+                `${row.productivity || 0}%`,
+            },
+          ]}
+          rows={projectReportRows}
+        />
+      )}
+
+      {/* RECEIVED VS COMPLETED REPORT */}
+
+      {reportType === "received" && (
+        <SimpleReportTable
+          title={`Received vs Completed — ${
+            period === "month"
+              ? "this month"
+              : "this week"
+          }`}
+          columns={[
+            {
+              key: "day",
+              label: "DAY",
+            },
+            {
+              key: "received",
+              label: "RECEIVED",
+            },
+            {
+              key: "completed",
+              label: "COMPLETED",
+            },
+            {
+              key: "pending",
+              label: "PENDING",
+            },
+          ]}
+          rows={bars.map((bar, index) => ({
+            id: index + 1,
+            day: bar.day,
+            received: bar.received,
+            completed: bar.completed,
+            pending: Math.max(
+              Number(bar.received || 0) -
+                Number(bar.completed || 0),
+              0
+            ),
+          }))}
+        />
+      )}
+
+      {/* CORRECTION REQUEST REPORT */}
+
+      {reportType === "correction" && (
+        <SimpleReportTable
+          title={`Correction request log — ${
+            period === "month"
+              ? "this month"
+              : "this week"
+          }`}
+          columns={[
+            {
+              key: "id",
+              label: "REQUEST ID",
+            },
+            {
+              key: "employee_name",
+              label: "EMPLOYEE",
+            },
+            {
+              key: "project_name",
+              label: "PROJECT",
+            },
+            {
+              key: "production_date",
+              label: "DATE",
+            },
+            {
+              key: "field_name",
+              label: "FIELD",
+            },
+            {
+              key: "old_value",
+              label: "OLD VALUE",
+            },
+            {
+              key: "new_value",
+              label: "NEW VALUE",
+            },
+            {
+              key: "status",
+              label: "STATUS",
+              render: (row) =>
+                String(
+                  row.status || "pending"
+                ).toUpperCase(),
+            },
+          ]}
+          rows={correctionReportRows}
+        />
+      )}
     </Box>
   );
 }

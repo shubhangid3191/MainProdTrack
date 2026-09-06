@@ -42,9 +42,12 @@ useEffect(() => {
           .toLowerCase();
 
         if (
-          !["indexer", "teamlead"].includes(
-            normalizedRole
-          )
+          ![
+            "indexer",
+            "teamlead",
+            "coreteam",
+            "administrator",
+          ].includes(normalizedRole)
         ) {
           return;
         }
@@ -79,6 +82,41 @@ useEffect(() => {
     );
   };
 }, [role]);
+
+const handleNotificationIconClick =
+  async () => {
+    try {
+      // Only calls API when unread
+      // notifications are available.
+      if (liveNotificationCount > 0) {
+        await apiRequest(
+          "/notifications/read-all",
+          {
+            method: "PATCH",
+          }
+        );
+
+        // Removes Header badge immediately.
+        setLiveNotificationCount(0);
+
+        // Tells Sidebar to reload its
+        // notification badge.
+        window.dispatchEvent(
+          new Event(
+            "prodtrack-notifications-updated"
+          )
+        );
+      }
+    } catch (error) {
+      console.error(
+        "Mark all notifications error:",
+        error
+      );
+    } finally {
+      // Opens Notifications page.
+      onNotifications?.();
+    }
+  };
 
   return (
     <AppBar
@@ -206,7 +244,9 @@ useEffect(() => {
           {/* NOTIFICATIONS */}
 
           <IconButton
-            onClick={onNotifications}
+            onClick={
+              handleNotificationIconClick
+            }
             sx={{
               width: 42,
               height: 42,

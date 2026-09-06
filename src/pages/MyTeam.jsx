@@ -1,4 +1,4 @@
-import { Box, Button, Paper, Typography, Avatar } from "@mui/material";
+import { Box, Button, Paper, Typography, Avatar,  Select, MenuItem, } from "@mui/material";
 import { useEffect, useState } from "react";
 import apiRequest from "../Config/api.js";
 import { useToast } from "../components/ToastProvider.jsx";
@@ -13,8 +13,17 @@ const MUTED = "#6a7585";
 const HEAD  = "#1a2434";
 
 
-const COLS = "1.4fr 1fr 1.4fr 1fr 1.2fr 1fr";
+const COLS = "1.4fr 1fr 1.4fr 1fr 1.2fr 1.8fr";
 const HEADERS = ["MEMBER", "EMP ID", "PROJECT(S)", "TODAY", "GUIDE ACK.", "STATUS"];
+const attendanceCodeMap = {
+  PRESENT: "present",
+  ABSENT: "absent",
+  TRAINING: "training",
+  HOLIDAY: "holiday",
+  "OTHER NON-PRODUCTION": "other_np",
+  "NOT MARKED": "",
+  LEAVE: "",
+};
 
 function GuideChip({ value }) {
   const done = value === "DONE";
@@ -80,7 +89,21 @@ function StatusChip({ value }) {
 
 // ─── Table row ────────────────────────────────────────────────────────────────
 
-function MemberRow({ initials, name, empId, avatarColor, projects, today, guide, status }) {
+function MemberRow({
+  id,
+  initials,
+  name,
+  empId,
+  avatarColor,
+  projects,
+  today,
+  guide,
+  status,
+  attendanceCode,
+  saving,
+  onStatusChange,
+  onMarkAttendance,
+}) {
   return (
     <Box
       sx={{
@@ -129,8 +152,85 @@ function MemberRow({ initials, name, empId, avatarColor, projects, today, guide,
       {/* guide ack */}
       <GuideChip value={guide} />
 
-      {/* status */}
-      <StatusChip value={status} />
+      {/* attendance status */}
+
+      {status === "LEAVE" ? (
+        <StatusChip value="LEAVE" />
+      ) : (
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 0.8,
+          }}
+        >
+          <Select
+            size="small"
+            value={attendanceCode}
+            onChange={(event) =>
+              onStatusChange(
+                id,
+                event.target.value
+              )
+            }
+            displayEmpty
+            sx={{
+              minWidth: 125,
+              height: 34,
+              fontFamily: FONT,
+              fontSize: 12,
+              borderRadius: "7px",
+            }}
+          >
+            <MenuItem value="" disabled>
+              Select status
+            </MenuItem>
+
+            <MenuItem value="present">
+              Present
+            </MenuItem>
+
+            <MenuItem value="absent">
+              Absent
+            </MenuItem>
+
+            <MenuItem value="training">
+              Training
+            </MenuItem>
+
+            <MenuItem value="holiday">
+              Holiday
+            </MenuItem>
+
+            <MenuItem value="other_np">
+              Other Non-Production
+            </MenuItem>
+          </Select>
+
+          <Button
+            variant="contained"
+            disabled={
+              !attendanceCode || saving
+            }
+            onClick={() =>
+              onMarkAttendance(id)
+            }
+            sx={{
+              minWidth: 62,
+              height: 34,
+              px: 1.2,
+              fontFamily: FONT,
+              fontSize: 11,
+              fontWeight: 700,
+              textTransform: "none",
+              borderRadius: "7px",
+              boxShadow: "none",
+            }}
+          >
+            {saving ? "Saving..." : "Mark"}
+          </Button>
+        </Box>
+      )}
     </Box>
   );
 }
@@ -140,6 +240,8 @@ function MemberRow({ initials, name, empId, avatarColor, projects, today, guide,
 export default function MyTeam({ onNavigate }) {
   const toast = useToast();
   const [team, setTeam] = useState([]);
+  const [savingMemberId, setSavingMemberId] =
+  useState(null);
 
 useEffect(() => {
   const loadMyTeam = async () => {
@@ -166,6 +268,11 @@ useEffect(() => {
             .join("")
             .slice(0, 2)
             .toUpperCase();
+            
+            const attendanceStatus = String(
+            member.attendance_status ||
+                "NOT MARKED"
+            ).toUpperCase();
 
           return {
             id: member.id || member.user_id,
@@ -182,9 +289,12 @@ useEffect(() => {
             guide: String(
               member.guide_acknowledgement || "DONE"
             ).toUpperCase(),
-            status: String(
-              member.attendance_status || "NOT MARKED"
-            ).toUpperCase(),
+            status: attendanceStatus,
+
+            attendanceCode:
+              attendanceCodeMap[
+                attendanceStatus
+              ] || "",
           };
         }
       );
@@ -198,6 +308,97 @@ useEffect(() => {
 
   loadMyTeam();
 }, [toast]);
+
+  const handleStatusChange = (
+  memberId,
+  statusCode
+) => {
+  setTeam((currentTeam) =>
+    currentTeam.map((member) =>
+      member.id === memberId
+        ? {
+            ...member,
+            attendanceCode:
+              statusCode,
+          }
+        : member
+    )
+  );
+};
+
+const handleMarkAttendance = async (
+  memberId
+) => {
+  const selectedMember = team.find(
+    (member) =>
+      member.id === memberId
+  );
+
+  if (
+    !selectedMember?.attendanceCode
+  ) {
+    toast.error(
+      "Please select attendance status"
+    );
+
+    return;
+  }
+
+  try {
+    setSavingMemberId(memberId);
+
+    const data = await apiRequest(
+      "/attendance/mark",
+      {
+        method: "POST",
+
+        body: JSON.stringify({
+          userId: memberId,
+
+          statusCode:
+            selectedMember
+              .attendanceCode,
+        }),
+      }
+    );
+
+    setTeam((currentTeam) =>
+      currentTeam.map((member) =>
+        member.id === memberId
+          ? {
+              ...member,
+
+              status: String(
+                data.attendance?.status ||
+                  selectedMember
+                    .attendanceCode
+              ).toUpperCase(),
+
+              attendanceCode:
+                data.attendance
+                  ?.statusCode ||
+                selectedMember
+                  .attendanceCode,
+            }
+          : member
+      )
+    );
+
+    toast.success(
+      "Attendance marked successfully"
+    );
+  } catch (error) {
+    console.error(
+      "Mark Attendance Error:",
+      error
+    );
+
+    toast.error(error.message);
+  } finally {
+    setSavingMemberId(null);
+  }
+};
+
   return (
     <Box sx={{ width: "100%", boxSizing: "border-box" }}>
 
@@ -286,6 +487,15 @@ useEffect(() => {
             <MemberRow
               key={member.id}
               {...member}
+              saving={
+                savingMemberId === member.id
+              }
+              onStatusChange={
+                handleStatusChange
+              }
+              onMarkAttendance={
+                handleMarkAttendance
+              }
             />
           ))}
         </Box>
