@@ -1207,64 +1207,66 @@ function StatusChipIndexer({ status }) {
           <DialogContentText sx={{ mb: 2, fontSize: 13 }}>
             Entry #{correctionEntry?.id} — {correctionEntry?.project}
           </DialogContentText>
-          <TextField
-            select
-            label="Field to correct"
-            value={correctionForm.fieldName}
-            onChange={(event) => {
-              const selectedField =
-                event.target.value;
 
-              const selectedValue =
-                selectedField ===
-                "docs_completed"
-                  ? correctionEntry?.completed
-                  : selectedField ===
-                    "docs_received"
-                  ? correctionEntry?.received
-                  : "";
-
-              setCorrectionForm(
-                (previousForm) => ({
+          {/* Field to correct */}
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, mb: 2 }}>
+            <Typography component="label" sx={{ fontSize: 12.5, fontWeight: 600, color: "#374151" }}>
+              Field to correct
+            </Typography>
+            <TextField
+              select
+              value={correctionForm.fieldName}
+              onChange={(event) => {
+                const selectedField = event.target.value;
+                const selectedValue =
+                  selectedField === "docs_completed"
+                    ? correctionEntry?.completed
+                    : selectedField === "docs_received"
+                    ? correctionEntry?.received
+                    : "";
+                setCorrectionForm((previousForm) => ({
                   ...previousForm,
                   fieldName: selectedField,
-                  newValue: String(
-                    selectedValue ?? ""
-                  ),
-                })
-              );
-            }}
-            fullWidth
-            size="small"
-            sx={{ mb: 2 }}
-          >
-            <MenuItem value="docs_completed">
-              Documents completed
-            </MenuItem>
+                  newValue: String(selectedValue ?? ""),
+                }));
+              }}
+              fullWidth
+              size="small"
+            >
+              <MenuItem value="docs_completed">Documents completed</MenuItem>
+              <MenuItem value="docs_received">Documents received</MenuItem>
+            </TextField>
+          </Box>
 
-            <MenuItem value="docs_received">
-              Documents received
-            </MenuItem>
-          </TextField>
-          <TextField
-            label="Corrected value"
-            name="newValue"
-            value={correctionForm.newValue}
-            onChange={handleCorrectionFieldChange}
-            fullWidth
-            size="small"
-            sx={{ mb: 2 }}
-          />
-          <TextField
-            label="Reason"
-            name="reason"
-            value={correctionForm.reason}
-            onChange={handleCorrectionFieldChange}
-            fullWidth
-            size="small"
-            multiline
-            rows={3}
-          />
+          {/* Corrected value */}
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, mb: 2 }}>
+            <Typography component="label" sx={{ fontSize: 12.5, fontWeight: 600, color: "#374151" }}>
+              Corrected value
+            </Typography>
+            <TextField
+              name="newValue"
+              value={correctionForm.newValue}
+              onChange={handleCorrectionFieldChange}
+              fullWidth
+              size="small"
+            />
+          </Box>
+
+          {/* Reason */}
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+            <Typography component="label" sx={{ fontSize: 12.5, fontWeight: 600, color: "#374151" }}>
+              Reason
+            </Typography>
+            <TextField
+              name="reason"
+              value={correctionForm.reason}
+              onChange={handleCorrectionFieldChange}
+              fullWidth
+              size="small"
+              multiline
+              rows={3}
+            />
+          </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button

@@ -509,48 +509,63 @@ const handleChangePassword = async () => {
             also be sent to your registered email.
           </Typography>
 
-        <TextField
-            name="currentPassword"
-            label="Current password *"
-            type="password"
-            autoComplete="new-password"
-            value={passwordData.currentPassword}
-            onFocus={() => setPasswordFieldsUnlocked(true)}
-            onChange={handlePasswordInputChange}
-            slotProps={{
-              htmlInput: { readOnly: !passwordFieldsUnlocked },
-            }}
-            fullWidth
-            margin="dense"
-            error={Boolean(passwordErrors.currentPassword)}
-            helperText={passwordErrors.currentPassword}
-          />
+          {/* Current password */}
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, mb: 1 }}>
+            <Typography component="label" sx={{ fontFamily: FONT, fontSize: 12.5, fontWeight: 600, color: "#374151" }}>
+              Current password <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
+            </Typography>
+            <TextField
+              name="currentPassword"
+              type="password"
+              autoComplete="new-password"
+              value={passwordData.currentPassword}
+              onFocus={() => setPasswordFieldsUnlocked(true)}
+              onChange={handlePasswordInputChange}
+              slotProps={{
+                htmlInput: { readOnly: !passwordFieldsUnlocked },
+              }}
+              fullWidth
+              size="small"
+              error={Boolean(passwordErrors.currentPassword)}
+              helperText={passwordErrors.currentPassword}
+            />
+          </Box>
 
-          <TextField
-            name="newPassword"
-            label="New password *"
-            type="password"
-            value={passwordData.newPassword}
-            onChange={handlePasswordInputChange}
-            fullWidth
-            margin="dense"
-            autoComplete="new-password"
-            error={Boolean(passwordErrors.newPassword)}
-            helperText={passwordErrors.newPassword || "Password must contain at least 8 characters"}
-          />
+          {/* New password */}
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, mb: 1 }}>
+            <Typography component="label" sx={{ fontFamily: FONT, fontSize: 12.5, fontWeight: 600, color: "#374151" }}>
+              New password <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
+            </Typography>
+            <TextField
+              name="newPassword"
+              type="password"
+              value={passwordData.newPassword}
+              onChange={handlePasswordInputChange}
+              fullWidth
+              size="small"
+              autoComplete="new-password"
+              error={Boolean(passwordErrors.newPassword)}
+              helperText={passwordErrors.newPassword || "Password must contain at least 8 characters"}
+            />
+          </Box>
 
-          <TextField
-            name="confirmPassword"
-            label="Confirm new password *"
-            type="password"
-            value={passwordData.confirmPassword}
-            onChange={handlePasswordInputChange}
-            fullWidth
-            margin="dense"
-            autoComplete="new-password"
-            error={Boolean(passwordErrors.confirmPassword)}
-            helperText={passwordErrors.confirmPassword}
-          />
+          {/* Confirm new password */}
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+            <Typography component="label" sx={{ fontFamily: FONT, fontSize: 12.5, fontWeight: 600, color: "#374151" }}>
+              Confirm new password <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
+            </Typography>
+            <TextField
+              name="confirmPassword"
+              type="password"
+              value={passwordData.confirmPassword}
+              onChange={handlePasswordInputChange}
+              fullWidth
+              size="small"
+              autoComplete="new-password"
+              error={Boolean(passwordErrors.confirmPassword)}
+              helperText={passwordErrors.confirmPassword}
+            />
+          </Box>
         </DialogContent>
 
         <DialogActions>

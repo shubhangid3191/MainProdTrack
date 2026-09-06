@@ -292,7 +292,7 @@ const loadDepartments = async () => {
       {
         name: "employee",
         label: "Employee name",
-        placeholder: "Full name",
+        placeholder: "e.g. Aditya Rao",
         required: true,
       },
       {
@@ -331,7 +331,8 @@ const loadDepartments = async () => {
       {
         name: "lead",
         label: "Team lead",
-        placeholder: "Rohan Mehta",
+        // Dynamically uses the first real team lead's name as the placeholder.
+        placeholder: teamLeads.length > 0 ? teamLeads[0].name : "e.g. Rohan Mehta",
         options: [
           "None",
           ...teamLeads.map(

@@ -558,29 +558,65 @@ export function CoreFormDialog({
         }}
       >
         {(fields || []).map((field) => (
-          <TextField
-            key={field.name}
-            label={field.required ? `${field.label} *` : field.label}
-            placeholder={field.placeholder}
-            type={field.options ? "text" : (field.type || "text")}
-            value={values[field.name] || ""}
-            onChange={(event) => update(field.name, event.target.value)}
-            select={Boolean(field.options)}
-            fullWidth
-            error={Boolean(errors[field.name])}
-            helperText={errors[field.name] ? `${field.label} is required.` : ""}
-          >
-            {field.options && (
-              <MenuItem value="">
-                {field.placeholder || "Select..."}
-              </MenuItem>
-            )}
-            {field.options?.map((option) => (
-              <MenuItem key={option} value={option}>
-                {option}
-              </MenuItem>
-            ))}
-          </TextField>
+          // Wraps each field in a Box so the label sits above the input like the reference design.
+          <Box key={field.name} sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+            {/* Label rendered outside and above the input box, always visible. */}
+            <Typography
+              component="label"
+              htmlFor={`field-${field.name}`}
+              sx={{
+                fontSize: 12.5,
+                fontWeight: 600,
+                color: errors[field.name] ? "#d32f2f" : "#374151",
+                lineHeight: 1.4,
+              }}
+            >
+              {field.label}
+              {field.required && (
+                <Box component="span" sx={{ color: "#d32f2f", ml: 0.3 }}>*</Box>
+              )}
+            </Typography>
+
+            {/* Input box with no MUI floating label — just a clean placeholder. */}
+            <TextField
+              id={`field-${field.name}`}
+              placeholder={field.placeholder}
+              type={field.options ? "text" : (field.type || "text")}
+              value={values[field.name] || ""}
+              onChange={(event) => update(field.name, event.target.value)}
+              select={Boolean(field.options)}
+              fullWidth
+              size="small"
+              error={Boolean(errors[field.name])}
+              helperText={errors[field.name] ? `${field.label} is required.` : ""}
+              // No label prop — label is rendered above as a Typography element.
+              InputLabelProps={{ shrink: false }}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 1.2,
+                  bgcolor: "#fff",
+                },
+                "& .MuiInputBase-input::placeholder": {
+                  color: "#9ca3af",
+                  opacity: 1,
+                  fontSize: 13.5,
+                },
+              }}
+            >
+              {field.options && (
+                <MenuItem value="">
+                  <Box component="span" sx={{ color: "#9ca3af" }}>
+                    {field.placeholder || "Select..."}
+                  </Box>
+                </MenuItem>
+              )}
+              {field.options?.map((option) => (
+                <MenuItem key={option} value={option}>
+                  {option}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Box>
         ))}
       </DialogContent>
 

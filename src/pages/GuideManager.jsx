@@ -1116,86 +1116,53 @@ const plainTextToHtml = (text = "") => {
                   {selectedGuideSection && (
                     <Box
                       sx={{
-                        display:
-                          "grid",
+                        display: "grid",
                         gap: 1.5,
                       }}
                     >
-                      {/* Edits the selected section title locally. */}
-                      <TextField
-                        label="Section title"
-                        value={
-                          selectedGuideSection.title ||
-                          ""
-                        }
-                        onChange={(
-                          event
-                        ) => {
-                          // Updates only the selected section title in local state.
-                          setGuideSections(
-                            (
-                              currentSections
-                            ) =>
-                              currentSections.map(
-                                (
-                                  section
-                                ) =>
-                                  Number(
-                                    section.section_id
-                                  ) ===
-                                  Number(
-                                    selectedSectionId
-                                  )
-                                    ? {
-                                        ...section,
-                                        title:
-                                          event
-                                            .target
-                                            .value,
-                                      }
-                                    : section
+                      {/* Section title */}
+                      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                        <Typography component="label" sx={{ fontSize: 12.5, fontWeight: 600, color: "#374151" }}>
+                          Section title
+                        </Typography>
+                        <TextField
+                          value={selectedGuideSection.title || ""}
+                          onChange={(event) => {
+                            setGuideSections((currentSections) =>
+                              currentSections.map((section) =>
+                                Number(section.section_id) === Number(selectedSectionId)
+                                  ? { ...section, title: event.target.value }
+                                  : section
                               )
-                          );
-                        }}
-                        fullWidth
-                      />
+                            );
+                          }}
+                          fullWidth
+                          size="small"
+                        />
+                      </Box>
 
-                      {/* Edits the selected section content locally. */}
-                      <TextField
-                        label="Section content"
-                        value={htmlToPlainText(
-                          selectedGuideSection.content ||""
-                  )}
-                        onChange={(
-                          event
-                        ) => {
-                          // Updates only the selected section content in local state.
-                          setGuideSections(
-                            (
-                              currentSections
-                            ) =>
-                              currentSections.map(
-                                (
-                                  section
-                                ) =>
-                                  Number(
-                                    section.section_id
-                                  ) ===
-                                  Number(
-                                    selectedSectionId
-                                  )
-                                    ? {
-                                        ...section,
-                                        content:plainTextToHtml( event.target.value),
-                                      }
-                                    : section
+                      {/* Section content */}
+                      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                        <Typography component="label" sx={{ fontSize: 12.5, fontWeight: 600, color: "#374151" }}>
+                          Section content
+                        </Typography>
+                        <TextField
+                          value={htmlToPlainText(selectedGuideSection.content || "")}
+                          onChange={(event) => {
+                            setGuideSections((currentSections) =>
+                              currentSections.map((section) =>
+                                Number(section.section_id) === Number(selectedSectionId)
+                                  ? { ...section, content: plainTextToHtml(event.target.value) }
+                                  : section
                               )
-                          );
-                        }}
-                        multiline
-                        minRows={8}
-                        fullWidth
-                      />
+                            );
+                          }}
+                          multiline
+                          minRows={8}
+                          fullWidth
+                          size="small"
+                        />
+                      </Box>
 
                       {/* Saves the selected guide section to the backend. */}
                       <Box
@@ -1245,7 +1212,7 @@ const plainTextToHtml = (text = "") => {
           }
         }}
         fullWidth
-        maxWidth="sm"
+        maxWidth="xs"
         PaperProps={{
           sx: {
             borderRadius: 2,
@@ -1283,28 +1250,35 @@ const plainTextToHtml = (text = "") => {
             pt: 2,
           }}
         >
-          {/* Uses the existing Guide name field as a live guide selector. */}
-          <TextField
-            select
-            label="Guide name *"
-            value={guideId}
-            onChange={(event) => {
-              setGuideId(event.target.value);
-              setUploadErrors((prev) => ({ ...prev, guideId: false }));
-            }}
-            fullWidth
-            error={uploadErrors.guideId}
-            helperText={uploadErrors.guideId ? "Please select a guide." : ""}
-          >
-            {guides.map((guide) => (
-              <MenuItem key={guide.guide_id} value={guide.guide_id}>
-                {guide.guide}
-              </MenuItem>
-            ))}
-          </TextField>
+          {/* Guide name */}
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+            <Typography component="label" sx={{ fontSize: 12.5, fontWeight: 600, color: "#374151" }}>
+              Guide name <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
+            </Typography>
+            <TextField
+              select
+              value={guideId}
+              onChange={(event) => {
+                setGuideId(event.target.value);
+                setUploadErrors((prev) => ({ ...prev, guideId: false }));
+              }}
+              fullWidth
+              error={uploadErrors.guideId}
+              helperText={uploadErrors.guideId ? "Please select a guide." : ""}
+            >
+              {guides.map((guide) => (
+                <MenuItem key={guide.guide_id} value={guide.guide_id}>
+                  {guide.guide}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Box>
 
-          {/* Keeps the same Choose guide file button UI. */}
+          {/* Choose guide file */}
           <Box>
+            <Typography component="label" sx={{ fontSize: 12.5, fontWeight: 600, color: "#374151", display: "block", mb: 0.5 }}>
+              Guide file <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
+            </Typography>
             <Button
               component="label"
               variant="outlined"
@@ -1323,12 +1297,7 @@ const plainTextToHtml = (text = "") => {
                 },
               }}
             >
-              {selectedFileName || (
-                <Box component="span">
-                  Choose guide file{" "}
-                  <Box component="span" sx={{ color: "error.main" }}>*</Box>
-                </Box>
-              )}
+              {selectedFileName || "Choose guide file (PDF)"}
               <input
                 hidden
                 type="file"
@@ -1346,19 +1315,23 @@ const plainTextToHtml = (text = "") => {
             )}
           </Box>
 
-          {/* Keeps the same Version field UI. */}
-          <TextField
-            label="Version *"
-            placeholder="e.g. v2.4"
-            value={version}
-            onChange={(event) => {
-              setVersion(event.target.value);
-              setUploadErrors((prev) => ({ ...prev, version: false }));
-            }}
-            fullWidth
-            error={uploadErrors.version}
-            helperText={uploadErrors.version ? "Please enter a version." : ""}
-          />
+          {/* Version */}
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+            <Typography component="label" sx={{ fontSize: 12.5, fontWeight: 600, color: "#374151" }}>
+              Version <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
+            </Typography>
+            <TextField
+              placeholder="e.g. v2.4"
+              value={version}
+              onChange={(event) => {
+                setVersion(event.target.value);
+                setUploadErrors((prev) => ({ ...prev, version: false }));
+              }}
+              fullWidth
+              error={uploadErrors.version}
+              helperText={uploadErrors.version ? "Please enter a version." : ""}
+            />
+          </Box>
         </DialogContent>
 
         <Divider />

@@ -1162,77 +1162,97 @@ useEffect(() => {
 
             <DialogContent dividers>
               <Box sx={{ display: "grid", gap: 2 }}>
-                <TextField
-                  select
-                  label={<>Leave type <Box component="span" sx={{ color: "error.main" }}>*</Box></>}
-                  name="leaveType"
-                  value={leaveForm.leaveType}
-                  onChange={(e) => {
-                    handleLeaveChange(e);
-                    setLeaveErrors((prev) => ({ ...prev, leaveType: false }));
-                  }}
-                  fullWidth
-                  size="small"
-                  error={leaveErrors.leaveType}
-                  helperText={leaveErrors.leaveType ? "Leave type is required." : ""}
-                >
-                  <MenuItem value="planned_leave">Planned Leave</MenuItem>
-                  <MenuItem value="sick_leave">Sick Leave</MenuItem>
-                </TextField>
 
-                <TextField
-                  label={<>Start date <Box component="span" sx={{ color: "error.main" }}>*</Box></>}
-                  type="date"
-                  name="startDate"
-                  value={leaveForm.startDate}
-                  onChange={(e) => {
-                    handleLeaveChange(e);
-                    setLeaveErrors((prev) => ({ ...prev, startDate: false, dateRange: false }));
-                  }}
-                  slotProps={{ inputLabel: { shrink: true } }}
-                  fullWidth
-                  size="small"
-                  error={leaveErrors.startDate}
-                  helperText={leaveErrors.startDate ? "Start date is required." : ""}
-                />
+                {/* Leave type */}
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                  <Typography component="label" sx={{ fontSize: 12.5, fontWeight: 600, color: "#374151" }}>
+                    Leave type <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
+                  </Typography>
+                  <TextField
+                    select
+                    name="leaveType"
+                    value={leaveForm.leaveType}
+                    onChange={(e) => {
+                      handleLeaveChange(e);
+                      setLeaveErrors((prev) => ({ ...prev, leaveType: false }));
+                    }}
+                    fullWidth
+                    size="small"
+                    error={leaveErrors.leaveType}
+                    helperText={leaveErrors.leaveType ? "Leave type is required." : ""}
+                  >
+                    <MenuItem value="planned_leave">Planned Leave</MenuItem>
+                    <MenuItem value="sick_leave">Sick Leave</MenuItem>
+                  </TextField>
+                </Box>
 
-                <TextField
-                  label={<>End date <Box component="span" sx={{ color: "error.main" }}>*</Box></>}
-                  type="date"
-                  name="endDate"
-                  value={leaveForm.endDate}
-                  onChange={(e) => {
-                    handleLeaveChange(e);
-                    setLeaveErrors((prev) => ({ ...prev, endDate: false, dateRange: false }));
-                  }}
-                  slotProps={{ inputLabel: { shrink: true } }}
-                  fullWidth
-                  size="small"
-                  error={leaveErrors.endDate || leaveErrors.dateRange}
-                  helperText={
-                    leaveErrors.endDate
-                      ? "End date is required."
-                      : leaveErrors.dateRange
-                      ? "End date cannot be before start date."
-                      : ""
-                  }
-                />
+                {/* Start date */}
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                  <Typography component="label" sx={{ fontSize: 12.5, fontWeight: 600, color: "#374151" }}>
+                    Start date <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
+                  </Typography>
+                  <TextField
+                    type="date"
+                    name="startDate"
+                    value={leaveForm.startDate}
+                    onChange={(e) => {
+                      handleLeaveChange(e);
+                      setLeaveErrors((prev) => ({ ...prev, startDate: false, dateRange: false }));
+                    }}
+                    fullWidth
+                    size="small"
+                    error={leaveErrors.startDate}
+                    helperText={leaveErrors.startDate ? "Start date is required." : ""}
+                  />
+                </Box>
 
-                <TextField
-                  label={<>Reason <Box component="span" sx={{ color: "error.main" }}>*</Box></>}
-                  name="reason"
-                  value={leaveForm.reason}
-                  onChange={(e) => {
-                    handleLeaveChange(e);
-                    setLeaveErrors((prev) => ({ ...prev, reason: false }));
-                  }}
-                  multiline
-                  rows={3}
-                  slotProps={{ htmlInput: { maxLength: 500 } }}
-                  fullWidth
-                  error={leaveErrors.reason}
-                  helperText={leaveErrors.reason ? "Reason is required." : ""}
-                />
+                {/* End date */}
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                  <Typography component="label" sx={{ fontSize: 12.5, fontWeight: 600, color: "#374151" }}>
+                    End date <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
+                  </Typography>
+                  <TextField
+                    type="date"
+                    name="endDate"
+                    value={leaveForm.endDate}
+                    onChange={(e) => {
+                      handleLeaveChange(e);
+                      setLeaveErrors((prev) => ({ ...prev, endDate: false, dateRange: false }));
+                    }}
+                    fullWidth
+                    size="small"
+                    error={leaveErrors.endDate || leaveErrors.dateRange}
+                    helperText={
+                      leaveErrors.endDate
+                        ? "End date is required."
+                        : leaveErrors.dateRange
+                        ? "End date cannot be before start date."
+                        : ""
+                    }
+                  />
+                </Box>
+
+                {/* Reason */}
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                  <Typography component="label" sx={{ fontSize: 12.5, fontWeight: 600, color: "#374151" }}>
+                    Reason <Box component="span" sx={{ color: "#d32f2f" }}>*</Box>
+                  </Typography>
+                  <TextField
+                    name="reason"
+                    value={leaveForm.reason}
+                    onChange={(e) => {
+                      handleLeaveChange(e);
+                      setLeaveErrors((prev) => ({ ...prev, reason: false }));
+                    }}
+                    multiline
+                    rows={3}
+                    slotProps={{ htmlInput: { maxLength: 500 } }}
+                    fullWidth
+                    error={leaveErrors.reason}
+                    helperText={leaveErrors.reason ? "Reason is required." : ""}
+                  />
+                </Box>
+
               </Box>
             </DialogContent>
 
