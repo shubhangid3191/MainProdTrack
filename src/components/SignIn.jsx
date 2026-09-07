@@ -605,54 +605,65 @@ const handleSubmit = async (event) => {
                 </Typography>
                 
                 <TextField
-                // slotProps={{
-                //   htmlInput: {
-                //     readOnly: !loginFieldsUnlocked,
-                //   },
-
-                //   input: {
-                //     endAdornment: (
-                //       <InputAdornment position="end">
-                //         <IconButton
-                //           type="button"
-                //           edge="end"
-                //           aria-label={
-                //             showPassword
-                //               ? "Hide password"
-                //               : "Show password"
-                //           }
-                //           onClick={() =>
-                //             setShowPassword(
-                //               (current) => !current
-                //             )
-                //           }
-                //         >
-                //           {showPassword ? (
-                //             <VisibilityOffOutlinedIcon
-                //               fontSize="small"
-                //             />
-                //           ) : (
-                //             <VisibilityOutlinedIcon
-                //               fontSize="small"
-                //             />
-                //           )}
-                //         </IconButton>
-                //       </InputAdornment>
-                //     ),
-                //   },
-                // }}
                   fullWidth
+                  name="prodtrackLoginPassword"
+                  autoComplete="new-password"
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter password"
                   value={password}
                   onChange={(event) => {
                     setPassword(event.target.value);
-                    if (fieldErrors.password) setFieldErrors((p) => ({ ...p, password: "" }));
+
+                    if (fieldErrors.password) {
+                      setFieldErrors((previousErrors) => ({
+                        ...previousErrors,
+                        password: "",
+                      }));
+                    }
+                  }}
+                  slotProps={{
+                    input: {
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            type="button"
+                            edge="end"
+                            aria-label={
+                              showPassword
+                                ? "Hide password"
+                                : "Show password"
+                            }
+                            onClick={() => {
+                              setShowPassword(
+                                (currentValue) => !currentValue
+                              );
+                            }}
+                            onMouseDown={(event) => {
+                              event.preventDefault();
+                            }}
+                          >
+                            {showPassword ? (
+                              <VisibilityOffOutlinedIcon fontSize="small" />
+                            ) : (
+                              <VisibilityOutlinedIcon fontSize="small" />
+                            )}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    },
                   }}
                   error={Boolean(fieldErrors.password)}
                   helperText={fieldErrors.password}
                   sx={{
                     mb: 0.6,
+
+                    "& input::-ms-reveal": {
+                      display: "none",
+                    },
+
+                    "& input::-ms-clear": {
+                      display: "none",
+                    },
 
                     "& .MuiOutlinedInput-root": {
                       bgcolor: "#ffffff",
@@ -664,7 +675,7 @@ const handleSubmit = async (event) => {
                       },
 
                       "&:hover fieldset": {
-                        borderColor: "#b9c3d0",
+                        borderColor: "#b9c5d4",
                       },
 
                       "&.Mui-focused fieldset": {
