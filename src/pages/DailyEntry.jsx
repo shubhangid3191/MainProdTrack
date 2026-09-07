@@ -6,7 +6,9 @@ import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
-import DialogContentText from "@mui/material/DialogContentText";
+import IconButton from "@mui/material/IconButton";
+import Divider from "@mui/material/Divider";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import MenuItem from "@mui/material/MenuItem";
 import TextField from "@mui/material/TextField";
 import Box from "@mui/material/Box";
@@ -220,7 +222,7 @@ function StatusChipIndexer({ status }) {
     reason: "",
   });
   const [correctionSaving, setCorrectionSaving] = useState(false);
-
+  const [correctionErrors, setCorrectionErrors] = useState({});
   const [formData, setFormData] = useState({
     productionDate: new Date().toISOString().slice(0, 10),
     projectId: "",
@@ -419,37 +421,62 @@ function StatusChipIndexer({ status }) {
   };
 
 
-  const handleRequestCorrection = (entry) => {
-    setCorrectionEntry(entry);
-    setCorrectionForm({
-      fieldName: "docs_completed",
-      newValue: String(entry.completed ?? ""),
-      reason: "",
-    });
-    setCorrectionOpen(true);
-  };
+ const handleRequestCorrection = (entry) => {
+  setCorrectionEntry(entry);
 
-  const handleCorrectionFieldChange = (event) => {
-    const { name, value } = event.target;
-    setCorrectionForm((prev) => ({ ...prev, [name]: value }));
-    // Pre-fill newValue when field changes
-    if (name === "fieldName" && correctionEntry) {
-      const defaultVal =
-        value === "docs_completed"
-          ? String(correctionEntry.completed ?? "")
-          : value === "docs_received"
-          ? String(correctionEntry.received ?? "")
-          : "";
-      setCorrectionForm((prev) => ({ ...prev, [name]: value, newValue: defaultVal }));
-    }
-  };
+  setCorrectionForm({
+    fieldName: "docs_completed",
+    newValue: "",
+    reason: "",
+  });
+
+  setCorrectionErrors({});
+  setCorrectionOpen(true);
+};
+
+const handleCorrectionFieldChange = (event) => {
+  const { name, value } = event.target;
+
+  setCorrectionForm((previousForm) => ({
+    ...previousForm,
+    [name]: value,
+  }));
+
+  setCorrectionErrors((previousErrors) => ({
+    ...previousErrors,
+    [name]: undefined,
+  }));
+};
 
   const handleCorrectionSubmit = async () => {
     if (!correctionEntry) return;
-    if (!correctionForm.newValue.trim() || !correctionForm.reason.trim()) {
-      toast.warning("Please fill in the corrected value and reason.");
+
+    const nextErrors = {};
+
+    if (!correctionForm.fieldName) {
+      nextErrors.fieldName = "Please select a field.";
+    }
+
+    if (!String(correctionForm.newValue).trim()) {
+      nextErrors.newValue = "New value is required.";
+    } else if (
+      !Number.isSafeInteger(Number(correctionForm.newValue)) ||
+      Number(correctionForm.newValue) < 0
+    ) {
+      nextErrors.newValue =
+        "Enter a valid non-negative whole number.";
+    }
+
+    if (!correctionForm.reason.trim()) {
+      nextErrors.reason = "Reason for change is required.";
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setCorrectionErrors(nextErrors);
       return;
     }
+
+    setCorrectionErrors({});
     const oldValue =
       correctionForm.fieldName === "docs_completed"
         ? correctionEntry.completed
@@ -1203,99 +1230,363 @@ function StatusChipIndexer({ status }) {
         </Box>
       )}
 
-      {/* ── Correction request dialog ── */}
-      <Dialog
-        open={correctionOpen}
-        onClose={() => { if (!correctionSaving) setCorrectionOpen(false); }}
-        fullWidth
-        maxWidth="xs"
-        aria-labelledby="correction-dialog-title"
+          {/* CORRECTION REQUEST DIALOG */}
+    <Dialog
+      open={correctionOpen}
+      onClose={() => {
+        if (!correctionSaving) {
+          setCorrectionOpen(false);
+        }
+      }}
+      fullWidth
+      maxWidth={false}
+      aria-labelledby="correction-dialog-title"
+      sx={{
+        "& .MuiDialog-paper": {
+          width: 600,
+          maxWidth: "94vw",
+          borderRadius: "16px",
+          overflow: "hidden",
+          boxShadow:
+            "0 20px 60px rgba(15, 23, 42, 0.25)",
+        },
+      }}
+      slotProps={{
+        backdrop: {
+          sx: {
+            backgroundColor: "rgba(15, 23, 42, 0.48)",
+          },
+        },
+      }}
+    >
+      {/* HEADER */}
+      <DialogTitle
+        id="correction-dialog-title"
+        sx={{
+          px: 2.75,
+          py: 2.1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          color: "#1a2434",
+          fontSize: 18,
+          fontWeight: 800,
+        }}
       >
-        <DialogTitle id="correction-dialog-title">Request correction</DialogTitle>
-        <DialogContent>
-          <DialogContentText sx={{ mb: 2, fontSize: 13 }}>
-            Entry #{correctionEntry?.id} — {correctionEntry?.project}
-          </DialogContentText>
+        New correction request
 
-          {/* Field to correct */}
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, mb: 2 }}>
-            <Typography component="label" sx={{ fontSize: 12.5, fontWeight: 600, color: "#374151" }}>
-              Field to correct
-            </Typography>
-            <TextField
-              select
-              value={correctionForm.fieldName}
-              onChange={(event) => {
-                const selectedField = event.target.value;
-                const selectedValue =
-                  selectedField === "docs_completed"
-                    ? correctionEntry?.completed
-                    : selectedField === "docs_received"
-                    ? correctionEntry?.received
-                    : "";
-                setCorrectionForm((previousForm) => ({
-                  ...previousForm,
-                  fieldName: selectedField,
-                  newValue: String(selectedValue ?? ""),
-                }));
+        <IconButton
+          size="small"
+          disabled={correctionSaving}
+          onClick={() => setCorrectionOpen(false)}
+          sx={{ color: "#6a7585" }}
+        >
+          <CloseRoundedIcon fontSize="small" />
+        </IconButton>
+      </DialogTitle>
+
+      <Divider />
+
+      {/* FORM */}
+      <DialogContent
+        sx={{
+          px: 2.75,
+          py: 2.75,
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 2.25,
+          }}
+        >
+          {/* PROJECT */}
+          <Box>
+            <Typography
+              sx={{
+                mb: 0.7,
+                color: "#3b5068",
+                fontSize: 13,
+                fontWeight: 600,
               }}
-              fullWidth
-              size="small"
             >
-              <MenuItem value="docs_completed">Documents completed</MenuItem>
-              <MenuItem value="docs_received">Documents received</MenuItem>
-            </TextField>
-          </Box>
-
-          {/* Corrected value */}
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, mb: 2 }}>
-            <Typography component="label" sx={{ fontSize: 12.5, fontWeight: 600, color: "#374151" }}>
-              Corrected value
+              Project
             </Typography>
+
             <TextField
-              name="newValue"
-              value={correctionForm.newValue}
-              onChange={handleCorrectionFieldChange}
               fullWidth
               size="small"
+              value={correctionEntry?.project || ""}
+              slotProps={{
+                input: {
+                  readOnly: true,
+                },
+              }}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  height: 51,
+                  borderRadius: "9px",
+                  backgroundColor: "#fff",
+                },
+              }}
             />
           </Box>
 
-          {/* Reason */}
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-            <Typography component="label" sx={{ fontSize: 12.5, fontWeight: 600, color: "#374151" }}>
-              Reason
+          {/* DATE AND FIELD */}
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "1fr 1fr",
+              },
+              gap: 2,
+            }}
+          >
+            <Box>
+              <Typography
+                sx={{
+                  mb: 0.7,
+                  color: "#3b5068",
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}
+              >
+                Production date
+              </Typography>
+
+              <TextField
+                fullWidth
+                size="small"
+                value={
+                  correctionEntry?.raw?.production_date ||
+                  correctionEntry?.date ||
+                  ""
+                }
+                slotProps={{
+                  input: {
+                    readOnly: true,
+                  },
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    height: 51,
+                    borderRadius: "9px",
+                  },
+                }}
+              />
+            </Box>
+
+            <Box>
+              <Typography
+                sx={{
+                  mb: 0.7,
+                  color: "#3b5068",
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}
+              >
+                Field name
+              </Typography>
+
+              <TextField
+                select
+                fullWidth
+                size="small"
+                name="fieldName"
+                value={correctionForm.fieldName}
+                onChange={handleCorrectionFieldChange}
+                error={Boolean(correctionErrors.fieldName)}
+                helperText={correctionErrors.fieldName}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    minHeight: 51,
+                    borderRadius: "9px",
+                  },
+                }}
+              >
+                <MenuItem value="docs_completed">
+                  Documents completed
+                </MenuItem>
+
+                <MenuItem value="docs_received">
+                  Documents received
+                </MenuItem>
+              </TextField>
+            </Box>
+          </Box>
+
+          {/* OLD AND NEW VALUE */}
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "1fr 1fr",
+              },
+              gap: 2,
+            }}
+          >
+            <Box>
+              <Typography
+                sx={{
+                  mb: 0.7,
+                  color: "#3b5068",
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}
+              >
+                Old value
+              </Typography>
+
+              <TextField
+                fullWidth
+                size="small"
+                value={
+                  correctionForm.fieldName ===
+                  "docs_completed"
+                    ? correctionEntry?.completed ?? ""
+                    : correctionEntry?.received ?? ""
+                }
+                slotProps={{
+                  input: {
+                    readOnly: true,
+                  },
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    height: 51,
+                    borderRadius: "9px",
+                    backgroundColor: "#f8fafc",
+                  },
+                }}
+              />
+            </Box>
+
+            <Box>
+              <Typography
+                sx={{
+                  mb: 0.7,
+                  color: "#3b5068",
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}
+              >
+                New value
+              </Typography>
+
+              <TextField
+                fullWidth
+                size="small"
+                type="number"
+                name="newValue"
+                placeholder="Corrected value"
+                value={correctionForm.newValue}
+                onChange={handleCorrectionFieldChange}
+                error={Boolean(correctionErrors.newValue)}
+                helperText={correctionErrors.newValue}
+                slotProps={{
+                  htmlInput: {
+                    min: 0,
+                    step: 1,
+                  },
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    minHeight: 51,
+                    borderRadius: "9px",
+                  },
+                }}
+              />
+            </Box>
+          </Box>
+
+          {/* REASON */}
+          <Box>
+            <Typography
+              sx={{
+                mb: 0.7,
+                color: "#3b5068",
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+            >
+              Reason for change
             </Typography>
+
             <TextField
+              fullWidth
+              multiline
+              minRows={3}
               name="reason"
+              placeholder="Why this correction is needed"
               value={correctionForm.reason}
               onChange={handleCorrectionFieldChange}
-              fullWidth
-              size="small"
-              multiline
-              rows={3}
+              error={Boolean(correctionErrors.reason)}
+              helperText={correctionErrors.reason}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "9px",
+                },
+              }}
             />
           </Box>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button
-            onClick={() => setCorrectionOpen(false)}
-            disabled={correctionSaving}
-            variant="outlined"
-            sx={{ textTransform: "none", borderColor: "#d0d7e2", color: "#1a2434" }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleCorrectionSubmit}
-            disabled={correctionSaving}
-            variant="contained"
-            sx={{ textTransform: "none" }}
-          >
-            {correctionSaving ? "Submitting…" : "Submit"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        </Box>
+      </DialogContent>
+
+  <Divider />
+
+  {/* BUTTONS */}
+  <DialogActions
+    sx={{
+      px: 2.75,
+      py: 2,
+      gap: 1,
+      backgroundColor: "#f8fafc",
+    }}
+  >
+    <Button
+      variant="outlined"
+      disabled={correctionSaving}
+      onClick={() => setCorrectionOpen(false)}
+      sx={{
+        height: 46,
+        px: 2.4,
+        borderRadius: "9px",
+        borderColor: "#d0d7e2",
+        color: "#1a2434",
+        textTransform: "none",
+        fontWeight: 600,
+      }}
+    >
+      Cancel
+    </Button>
+
+    <Button
+      variant="contained"
+      disabled={correctionSaving}
+      onClick={handleCorrectionSubmit}
+      sx={{
+        height: 46,
+        px: 2.4,
+        borderRadius: "9px",
+        backgroundColor: "#2f6df0",
+        textTransform: "none",
+        fontWeight: 700,
+        boxShadow: "none",
+        "&:hover": {
+          backgroundColor: "#255dd8",
+          boxShadow: "none",
+        },
+      }}
+    >
+      {correctionSaving
+        ? "Submitting…"
+        : "Submit request"}
+    </Button>
+  </DialogActions>
+</Dialog>
     </Box>
   );
 }
