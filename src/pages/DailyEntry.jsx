@@ -1200,20 +1200,38 @@ const handleCorrectionFieldChange = (event) => {
                   )}
 
                   {entry.status === "LOCKED" && (
-                    <Typography
-                        onClick={() =>
+                        <Button
+                          // Keeps the existing correction request functionality unchanged.
+                          type="button"
+                          size="small"
+                          variant="outlined"
+                          onClick={() =>
                             handleRequestCorrection(entry)
                           }
-                      sx={{
-                        fontSize: 12,
-                        color: "#64748b",
-                        whiteSpace: "nowrap",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Request correction
-                    </Typography>
-                  )}
+                          sx={{
+                            // Gives Request correction a clear clickable button appearance.
+                            minWidth: "auto",
+                            height: 32,
+                            px: 1.5,
+                            fontSize: 12,
+                            fontWeight: 600,
+                            textTransform: "none",
+                            whiteSpace: "nowrap",
+                            color: "#3169e8",
+                            borderColor: "#bcd2ff",
+                            bgcolor: "#f5f8ff",
+                            borderRadius: "6px",
+
+                            // Adds a stronger blue appearance on hover.
+                            "&:hover": {
+                              bgcolor: "#eaf1ff",
+                              borderColor: "#3169e8",
+                            },
+                          }}
+                        >
+                          Request correction
+                        </Button>
+                      )}
                 </TableCell>
               </TableRow>
             ))}
