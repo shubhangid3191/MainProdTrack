@@ -2449,7 +2449,9 @@ function TeamLeadDailyEntryTeamLead() {
           EDITABLE — DRAFT
         </Typography>
       </Box>
-
+      
+      {/* TEAM MEMBERS' SUBMITTED ENTRIES FOR REVIEW */}
+      <TeamPendingEntries />
       {/* =================================================
           ENTRY FORM
        ================================================= */}
