@@ -1020,7 +1020,7 @@ const plainTextToHtml = (text = "") => {
                 ? "Loading..."
                 : "Compliance"
             }
-            actionVariant="text"
+            actionVariant="outlined"
             onAction={
               handleCompliance
             }
