@@ -29,6 +29,9 @@ const getStoredUser = () => {
 export default function App() {
   const [user, setUser] = useState(getStoredUser);
   const [page, setPage] = useState("dashboard");
+   // Stores the exact item selected from the global search.
+  const [searchSelection, setSearchSelection] = useState(null);
+
   // Stores the pending guide object returned by /api/guides/pending-ack.
   // null  → not fetched yet or no pending guide.
   // object → a guide is waiting for acknowledgement, open the modal.
@@ -129,7 +132,7 @@ const logout = useCallback(() => {
     "scroll",
     "touchstart",
   ];
-
+ 
   activityEvents.forEach((eventName) => {
     window.addEventListener(
       eventName,
@@ -164,7 +167,11 @@ if (!user) return <SignIn onLogin={login} />;
         onNavigate={setPage}
         onLogout={logout}
       >
-        <AppRoutes user={user} currentPage={page} onNavigate={setPage} onReviewGuide={fetchPendingGuide} />
+        <AppRoutes 
+        user={user} currentPage={page} 
+        onNavigate={setPage} 
+        onReviewGuide={fetchPendingGuide}
+        searchSelection={searchSelection} />
       </DashboardLayout>
 
       {user.roleKey === "indexer" && (
@@ -172,9 +179,6 @@ if (!user) return <SignIn onLogin={login} />;
           open={Boolean(pendingGuide)}
           guide={pendingGuide}
           onClose={(acknowledged) => {
-            // Clear the guide so the modal closes.
-            // acknowledged=true means the user confirmed; Later also clears it
-            // so it won't re-appear until they log in again.
             setPendingGuide(null);
           }}
         />

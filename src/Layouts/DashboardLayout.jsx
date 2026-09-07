@@ -29,6 +29,27 @@ export default function DashboardLayout({
         currentPage={currentPage}
         onNavigate={onNavigate}
         onSignOut={onLogout}
+        // Stores the clicked search result and opens the matching page.
+onSearchSelect={(result) => {
+  setSearchSelection(result);
+
+  // Opens Projects page for project results.
+  if (result.type === "project") {
+    setPage("projects");
+    return;
+  }
+
+  // Opens Daily Entry page for entry results.
+  if (result.type === "entry") {
+    setPage("daily-entry");
+    return;
+  }
+
+  // Opens profile page for user results in the basic version.
+  if (result.type === "user") {
+    setPage("my-profile");
+  }
+}}
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
       />
@@ -53,6 +74,8 @@ export default function DashboardLayout({
             onNotifications={() => onNavigate("notifications")}
             onMenuClick={() => setMobileOpen(true)}
             onProfileClick={() => onNavigate("my-profile")}
+            // Gives the Header search access to the existing page-navigation function.
+            onNavigate={onNavigate}
           />
         </Box>
 

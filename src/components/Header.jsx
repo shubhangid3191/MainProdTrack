@@ -23,7 +23,9 @@ export default function Header({
   onHelp,
   onMenuClick,
   onProfileClick,
+  onNavigate,
 }) {
+  // Builds user initials for the existing avatar.
   const initials = userName
     .split(" ")
     .filter(Boolean)
@@ -32,91 +34,179 @@ export default function Header({
     .slice(0, 2)
     .toUpperCase();
 
+  // Stores the live unread notification count.
   const [liveNotificationCount, setLiveNotificationCount] =
-  useState(notificationCount);
+    useState(notificationCount);
 
-useEffect(() => {
-  const loadNotificationCount = async () => {
-    const normalizedRole = String(role || "")
-          .replace(/\s+/g, "")
-          .toLowerCase();
+  // Stores the current text typed in the global search box.
+  const [searchQuery, setSearchQuery] = useState("");
 
-        if (
-          ![
-            "indexer",
-            "teamlead",
-            "coreteam",
-            "administrator",
-          ].includes(normalizedRole)
-        ) {
-          return;
-        }
+  // Stores matching project, user, and entry results from the backend.
+  const [searchResults, setSearchResults] = useState([]);
 
-    try {
-      const data = await apiRequest(
-        "/notifications/my"
-      );
+  // Tracks whether the global search API is currently loading.
+  const [searchLoading, setSearchLoading] = useState(false);
 
-      setLiveNotificationCount(
-        Number(data.unreadCount || 0)
-      );
-    } catch (error) {
-      console.error(
-        "Header notification count error:",
-        error
-      );
-    }
-  };
+  // Controls whether the search result dropdown is visible.
+  const [searchOpen, setSearchOpen] = useState(false);
 
-  loadNotificationCount();
+  // =========================================================
+  // LOAD NOTIFICATION COUNT
+  // =========================================================
 
-  window.addEventListener(
-    "prodtrack-notifications-updated",
-    loadNotificationCount
-  );
+  useEffect(() => {
+    // Loads unread notifications for supported roles.
+    const loadNotificationCount = async () => {
+      // Normalizes the role name for comparison.
+      const normalizedRole = String(role || "")
+        .replace(/\s+/g, "")
+        .toLowerCase();
 
-  return () => {
-    window.removeEventListener(
+      // Stops the request for unsupported roles.
+      if (
+        ![
+          "indexer",
+          "teamlead",
+          "coreteam",
+          "administrator",
+        ].includes(normalizedRole)
+      ) {
+        return;
+      }
+
+      try {
+        // Calls the existing notifications API.
+        const data = await apiRequest(
+          "/notifications/my"
+        );
+
+        // Stores the returned unread count.
+        setLiveNotificationCount(
+          Number(data.unreadCount || 0)
+        );
+      } catch (error) {
+        // Logs notification count errors.
+        console.error(
+          "Header notification count error:",
+          error
+        );
+      }
+    };
+
+    // Loads notification count when Header mounts.
+    loadNotificationCount();
+
+    // Reloads notification count when another component updates notifications.
+    window.addEventListener(
       "prodtrack-notifications-updated",
       loadNotificationCount
     );
-  };
-}, [role]);
 
-const handleNotificationIconClick =
-  async () => {
-    try {
-      // Only calls API when unread
-      // notifications are available.
-      if (liveNotificationCount > 0) {
-        await apiRequest(
-          "/notifications/read-all",
-          {
-            method: "PATCH",
-          }
-        );
-
-        // Removes Header badge immediately.
-        setLiveNotificationCount(0);
-
-        // Tells Sidebar to reload its
-        // notification badge.
-        window.dispatchEvent(
-          new Event(
-            "prodtrack-notifications-updated"
-          )
-        );
-      }
-    } catch (error) {
-      console.error(
-        "Mark all notifications error:",
-        error
+    // Removes the notification event listener when Header unmounts.
+    return () => {
+      window.removeEventListener(
+        "prodtrack-notifications-updated",
+        loadNotificationCount
       );
-    } finally {
-      // Opens Notifications page.
-      onNotifications?.();
+    };
+  }, [role]);
+
+  // =========================================================
+  // GLOBAL BASIC SEARCH
+  // =========================================================
+
+  useEffect(() => {
+    // Removes unnecessary spaces from the typed search text.
+    const trimmedQuery = searchQuery.trim();
+
+    // Clears and closes search when no text is entered.
+    if (!trimmedQuery) {
+      setSearchResults([]);
+      setSearchOpen(false);
+      return;
     }
-  };
+
+    // Delays the request slightly so the API is not called on every instant keystroke.
+    const searchTimer = setTimeout(async () => {
+      try {
+        // Enables the loading state.
+        setSearchLoading(true);
+
+        // Calls the backend global search API.
+        const data = await apiRequest(
+          `/search?q=${encodeURIComponent(
+            trimmedQuery
+          )}`
+        );
+
+        // Stores the returned search results.
+        setSearchResults(
+          data.results || []
+        );
+
+        // Opens the dropdown after the request completes.
+        setSearchOpen(true);
+      } catch (error) {
+        // Logs global search errors.
+        console.error(
+          "Header global search error:",
+          error
+        );
+
+        // Clears stale search results when the request fails.
+        setSearchResults([]);
+
+        // Closes the dropdown on an API error.
+        setSearchOpen(false);
+      } finally {
+        // Stops the loading state.
+        setSearchLoading(false);
+      }
+    }, 350);
+
+    // Cancels the previous delayed search if the user types again.
+    return () => {
+      clearTimeout(searchTimer);
+    };
+  }, [searchQuery]);
+
+  // =========================================================
+  // NOTIFICATION ICON CLICK
+  // =========================================================
+
+  const handleNotificationIconClick =
+    async () => {
+      try {
+        // Only marks notifications as read when unread notifications exist.
+        if (liveNotificationCount > 0) {
+          await apiRequest(
+            "/notifications/read-all",
+            {
+              method: "PATCH",
+            }
+          );
+
+          // Removes Header notification badge immediately.
+          setLiveNotificationCount(0);
+
+          // Tells Sidebar to reload its notification badge.
+          window.dispatchEvent(
+            new Event(
+              "prodtrack-notifications-updated"
+            )
+          );
+        }
+      } catch (error) {
+        // Logs mark-all-read errors.
+        console.error(
+          "Mark all notifications error:",
+          error
+        );
+      } finally {
+        // Opens the Notifications page.
+        onNotifications?.();
+      }
+    };
 
   return (
     <AppBar
@@ -143,24 +233,63 @@ const handleNotificationIconClick =
       >
         {/* ================= LEFT ================= */}
 
-        <Box sx={{ pl: 0.5, display: "flex", alignItems: "center", gap: 1 }}>
+        <Box
+          sx={{
+            pl: 0.5,
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
           <IconButton
             onClick={onMenuClick}
             sx={{
-              display: { xs: "flex", md: "none" },
+              display: {
+                xs: "flex",
+                md: "none",
+              },
               color: "#e2e8f0",
               mr: 0.5,
             }}
           >
-            <Box component="svg" viewBox="0 0 24 24" sx={{ width: 22, height: 22, fill: "none" }}>
-              <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <Box
+              component="svg"
+              viewBox="0 0 24 24"
+              sx={{
+                width: 22,
+                height: 22,
+                fill: "none",
+              }}
+            >
+              <path
+                d="M4 6h16M4 12h16M4 18h16"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
             </Box>
           </IconButton>
+
           <Box>
-            <Typography sx={{ color: "#fff", fontWeight: 700, fontSize: 16, lineHeight: 1.15 }}>
+            <Typography
+              sx={{
+                color: "#fff",
+                fontWeight: 700,
+                fontSize: 16,
+                lineHeight: 1.15,
+              }}
+            >
               Welcome, {userName}
             </Typography>
-            <Typography sx={{ color: "#94a3b8", fontSize: 12, lineHeight: 1.2, mt: 0.2 }}>
+
+            <Typography
+              sx={{
+                color: "#94a3b8",
+                fontSize: 12,
+                lineHeight: 1.2,
+                mt: 0.2,
+              }}
+            >
               {role}
             </Typography>
           </Box>
@@ -172,17 +301,34 @@ const handleNotificationIconClick =
           sx={{
             display: "flex",
             alignItems: "center",
-            gap: { xs: 0.6, sm: 1.2 },
-            pr: { xs: 1, sm: 2.5 },
+            gap: {
+              xs: 0.6,
+              sm: 1.2,
+            },
+            pr: {
+              xs: 1,
+              sm: 2.5,
+            },
           }}
         >
           {/* SEARCH — hidden below md */}
 
           <Box
             sx={{
-              display: { xs: "none", md: "flex" },
-              width: { md: 200, lg: 294 },
+              display: {
+                xs: "none",
+                md: "flex",
+              },
+
+              width: {
+                md: 200,
+                lg: 294,
+              },
+
               height: 40,
+
+              // Lets the result dropdown stay directly below the existing search box.
+              position: "relative",
 
               alignItems: "center",
 
@@ -211,6 +357,26 @@ const handleNotificationIconClick =
 
             <InputBase
               placeholder="Search projects, entries, users..."
+
+              // Connects the existing input to the global search state.
+              value={searchQuery}
+
+              // Updates the search state whenever the user types.
+              onChange={(event) => {
+                setSearchQuery(
+                  event.target.value
+                );
+              }}
+
+              // Reopens existing results when the user focuses the search box again.
+              onFocus={() => {
+                if (
+                  searchResults.length > 0
+                ) {
+                  setSearchOpen(true);
+                }
+              }}
+
               sx={{
                 width: "100%",
 
@@ -224,21 +390,187 @@ const handleNotificationIconClick =
                 },
               }}
             />
+
+            {/* GLOBAL SEARCH RESULT DROPDOWN */}
+
+            {searchOpen && (
+              <Box
+                sx={{
+                  // Positions results directly below the original search bar.
+                  position: "absolute",
+
+                  top: 46,
+                  left: 0,
+
+                  width: "100%",
+
+                  maxHeight: 320,
+
+                  overflowY: "auto",
+
+                  bgcolor: "#ffffff",
+
+                  border:
+                    "1px solid #dbe3ec",
+
+                  borderRadius: "10px",
+
+                  boxShadow:
+                    "0 12px 30px rgba(15, 23, 42, 0.18)",
+
+                  zIndex: 1500,
+                }}
+              >
+                {/* Shows the loading message while searching. */}
+                {searchLoading && (
+                  <Typography
+                    sx={{
+                      px: 1.5,
+                      py: 1.2,
+                      fontSize: 13,
+                      color: "#64748b",
+                    }}
+                  >
+                    Searching...
+                  </Typography>
+                )}
+
+                {/* Shows a message when no results match the search. */}
+                {!searchLoading &&
+                  searchResults.length ===
+                    0 && (
+                    <Typography
+                      sx={{
+                        px: 1.5,
+                        py: 1.2,
+                        fontSize: 13,
+                        color: "#64748b",
+                      }}
+                    >
+                      No results found
+                    </Typography>
+                  )}
+
+                {/* Renders every project, user, and entry returned by the backend. */}
+                {!searchLoading &&
+                  searchResults.map(
+                    (result) => (
+                      <Box
+                        key={`${result.type}-${result.id}`}
+                         // Navigates to the correct page when a search result is selected.
+                          onClick={() => {
+                            // Closes the search dropdown.
+                            setSearchOpen(false);
+
+                            // Clears the search input after selection.
+                            setSearchQuery("");
+
+                            // Project result opens the existing Projects page.
+                            if (result.type === "project") {
+                              onNavigate?.("projects");
+                              return;
+                            }
+
+                            // Entry result opens the existing Daily Entry page.
+                            if (result.type === "entry") {
+                              onNavigate?.("daily-entry");
+                              return;
+                            }
+
+                            // User result opens My Profile in the current basic version.
+                            if (result.type === "user") {
+                              onNavigate?.("my-profile");
+                            }
+                          }}
+                        sx={{
+                          px: 1.5,
+                          py: 1,
+
+                          cursor: "pointer",
+
+                          borderBottom:
+                            "1px solid #eef2f7",
+
+                          "&:last-child": {
+                            borderBottom:
+                              "none",
+                          },
+
+                          "&:hover": {
+                            bgcolor:
+                              "#f8fafc",
+                          },
+                        }}
+                      >
+                        {/* Shows the result name/title. */}
+                        <Typography
+                          sx={{
+                            color:
+                              "#0f172a",
+
+                            fontSize: 13,
+
+                            fontWeight: 600,
+                          }}
+                        >
+                          {result.title ||
+                            `${result.type} #${result.id}`}
+                        </Typography>
+
+                        {/* Shows result type and optional code. */}
+                        <Typography
+                          sx={{
+                            color:
+                              "#64748b",
+
+                            fontSize: 11,
+
+                            mt: 0.2,
+
+                            textTransform:
+                              "capitalize",
+                          }}
+                        >
+                          {result.type}
+
+                          {result.code
+                            ? ` · ${result.code}`
+                            : ""}
+                        </Typography>
+                      </Box>
+                    )
+                  )}
+              </Box>
+            )}
           </Box>
 
           {/* SEARCH ICON ONLY — shown below md */}
 
           <IconButton
             sx={{
-              display: { xs: "flex", md: "none" },
+              display: {
+                xs: "flex",
+                md: "none",
+              },
+
               width: 42,
               height: 42,
+
               bgcolor: "#1e3149",
+
               borderRadius: "9px",
-              "&:hover": { bgcolor: "#293d57" },
+
+              "&:hover": {
+                bgcolor: "#293d57",
+              },
             }}
           >
-            <SearchIcon sx={{ color: "#94a3b8", fontSize: 19 }} />
+            <SearchIcon
+              sx={{
+                color: "#94a3b8",
+                fontSize: 19,
+              }}
+            />
           </IconButton>
 
           {/* NOTIFICATIONS */}
@@ -261,8 +593,13 @@ const handleNotificationIconClick =
             }}
           >
             <Badge
-              badgeContent={liveNotificationCount}
-              invisible={liveNotificationCount === 0}
+              badgeContent={
+                liveNotificationCount
+              }
+              invisible={
+                liveNotificationCount ===
+                0
+              }
               color="error"
               sx={{
                 "& .MuiBadge-badge": {
@@ -287,7 +624,11 @@ const handleNotificationIconClick =
           <IconButton
             onClick={onHelp}
             sx={{
-              display: { xs: "none", sm: "flex" },
+              display: {
+                xs: "none",
+                sm: "flex",
+              },
+
               width: 42,
               height: 42,
 
@@ -335,7 +676,10 @@ const handleNotificationIconClick =
             sx={{
               height: 40,
 
-              px: { xs: 1, sm: 1.8 },
+              px: {
+                xs: 1,
+                sm: 1.8,
+              },
 
               minWidth: "auto",
 
@@ -359,8 +703,29 @@ const handleNotificationIconClick =
               },
             }}
           >
-            <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>Logout</Box>
-            <Box component="span" sx={{ display: { xs: "inline", sm: "none" } }}>⏻</Box>
+            <Box
+              component="span"
+              sx={{
+                display: {
+                  xs: "none",
+                  sm: "inline",
+                },
+              }}
+            >
+              Logout
+            </Box>
+
+            <Box
+              component="span"
+              sx={{
+                display: {
+                  xs: "inline",
+                  sm: "none",
+                },
+              }}
+            >
+              ⏻
+            </Box>
           </Button>
         </Box>
       </Toolbar>
