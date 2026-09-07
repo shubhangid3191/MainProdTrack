@@ -208,6 +208,82 @@ export default function Header({
       }
     };
 
+// Handles search-result navigation according to the logged-in user role.
+const handleSearchResultClick = (result) => {
+  // Closes the search dropdown after a result is selected.
+  setSearchOpen(false);
+
+  // Clears the search box after selection.
+  setSearchQuery("");
+
+  // Normalizes role names such as "Core Team" → "coreteam".
+  const normalizedRole = String(role || "")
+    .replace(/\s+/g, "")
+    .toLowerCase();
+
+  // Core Team and Administrator use management pages.
+  if (
+    normalizedRole === "coreteam" ||
+    normalizedRole === "administrator"
+  ) {
+    // Project results open Project Master.
+    if (result.type === "project") {
+      onNavigate?.("project-master");
+      return;
+    }
+
+    // User results open User Master.
+    if (result.type === "user") {
+      onNavigate?.("users");
+      return;
+    }
+
+    // Entry results currently open Analytics & KPIs.
+    if (result.type === "entry") {
+      onNavigate?.("analytics-kpis");
+      return;
+    }
+  }
+
+  // Team Lead uses operational project and entry pages.
+  if (normalizedRole === "teamlead") {
+    // Project results open Projects.
+    if (result.type === "project") {
+      onNavigate?.("projects");
+      return;
+    }
+
+    // Entry results open Daily Entry.
+    if (result.type === "entry") {
+      onNavigate?.("daily-entry");
+      return;
+    }
+
+    // User results open My Team.
+    if (result.type === "user") {
+      onNavigate?.("my-team");
+      return;
+    }
+  }
+
+  // Indexer project results open Projects.
+  if (result.type === "project") {
+    onNavigate?.("projects");
+    return;
+  }
+
+  // Indexer entry results open Daily Entry.
+  if (result.type === "entry") {
+    onNavigate?.("daily-entry");
+    return;
+  }
+
+  // Indexer user results currently open My Profile.
+  if (result.type === "user") {
+    onNavigate?.("my-profile");
+  }
+};
+
   return (
     <AppBar
       position="static"
@@ -458,30 +534,10 @@ export default function Header({
                       <Box
                         key={`${result.type}-${result.id}`}
                          // Navigates to the correct page when a search result is selected.
-                          onClick={() => {
-                            // Closes the search dropdown.
-                            setSearchOpen(false);
-
-                            // Clears the search input after selection.
-                            setSearchQuery("");
-
-                            // Project result opens the existing Projects page.
-                            if (result.type === "project") {
-                              onNavigate?.("projects");
-                              return;
-                            }
-
-                            // Entry result opens the existing Daily Entry page.
-                            if (result.type === "entry") {
-                              onNavigate?.("daily-entry");
-                              return;
-                            }
-
-                            // User result opens My Profile in the current basic version.
-                            if (result.type === "user") {
-                              onNavigate?.("my-profile");
-                            }
-                          }}
+                          // Uses role-based navigation for the selected search result.
+                        onClick={() => {
+                          handleSearchResultClick(result);
+                        }}
                         sx={{
                           px: 1.5,
                           py: 1,
