@@ -421,17 +421,27 @@ export default function Sidebar({
       ================================================== */}
 
       <List
-        sx={{
-          py: 0,
-          flex: "1 1 auto",
-          minHeight: 0,
-          overflowY: "auto",
-          overflowX: "hidden",
-          scrollbarWidth: "thin",
-          scrollbarColor: "#526b8f transparent",
-          "&::-webkit-scrollbar": { width: 6 },
-          "&::-webkit-scrollbar-thumb": { backgroundColor: "#526b8f", borderRadius: 6 },
-        }}
+  sx={{
+    py: 0,
+    flex: "1 1 auto",
+    minHeight: 0,
+
+    // Keeps vertical scrolling enabled.
+    overflowY: "auto",
+    overflowX: "hidden",
+
+    // Hides the scrollbar in Firefox while keeping scrolling enabled.
+    scrollbarWidth: "none",
+
+    // Hides the scrollbar in older Microsoft browsers.
+    msOverflowStyle: "none",
+
+    // Hides the scrollbar in Chrome, Edge, and Safari.
+    "&::-webkit-scrollbar": {
+      display: "none",
+    },
+  }}
+
       >
         {menuItems.map((item) => (
           <NavItem
