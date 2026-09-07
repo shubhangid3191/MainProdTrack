@@ -529,6 +529,7 @@ export default function LockingRules() {
         title="Daily entry locking rules"
         description="Configure the Draft → Submitted → Reviewed → Locked workflow per project."
         actionLabel={saving ? "Saving..." : "Save rules"}
+        actionIcon={null}
         actionHandler={handleSaveRules}
       >
         {/* Shows an API error without changing the existing page layout. */}
