@@ -405,8 +405,8 @@ const rows =
             </TableRow>
           </TableHead>
           <TableBody>
-            {pagedRows.map(([time, initials, name, action, entity, detail]) => (
-              <TableRow key={`${time}-${name}`} hover>
+            {pagedRows.map(([time, initials, name, action, entity, detail], rowIdx) => (
+              <TableRow key={`${activeTab}-${auditPage}-${rowIdx}`} hover>
                 <TableCell
                   sx={{
                     color: "#526581",

@@ -629,7 +629,7 @@ export function CoreFormDialog({
               sx={{
                 fontSize: 12.5,
                 fontWeight: 600,
-                color: errors[field.name] ? "#d32f2f" : "#374151",
+                color: "#374151",
                 lineHeight: 1.4,
               }}
             >
