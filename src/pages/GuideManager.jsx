@@ -997,6 +997,14 @@ const plainTextToHtml = (text = "") => {
             </TextField>
           </Box>
 
+          <Box
+            sx={{
+              "& > .MuiPaper-root": {
+                borderTopLeftRadius: 0,
+                borderTopRightRadius: 0,
+              },
+            }}
+          >
           <CoreTable
             columns={[
               "PROJECT",
@@ -1017,6 +1025,7 @@ const plainTextToHtml = (text = "") => {
               handleCompliance
             }
           />
+          </Box>
 
           {/* Shows the section editor only after a guide version has been selected. */}
           {sectionVersionId && (
