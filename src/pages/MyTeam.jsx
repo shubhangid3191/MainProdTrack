@@ -240,8 +240,9 @@ function MemberRow({
 export default function MyTeam({ onNavigate }) {
   const toast = useToast();
   const [team, setTeam] = useState([]);
-  const [savingMemberId, setSavingMemberId] =
-  useState(null);
+  const [savingMemberId, setSavingMemberId] = useState(null);
+  const [teamPage, setTeamPage] = useState(0);
+  const TEAM_ROWS_PER_PAGE = 10;
 
 useEffect(() => {
   const loadMyTeam = async () => {
@@ -483,7 +484,7 @@ const handleMarkAttendance = async (
 
         {/* data rows */}
         <Box sx={{ overflowX: "auto" }}>
-          {team.map((member) => (
+          {team.slice(teamPage * TEAM_ROWS_PER_PAGE, (teamPage + 1) * TEAM_ROWS_PER_PAGE).map((member) => (
             <MemberRow
               key={member.id}
               {...member}
@@ -499,6 +500,15 @@ const handleMarkAttendance = async (
             />
           ))}
         </Box>
+        {Math.ceil(team.length / TEAM_ROWS_PER_PAGE) > 1 && (
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 1, px: 2, py: 1, borderTop: `1px solid ${LINE2}` }}>
+            <Typography sx={{ fontFamily: FONT, fontSize: 12, color: MUTED }}>
+              {teamPage * TEAM_ROWS_PER_PAGE + 1}–{Math.min((teamPage + 1) * TEAM_ROWS_PER_PAGE, team.length)} of {team.length}
+            </Typography>
+            <Button size="small" disabled={teamPage === 0} onClick={() => setTeamPage((p) => p - 1)} sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16, color: MUTED }}>‹</Button>
+            <Button size="small" disabled={teamPage >= Math.ceil(team.length / TEAM_ROWS_PER_PAGE) - 1} onClick={() => setTeamPage((p) => p + 1)} sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16, color: MUTED }}>›</Button>
+          </Box>
+        )}
       </Paper>
     </Box>
   );

@@ -533,6 +533,8 @@ function IndexerCorrectionRequestsIndexer({ user , onNavigate,}) {
   const toast = useToast();
   const [requestsIndexer, setRequestsIndexer] = useState([]);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [indexerPage, setIndexerPage] = useState(0);
+  const INDEXER_ROWS_PER_PAGE = 10;
 
   const userName = user?.name || "Indexer";
 
@@ -759,7 +761,7 @@ function IndexerCorrectionRequestsIndexer({ user , onNavigate,}) {
 
         {/* ================= TABLE ROWS ================= */}
 
-        {requestsIndexer.map((request, index) => (
+        {requestsIndexer.slice(indexerPage * INDEXER_ROWS_PER_PAGE, (indexerPage + 1) * INDEXER_ROWS_PER_PAGE).map((request, index) => (
           <Box
             key={request.id}
             sx={{
@@ -866,6 +868,15 @@ function IndexerCorrectionRequestsIndexer({ user , onNavigate,}) {
           </Box>
         ))}
       </Card>
+      {Math.ceil(requestsIndexer.length / INDEXER_ROWS_PER_PAGE) > 1 && (
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 1, px: 2, py: 1, border: "1px solid #dce3ec", borderTop: "none", borderRadius: "0 0 10px 10px", bgcolor: "#fff" }}>
+          <Typography sx={{ fontSize: 12, color: "#6A7585" }}>
+            {indexerPage * INDEXER_ROWS_PER_PAGE + 1}–{Math.min((indexerPage + 1) * INDEXER_ROWS_PER_PAGE, requestsIndexer.length)} of {requestsIndexer.length}
+          </Typography>
+          <Button size="small" disabled={indexerPage === 0} onClick={() => setIndexerPage((p) => p - 1)} sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16, color: "#6A7585" }}>‹</Button>
+          <Button size="small" disabled={indexerPage >= Math.ceil(requestsIndexer.length / INDEXER_ROWS_PER_PAGE) - 1} onClick={() => setIndexerPage((p) => p + 1)} sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16, color: "#6A7585" }}>›</Button>
+        </Box>
+      )}
 
       {/* NEW CORRECTION REQUEST DIALOG */}
       <NewCorrectionDialog
@@ -1034,6 +1045,8 @@ function CorrectionsCoreTeam({
   rejectedMonth: 0,
   averageTurnaroundHours: 0,
 });
+  const [correctionPage, setCorrectionPage] = useState(0);
+  const CORRECTION_ROWS_PER_PAGE = 10;
 
 useEffect(() => {
   const loadPendingRequests = async () => {
@@ -1366,8 +1379,9 @@ const updateStatus = async (rowIndex, newStatus) => {
           </TableHead>
 
           <TableBody>
-            {rows.map((row, rowIndex) => (
-              <TableRow key={row[6] || `${row[0]}-${rowIndex}`} hover>
+            {rows.slice(correctionPage * CORRECTION_ROWS_PER_PAGE, (correctionPage + 1) * CORRECTION_ROWS_PER_PAGE).map((row, rowIndex) => {
+              const globalIndex = correctionPage * CORRECTION_ROWS_PER_PAGE + rowIndex;
+              return (<TableRow key={row[6] || `${row[0]}-${rowIndex}`} hover>
                 <TableCell>{row[0]}</TableCell>
 
                 <TableCell>{row[1]}</TableCell>
@@ -1439,7 +1453,7 @@ const updateStatus = async (rowIndex, newStatus) => {
                       <Button
                         variant="contained"
                         size="small"
-                        onClick={() => updateStatus(rowIndex, "APPROVED")}
+                        onClick={() => updateStatus(globalIndex, "APPROVED")}
                         sx={{
                           minWidth: 84,
                           height: 38,
@@ -1455,7 +1469,7 @@ const updateStatus = async (rowIndex, newStatus) => {
                       <Button
                         variant="outlined"
                         size="small"
-                        onClick={() => updateStatus(rowIndex, "REJECTED")}
+                        onClick={() => updateStatus(globalIndex, "REJECTED")}
                         sx={{
                           minWidth: 70,
                           height: 38,
@@ -1472,10 +1486,20 @@ const updateStatus = async (rowIndex, newStatus) => {
                   )}
                 </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>
+      {Math.ceil(rows.length / CORRECTION_ROWS_PER_PAGE) > 1 && (
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 1, px: 2, py: 1, borderTop: "1px solid #dbe3ec" }}>
+          <Typography sx={{ fontSize: 12, color: "#6A7585" }}>
+            {correctionPage * CORRECTION_ROWS_PER_PAGE + 1}–{Math.min((correctionPage + 1) * CORRECTION_ROWS_PER_PAGE, rows.length)} of {rows.length}
+          </Typography>
+          <Button size="small" disabled={correctionPage === 0} onClick={() => setCorrectionPage((p) => p - 1)} sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16, color: "#6A7585" }}>‹</Button>
+          <Button size="small" disabled={correctionPage >= Math.ceil(rows.length / CORRECTION_ROWS_PER_PAGE) - 1} onClick={() => setCorrectionPage((p) => p + 1)} sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16, color: "#6A7585" }}>›</Button>
+        </Box>
+      )}
     </CorePageShell>
     {ConfirmElement}
     </>

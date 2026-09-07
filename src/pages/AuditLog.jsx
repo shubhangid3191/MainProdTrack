@@ -23,11 +23,13 @@ import {
 
 
 const tabs = ["Activity", "Change History", "Login Events"];
+const AUDIT_ROWS_PER_PAGE = 10;
 
 export default function AuditLog() {
   const toast = useToast();
   const [notice, setNotice] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
+  const [auditPage, setAuditPage] = useState(0);
   const [loginEvents, setLoginEvents] =
   useState([]);
   const [logs, setLogs] = useState([]);
@@ -299,6 +301,12 @@ const rows =
     : activeTab === 1
       ? changeRows
       : activityRows;
+
+  const auditTotalPages = Math.ceil(rows.length / AUDIT_ROWS_PER_PAGE);
+  const pagedRows = rows.slice(
+    auditPage * AUDIT_ROWS_PER_PAGE,
+    (auditPage + 1) * AUDIT_ROWS_PER_PAGE,
+  );
   return (
     <Box sx={{ width: "100%" }}>
       {/* ── PAGE HEADER ── */}
@@ -347,7 +355,7 @@ const rows =
         {tabs.map((tab, i) => (
           <Button
             key={tab}
-            onClick={() => setActiveTab(i)}
+            onClick={() => { setActiveTab(i); setAuditPage(0); }}
             sx={{
               borderRadius: 0,
               borderBottom:
@@ -397,7 +405,7 @@ const rows =
             </TableRow>
           </TableHead>
           <TableBody>
-            {rows.map(([time, initials, name, action, entity, detail]) => (
+            {pagedRows.map(([time, initials, name, action, entity, detail]) => (
               <TableRow key={`${time}-${name}`} hover>
                 <TableCell
                   sx={{
@@ -458,6 +466,40 @@ const rows =
             ))}
           </TableBody>
         </Table>
+        {auditTotalPages > 1 && (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-end",
+              gap: 1,
+              px: 2,
+              py: 1,
+              borderTop: "1px solid #e3e8ef",
+            }}
+          >
+            <Typography sx={{ fontSize: 12, color: "#526581" }}>
+              {auditPage * AUDIT_ROWS_PER_PAGE + 1}–
+              {Math.min((auditPage + 1) * AUDIT_ROWS_PER_PAGE, rows.length)} of {rows.length}
+            </Typography>
+            <Button
+              size="small"
+              disabled={auditPage === 0}
+              onClick={() => setAuditPage((p) => p - 1)}
+              sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16, color: "#526581" }}
+            >
+              ‹
+            </Button>
+            <Button
+              size="small"
+              disabled={auditPage >= auditTotalPages - 1}
+              onClick={() => setAuditPage((p) => p + 1)}
+              sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16, color: "#526581" }}
+            >
+              ›
+            </Button>
+          </Box>
+        )}
       </Paper>
 
       <Snackbar

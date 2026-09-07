@@ -207,9 +207,9 @@ function StatusChipIndexer({ status }) {
   const [projects, setProjects] = useState([]);
   const [saving, setSaving] = useState(false);
   const [editingEntryId, setEditingEntryId] = useState(null);
-
-  // Stores the original workflow status so editing a Submitted entry cannot accidentally turn it back into Draft.
   const [editingEntryStatus, setEditingEntryStatus] = useState(null);
+  const [entriesPage, setEntriesPage] = useState(0);
+  const DAILY_ROWS_PER_PAGE = 10;
 
   // ── Correction request dialog state ──────────────────────────────────────
   const [correctionOpen, setCorrectionOpen] = useState(false);
@@ -1086,7 +1086,7 @@ function StatusChipIndexer({ status }) {
           </TableHead>
 
           <TableBody>
-            {entries.map((entry) => (
+            {entries.slice(entriesPage * DAILY_ROWS_PER_PAGE, (entriesPage + 1) * DAILY_ROWS_PER_PAGE).map((entry) => (
               <TableRow key={entry.id}>
                 <TableCell
                   sx={{
@@ -1193,6 +1193,15 @@ function StatusChipIndexer({ status }) {
           </TableBody>
         </Table>
       </TableContainer>
+      {Math.ceil(entries.length / DAILY_ROWS_PER_PAGE) > 1 && (
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 1, px: 2, py: 1, mt: 0.5, border: "1px solid #dbe3ec", borderTop: "none", borderRadius: "0 0 14px 14px", bgcolor: "#fff" }}>
+          <Typography sx={{ fontSize: 12, color: "#64748b" }}>
+            {entriesPage * DAILY_ROWS_PER_PAGE + 1}–{Math.min((entriesPage + 1) * DAILY_ROWS_PER_PAGE, entries.length)} of {entries.length}
+          </Typography>
+          <Button size="small" disabled={entriesPage === 0} onClick={() => setEntriesPage((p) => p - 1)} sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16, color: "#64748b" }}>‹</Button>
+          <Button size="small" disabled={entriesPage >= Math.ceil(entries.length / DAILY_ROWS_PER_PAGE) - 1} onClick={() => setEntriesPage((p) => p + 1)} sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16, color: "#64748b" }}>›</Button>
+        </Box>
+      )}
 
       {/* ── Correction request dialog ── */}
       <Dialog
@@ -1385,6 +1394,8 @@ function TeamPendingEntries() {
   const [reviewingId, setReviewingId] = useState(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [pendingPage, setPendingPage] = useState(0);
+  const PENDING_ROWS_PER_PAGE = 10;
 
   const loadPendingEntries = useCallback(async () => {
     setLoading(true);
@@ -1535,7 +1546,7 @@ function TeamPendingEntries() {
                 </TableHead>
 
                 <TableBody>
-                  {entries.map((entry) => (
+                  {entries.slice(pendingPage * PENDING_ROWS_PER_PAGE, (pendingPage + 1) * PENDING_ROWS_PER_PAGE).map((entry) => (
                     <TableRow key={entry.entry_id}>
                       <TableCell>
                         {entry.employee_name}
@@ -1607,6 +1618,15 @@ function TeamPendingEntries() {
               </Table>
             </TableContainer>
           )}
+          {entries.length > 0 && Math.ceil(entries.length / PENDING_ROWS_PER_PAGE) > 1 && (
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 1, px: 2, py: 1, borderTop: "1px solid #e2e8f0" }}>
+              <Typography sx={{ fontSize: 12, color: "#64748b" }}>
+                {pendingPage * PENDING_ROWS_PER_PAGE + 1}–{Math.min((pendingPage + 1) * PENDING_ROWS_PER_PAGE, entries.length)} of {entries.length}
+              </Typography>
+              <Button size="small" disabled={pendingPage === 0} onClick={() => setPendingPage((p) => p - 1)} sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16, color: "#64748b" }}>‹</Button>
+              <Button size="small" disabled={pendingPage >= Math.ceil(entries.length / PENDING_ROWS_PER_PAGE) - 1} onClick={() => setPendingPage((p) => p + 1)} sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16, color: "#64748b" }}>›</Button>
+            </Box>
+          )}
         </>
       )}
       {ConfirmElement}
@@ -1625,6 +1645,8 @@ function TeamLeadDailyEntryTeamLead() {
   const [entriesLoading, setEntriesLoading] = useState(true);
   const [entriesError, setEntriesError] = useState("");
   const [editingEntryId, setEditingEntryId] = useState(null);
+  const [tlEntriesPage, setTlEntriesPage] = useState(0);
+  const TL_ROWS_PER_PAGE = 10;
 
   const [formData, setFormData] = useState({
     productionDate: new Date().toISOString().slice(0, 10),
@@ -2383,7 +2405,7 @@ function TeamLeadDailyEntryTeamLead() {
                   </TableCell>
                 </TableRow>
               )}
-           {entries.map((entry) => (
+           {entries.slice(tlEntriesPage * TL_ROWS_PER_PAGE, (tlEntriesPage + 1) * TL_ROWS_PER_PAGE).map((entry) => (
             <TableRow key={entry.id}>
                 <TableCell
                   sx={{
@@ -2478,6 +2500,15 @@ function TeamLeadDailyEntryTeamLead() {
           </TableBody>
         </Table>
       </TableContainer>
+      {Math.ceil(entries.length / TL_ROWS_PER_PAGE) > 1 && (
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 1, px: 2, py: 1, mt: 0.5, border: "1px solid #dbe3ec", borderTop: "none", borderRadius: "0 0 14px 14px", bgcolor: "#fff" }}>
+          <Typography sx={{ fontSize: 12, color: "#64748b" }}>
+            {tlEntriesPage * TL_ROWS_PER_PAGE + 1}–{Math.min((tlEntriesPage + 1) * TL_ROWS_PER_PAGE, entries.length)} of {entries.length}
+          </Typography>
+          <Button size="small" disabled={tlEntriesPage === 0} onClick={() => setTlEntriesPage((p) => p - 1)} sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16, color: "#64748b" }}>‹</Button>
+          <Button size="small" disabled={tlEntriesPage >= Math.ceil(entries.length / TL_ROWS_PER_PAGE) - 1} onClick={() => setTlEntriesPage((p) => p + 1)} sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16, color: "#64748b" }}>›</Button>
+        </Box>
+      )}
     </Box>
   );
 }

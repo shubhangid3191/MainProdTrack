@@ -430,6 +430,10 @@ const [completedVsTarget, setCompletedVsTarget] = useState([]);
 // Stores whether a production target is currently configured in the database.
 const [targetConfigured, setTargetConfigured] = useState(false);
 
+// Pagination for top performers table.
+const [performersPage, setPerformersPage] = useState(0);
+const PERFORMERS_PER_PAGE = 10;
+
 // Loads available production months once when the Analytics page opens.
 useEffect(() => {
   // Requests the months that actually contain production data.
@@ -957,7 +961,7 @@ const handleExportAnalytics = () => {
     <span>PRODUCTIVITY</span>
   </Box>
 
-  {topPerformers.map((performer) => {
+  {topPerformers.slice(performersPage * PERFORMERS_PER_PAGE, (performersPage + 1) * PERFORMERS_PER_PAGE).map((performer) => {
     const initials = performer.name
       ? performer.name
           .split(" ")
@@ -998,6 +1002,43 @@ const handleExportAnalytics = () => {
       </Box>
     );
   })}
+
+  {/* Performers pagination footer */}
+  {Math.ceil(topPerformers.length / PERFORMERS_PER_PAGE) > 1 && (
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "flex-end",
+        gap: 1,
+        px: 2,
+        py: 1,
+        borderTop: "1px solid #e3e8ef",
+      }}
+    >
+      <Typography sx={{ fontSize: 12, color: "#526581" }}>
+        {performersPage * PERFORMERS_PER_PAGE + 1}–
+        {Math.min((performersPage + 1) * PERFORMERS_PER_PAGE, topPerformers.length)}{" "}
+        of {topPerformers.length}
+      </Typography>
+      <Button
+        size="small"
+        disabled={performersPage === 0}
+        onClick={() => setPerformersPage((p) => p - 1)}
+        sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16, color: "#526581" }}
+      >
+        ‹
+      </Button>
+      <Button
+        size="small"
+        disabled={performersPage >= Math.ceil(topPerformers.length / PERFORMERS_PER_PAGE) - 1}
+        onClick={() => setPerformersPage((p) => p + 1)}
+        sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16, color: "#526581" }}
+      >
+        ›
+      </Button>
+    </Box>
+  )}
 </SectionCard>
       </Box>
       <Snackbar
@@ -1194,6 +1235,15 @@ function WeeklyChartAdministrator() {
   );
 }
 function AnalyticsKpisAdministrator() {
+  const [tablePage, setTablePage] = useState(0);
+  const TABLE_ROWS_PER_PAGE = 3;
+
+  const pagedProjectKpis = projectKpisAdministrator.slice(
+    tablePage * TABLE_ROWS_PER_PAGE,
+    (tablePage + 1) * TABLE_ROWS_PER_PAGE,
+  );
+  const totalTablePages = Math.ceil(projectKpisAdministrator.length / TABLE_ROWS_PER_PAGE);
+
   return (
     <CorePageShell
       breadcrumb="Administrator"
@@ -1349,8 +1399,8 @@ function AnalyticsKpisAdministrator() {
           ))}
         </Box>
 
-        {/* Table rows */}
-        {projectKpisAdministrator.map(
+        {/* Table rows — current page only */}
+        {pagedProjectKpis.map(
           ([name, pct, , received, completed, color]) => (
             <Box
               key={name}
@@ -1411,6 +1461,43 @@ function AnalyticsKpisAdministrator() {
               </Typography>
             </Box>
           ),
+        )}
+
+        {/* Pagination footer */}
+        {totalTablePages > 1 && (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-end",
+              gap: 1,
+              px: 2,
+              py: 1,
+              borderTop: "1px solid #e3e8ef",
+            }}
+          >
+            <Typography sx={{ fontSize: 12, color: "#526581" }}>
+              {tablePage * TABLE_ROWS_PER_PAGE + 1}–
+              {Math.min((tablePage + 1) * TABLE_ROWS_PER_PAGE, projectKpisAdministrator.length)}{" "}
+              of {projectKpisAdministrator.length}
+            </Typography>
+            <Button
+              size="small"
+              disabled={tablePage === 0}
+              onClick={() => setTablePage((p) => p - 1)}
+              sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16, color: "#526581" }}
+            >
+              ‹
+            </Button>
+            <Button
+              size="small"
+              disabled={tablePage >= totalTablePages - 1}
+              onClick={() => setTablePage((p) => p + 1)}
+              sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16, color: "#526581" }}
+            >
+              ›
+            </Button>
+          </Box>
         )}
       </Paper>
     </CorePageShell>

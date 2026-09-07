@@ -191,6 +191,12 @@ export default function Attendance({ roleLabel = "Indexer", roleKey, }) {
   const [attendanceError, setAttendanceError] = useState("");
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [leaveSaving, setLeaveSaving] = useState(false);
+
+  // Pagination state for the three tables.
+  const [attendancePage, setAttendancePage] = useState(0);
+  const [teamLeavePage, setTeamLeavePage] = useState(0);
+  const [myLeavePage, setMyLeavePage] = useState(0);
+  const ROWS_PER_PAGE = 10;
   const [leaveErrors, setLeaveErrors] = useState({
     leaveType: false,
     startDate: false,
@@ -761,7 +767,7 @@ useEffect(() => {
                     </TableCell>
                   </TableRow>
                 )}
-              {attendance.map((row) => {
+              {attendance.slice(attendancePage * ROWS_PER_PAGE, (attendancePage + 1) * ROWS_PER_PAGE).map((row) => {
                 const statusStyle = getStatusStyle(row.status);
 
                 return (
@@ -877,6 +883,15 @@ useEffect(() => {
             </TableBody>
           </Table>
         </TableContainer>
+        {Math.ceil(attendance.length / ROWS_PER_PAGE) > 1 && (
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 1, px: 2, py: 1, borderTop: "1px solid #e5e7eb" }}>
+            <Typography sx={{ fontSize: 12, color: "#6A7585" }}>
+              {attendancePage * ROWS_PER_PAGE + 1}–{Math.min((attendancePage + 1) * ROWS_PER_PAGE, attendance.length)} of {attendance.length}
+            </Typography>
+            <Button size="small" disabled={attendancePage === 0} onClick={() => setAttendancePage((p) => p - 1)} sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16 }}>‹</Button>
+            <Button size="small" disabled={attendancePage >= Math.ceil(attendance.length / ROWS_PER_PAGE) - 1} onClick={() => setAttendancePage((p) => p + 1)} sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16 }}>›</Button>
+          </Box>
+        )}
       </Paper>
       {roleKey === "teamLead" && (
   <Paper
@@ -955,7 +970,7 @@ useEffect(() => {
               </TableCell>
             </TableRow>
           ) : (
-            teamLeaveRequests.map((request) => (
+          teamLeaveRequests.slice(teamLeavePage * ROWS_PER_PAGE, (teamLeavePage + 1) * ROWS_PER_PAGE).map((request) => (
               <TableRow key={request.id}>
                 <TableCell>
                   {request.employee_name}
@@ -1033,6 +1048,15 @@ useEffect(() => {
         </TableBody>
       </Table>
     </TableContainer>
+        {Math.ceil(teamLeaveRequests.length / ROWS_PER_PAGE) > 1 && (
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 1, px: 2, py: 1, borderTop: "1px solid #e5e7eb" }}>
+            <Typography sx={{ fontSize: 12, color: "#6A7585" }}>
+              {teamLeavePage * ROWS_PER_PAGE + 1}–{Math.min((teamLeavePage + 1) * ROWS_PER_PAGE, teamLeaveRequests.length)} of {teamLeaveRequests.length}
+            </Typography>
+            <Button size="small" disabled={teamLeavePage === 0} onClick={() => setTeamLeavePage((p) => p - 1)} sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16 }}>‹</Button>
+            <Button size="small" disabled={teamLeavePage >= Math.ceil(teamLeaveRequests.length / ROWS_PER_PAGE) - 1} onClick={() => setTeamLeavePage((p) => p + 1)} sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16 }}>›</Button>
+          </Box>
+        )}
   </Paper>
 )}
       <Paper
@@ -1103,7 +1127,7 @@ useEffect(() => {
                   </TableCell>
                 </TableRow>
               ) : (
-                leaveRequests.map((request) => (
+                leaveRequests.slice(myLeavePage * ROWS_PER_PAGE, (myLeavePage + 1) * ROWS_PER_PAGE).map((request) => (
                   <TableRow key={request.leave_request_id}>
                     <TableCell>{request.leave_request_id}</TableCell>
                     <TableCell>{request.leave_type}</TableCell>
@@ -1142,6 +1166,15 @@ useEffect(() => {
             </TableBody>
           </Table>
         </TableContainer>
+        {Math.ceil(leaveRequests.length / ROWS_PER_PAGE) > 1 && (
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 1, px: 2, py: 1, borderTop: "1px solid #e5e7eb" }}>
+            <Typography sx={{ fontSize: 12, color: "#6A7585" }}>
+              {myLeavePage * ROWS_PER_PAGE + 1}–{Math.min((myLeavePage + 1) * ROWS_PER_PAGE, leaveRequests.length)} of {leaveRequests.length}
+            </Typography>
+            <Button size="small" disabled={myLeavePage === 0} onClick={() => setMyLeavePage((p) => p - 1)} sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16 }}>‹</Button>
+            <Button size="small" disabled={myLeavePage >= Math.ceil(leaveRequests.length / ROWS_PER_PAGE) - 1} onClick={() => setMyLeavePage((p) => p + 1)} sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16 }}>›</Button>
+          </Box>
+        )}
       </Paper>
       <Dialog
       

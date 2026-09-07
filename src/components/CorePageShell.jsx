@@ -139,6 +139,49 @@ const ROLE_COLORS = {
   ADMIN: { bg: "#fff0e0", color: "#b45309", border: "#f5c480" },
 };
 
+// Shared pagination footer used by CoreTable and other tables throughout the app.
+export function TablePagination({ page, total, rowsPerPage, onPageChange }) {
+  const totalPages = Math.ceil(total / rowsPerPage);
+  if (totalPages <= 1) return null;
+  const start = page * rowsPerPage + 1;
+  const end = Math.min((page + 1) * rowsPerPage, total);
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "flex-end",
+        gap: 1,
+        px: 2,
+        py: 1,
+        borderTop: "1px solid #e3e8ef",
+      }}
+    >
+      <Typography sx={{ fontSize: 12, color: "#526581" }}>
+        {start}–{end} of {total}
+      </Typography>
+      <Button
+        size="small"
+        disabled={page === 0}
+        onClick={() => onPageChange(page - 1)}
+        sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16, color: "#526581" }}
+      >
+        ‹
+      </Button>
+      <Button
+        size="small"
+        disabled={page >= totalPages - 1}
+        onClick={() => onPageChange(page + 1)}
+        sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16, color: "#526581" }}
+      >
+        ›
+      </Button>
+    </Box>
+  );
+}
+
+const CORE_TABLE_ROWS_PER_PAGE = 10;
+
 export function CoreTable({
   columns,
   rows,
@@ -147,6 +190,16 @@ export function CoreTable({
   onCellAction,
   actionVariant = "outlined",
 }) {
+  const [page, setPage] = useState(0);
+
+  // Reset to page 0 whenever rows change (filter/data refresh).
+  useEffect(() => { setPage(0); }, [rows.length]);
+
+  const pagedRows = rows.slice(
+    page * CORE_TABLE_ROWS_PER_PAGE,
+    (page + 1) * CORE_TABLE_ROWS_PER_PAGE,
+  );
+
   return (
     <Paper
       elevation={0}
@@ -177,8 +230,10 @@ export function CoreTable({
           </TableRow>
         </TableHead>
         <TableBody>
-          {rows.map((row, rowIndex) => (
-            <TableRow key={`row-${rowIndex}`} hover>
+          {pagedRows.map((row, rowIndex) => {
+            const globalIndex = page * CORE_TABLE_ROWS_PER_PAGE + rowIndex;
+            return (
+            <TableRow key={`row-${globalIndex}`} hover>
               {row.map((cell, cellIndex) => (
                 <TableCell
                   key={`${row[0]}-${cellIndex}`}
@@ -194,7 +249,7 @@ export function CoreTable({
                           ? "Revoke project access"
                           : "Grant project access"
                       }
-                      onClick={() => onCellAction?.(rowIndex, cellIndex)}
+                      onClick={() => onCellAction?.(globalIndex, cellIndex)}
                       sx={{
                         width: 10,
                         height: 10,
@@ -232,7 +287,7 @@ export function CoreTable({
                       }
                       sx={{ fontSize: 10, fontWeight: 800 }}
                     />
-                                    ) : ROLE_LABELS.includes(cell) ? (
+                  ) : ROLE_LABELS.includes(cell) ? (
                     <Box
                       sx={{
                         display: "inline-flex",
@@ -261,7 +316,7 @@ export function CoreTable({
                   <Button
                     size="small"
                     variant={actionVariant}
-                    onClick={() => onAction?.(row, rowIndex)}
+                    onClick={() => onAction?.(row, globalIndex)}
                     sx={
                       actionVariant === "text"
                         ? { color: "#10233d", minWidth: 0, px: 0, fontSize: 12 }
@@ -273,9 +328,16 @@ export function CoreTable({
                 </TableCell>
               )}
             </TableRow>
-          ))}
+            );
+          })}
         </TableBody>
       </Table>
+      <TablePagination
+        page={page}
+        total={rows.length}
+        rowsPerPage={CORE_TABLE_ROWS_PER_PAGE}
+        onPageChange={setPage}
+      />
     </Paper>
   );
 }

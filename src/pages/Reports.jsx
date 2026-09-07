@@ -105,6 +105,13 @@ function SimpleReportTable({
   columns,
   rows,
 }) {
+  const [srPage, setSrPage] = useState(0);
+  const SR_ROWS_PER_PAGE = 10;
+  // Reset page when rows change (filter/type switch).
+  useEffect(() => { setSrPage(0); }, [rows.length]);
+  const pagedRows = rows.slice(srPage * SR_ROWS_PER_PAGE, (srPage + 1) * SR_ROWS_PER_PAGE);
+  const srTotalPages = Math.ceil(rows.length / SR_ROWS_PER_PAGE);
+
   const minWidth = Math.max(
     720,
     columns.length * 150
@@ -184,7 +191,7 @@ function SimpleReportTable({
               No report data found.
             </Typography>
           ) : (
-            rows.map((row, index) => (
+            pagedRows.map((row, index) => (
               <Box
                 key={row.id || index}
                 sx={{
@@ -218,6 +225,15 @@ function SimpleReportTable({
           )}
         </Box>
       </Box>
+      {srTotalPages > 1 && (
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 1, px: 2, py: 1, borderTop: "1px solid #e2e7ee" }}>
+          <Typography sx={{ fontSize: 12, color: "#6A7585" }}>
+            {srPage * SR_ROWS_PER_PAGE + 1}–{Math.min((srPage + 1) * SR_ROWS_PER_PAGE, rows.length)} of {rows.length}
+          </Typography>
+          <Button size="small" disabled={srPage === 0} onClick={() => setSrPage((p) => p - 1)} sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16, color: "#6A7585" }}>‹</Button>
+          <Button size="small" disabled={srPage >= srTotalPages - 1} onClick={() => setSrPage((p) => p + 1)} sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16, color: "#6A7585" }}>›</Button>
+        </Box>
+      )}
     </Card>
   );
 }
@@ -232,7 +248,9 @@ export default function Reports({
   totalPending: 0,
   completionRate: 0,
 });
-const [period, setPeriod] = useState("week");
+  const [period, setPeriod] = useState("week");
+  const [employeeReportPage, setEmployeeReportPage] = useState(0);
+  const EMP_ROWS_PER_PAGE = 10;
 const [bars, setBars] = useState([]);
 const [employees, setEmployees] = useState([]);
 const [employeeOptions, setEmployeeOptions] = useState([]);
@@ -432,6 +450,13 @@ const max = Math.max(
             Number(b[5]) - Number(a[5])
         )
     : employees;
+
+  // Reset employee table page when data or type changes.
+  const pagedEmployees = displayedEmployees.slice(
+    employeeReportPage * EMP_ROWS_PER_PAGE,
+    (employeeReportPage + 1) * EMP_ROWS_PER_PAGE,
+  );
+  const empTotalPages = Math.ceil(displayedEmployees.length / EMP_ROWS_PER_PAGE);
 
   const handleCsvDownload = () => {
   if (employees.length === 0) {
@@ -1194,7 +1219,7 @@ const handlePdfDownload = () => {
             width: "100%",
           }}
         >
-          {displayedEmployees.map((employee) => (
+          {pagedEmployees.map((employee) => (
             <Box
               key={employee[7] || employee[1]}
               sx={{
@@ -1320,6 +1345,15 @@ const handlePdfDownload = () => {
         </Box>
         </Box>
       </Box>
+      {empTotalPages > 1 && (
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 1, px: 2, py: 1, borderTop: "1px solid #e2e7ee" }}>
+          <Typography sx={{ fontSize: 12, color: "#6A7585" }}>
+            {employeeReportPage * EMP_ROWS_PER_PAGE + 1}–{Math.min((employeeReportPage + 1) * EMP_ROWS_PER_PAGE, displayedEmployees.length)} of {displayedEmployees.length}
+          </Typography>
+          <Button size="small" disabled={employeeReportPage === 0} onClick={() => setEmployeeReportPage((p) => p - 1)} sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16, color: "#6A7585" }}>‹</Button>
+          <Button size="small" disabled={employeeReportPage >= empTotalPages - 1} onClick={() => setEmployeeReportPage((p) => p + 1)} sx={{ minWidth: 28, height: 28, p: 0, fontSize: 16, color: "#6A7585" }}>›</Button>
+        </Box>
+      )}
       </Card>
       )}
       {/* PROJECT-WISE REPORT */}
