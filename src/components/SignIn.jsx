@@ -15,7 +15,7 @@ import InputAdornment from "@mui/material/InputAdornment";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 
-import { DEMO_ACCOUNTS } from "../Config/users.js";
+import { DEMO_ACCOUNTS } from "../lib/users.js";
 import { useToast } from "../components/ToastProvider.jsx";
 
 export default function SignIn({ onLogin }) {

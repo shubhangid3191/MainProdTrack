@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import apiRequest from "../Config/api.js";
+import apiRequest from "../lib/api.js";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Box from "@mui/material/Box";

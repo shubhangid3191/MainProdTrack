@@ -1,6 +1,6 @@
 // Defines the base URL used for all backend API requests.
 const API_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  import.meta.env.VITE_API_URL || "https://api.prod.kavyaconsultancy.com/api";
 
 // Gets the authentication token from local storage or session storage.
 const getToken = () =>

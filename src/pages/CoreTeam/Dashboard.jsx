@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Box, Button, Typography } from "@mui/material";
 
 // Imports the shared API helper used to call backend APIs with authentication.
-import { apiRequest } from "../../Config/api.js";
+import { apiRequest } from "../../lib/api.js";
 
 // Imports the common Core Team page layout components.
 import CorePageShell, {

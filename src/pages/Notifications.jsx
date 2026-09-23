@@ -4,7 +4,7 @@ import {
   Paper,
   Typography,
 } from "@mui/material";
-import apiRequest from "../Config/api.js";
+import apiRequest from "../lib/api.js";
 import { useToast } from "../components/ToastProvider.jsx";
 
 import ErrorOutlineRoundedIcon from "@mui/icons-material/ErrorOutlineRounded";

@@ -16,7 +16,7 @@ import SchoolRoundedIcon from "@mui/icons-material/SchoolRounded";
 import CalendarMonthRoundedIcon from "@mui/icons-material/CalendarMonthRounded";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import { useCallback, useEffect, useState } from "react";
-import apiRequest from "../Config/api.js";
+import apiRequest from "../lib/api.js";
 import { useToast } from "../components/ToastProvider.jsx";
 import Alert from "@mui/material/Alert";
 import Dialog from "@mui/material/Dialog";

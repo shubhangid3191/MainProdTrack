@@ -23,7 +23,7 @@ import {
 import CorePageShell from "../components/CorePageShell.jsx";
 
 // Imports the shared API helper used for authenticated backend requests.
-import { apiRequest } from "../Config/api.js";
+import { apiRequest } from "../lib/api.js";
 
 // Defines the shared styling used by rule dropdowns.
 const selectSx = {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import apiRequest from "../Config/api.js";
+import apiRequest from "../lib/api.js";
 import Box from "@mui/material/Box";
 import Drawer from "@mui/material/Drawer";
 import List from "@mui/material/List";
@@ -11,7 +11,7 @@ import Chip from "@mui/material/Chip";
 
 import PowerSettingsNewOutlinedIcon from "@mui/icons-material/PowerSettingsNewOutlined";
 
-import sidebarConfig from "../Config/sidebarConfig.js";
+import sidebarConfig from "../lib/sidebarConfig.js";
 
 export const DRAWER_WIDTH = 260;
 

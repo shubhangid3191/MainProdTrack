@@ -20,7 +20,7 @@ import InfoRoundedIcon from "@mui/icons-material/InfoRounded";
 import SaveRoundedIcon from "@mui/icons-material/SaveRounded";
 
 // Imports the shared API helper so requests use the configured backend URL and Bearer token.
-import { apiRequest } from "../Config/api.js";
+import { apiRequest } from "../lib/api.js";
 
 
 // ─── Design tokens ────────────────────────────────────────────────────────────

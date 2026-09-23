@@ -12,7 +12,7 @@ import CorePageShell, {
 } from "../components/CorePageShell.jsx";
 
 // Imports the shared API helper so all requests use the configured backend URL and token.
-import { apiRequest } from "../Config/api.js";
+import { apiRequest } from "../lib/api.js";
 
 // Imports the global toast notification hook.
 import { useToast } from "../components/ToastProvider.jsx";

@@ -15,7 +15,7 @@ import {
 } from "@mui/material";
 
 // Imports the shared authenticated API helper.
-import { apiRequest } from "../Config/api.js";
+import { apiRequest } from "../lib/api.js";
 
 
 // ============================================================

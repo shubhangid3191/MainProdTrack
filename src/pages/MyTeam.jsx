@@ -6,7 +6,7 @@ import {
   Avatar,
 } from "@mui/material";
 import { useEffect, useState } from "react";
-import apiRequest from "../Config/api.js";
+import apiRequest from "../lib/api.js";
 import { useToast } from "../components/ToastProvider.jsx";
 
 // ─── Design tokens — databin.in/kavya ────────────────────────────────────────

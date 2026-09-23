@@ -10,7 +10,7 @@ import {
   Avatar,
   Chip,
 } from "@mui/material";
-import apiRequest from "../Config/api.js";
+import apiRequest from "../lib/api.js";
 import { useToast } from "../components/ToastProvider.jsx";
 import { jsPDF } from "jspdf";
 import { autoTable } from "jspdf-autotable";

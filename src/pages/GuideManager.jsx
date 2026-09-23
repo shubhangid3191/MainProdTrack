@@ -30,7 +30,7 @@ import CorePageShell, {
 } from "../components/CorePageShell.jsx";
 
 // Imports the shared API helper so authentication is handled automatically.
-import { apiRequest } from "../Config/api.js";
+import { apiRequest } from "../lib/api.js";
 
 // ======================================================
 // ACKNOWLEDGEMENT PROGRESS

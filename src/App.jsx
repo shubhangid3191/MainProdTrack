@@ -8,7 +8,7 @@ import GuideUpdateModal from "./components/GuideUpdateModal.jsx";
 import DashboardLayout from "./Layouts/DashboardLayout.jsx";
 import AppRoutes from "./routes/AppRoutes.jsx";
 import { useToast } from "./components/ToastProvider.jsx";
-import { apiRequest } from "./Config/api.js";
+import { apiRequest } from "./lib/api.js";
 
 const getStoredUser = () => {
   const storedUser =

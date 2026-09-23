@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import apiRequest, { apiDownload } from "../Config/api.js";
+import apiRequest, { apiDownload } from "../lib/api.js";
 import { useConfirm } from "../components/ConfirmDialog.jsx";
 import {
   Box,

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import apiRequest from "../../Config/api.js";
+import apiRequest from "../../lib/api.js";
 
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";

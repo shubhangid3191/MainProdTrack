@@ -21,7 +21,7 @@ import CorePageShell, {
 } from "../components/CorePageShell.jsx";
 
 // Imports the shared authenticated API helper used for Core Team Analytics requests.
-import { apiRequest } from "../Config/api.js";
+import { apiRequest } from "../lib/api.js";
 // Displays Completed vs Target data while preserving the original chart UI.
 function TrendChartCoreTeam({ trend, targetConfigured }) {
   // Converts backend values into normal numeric chart values.
