@@ -28,7 +28,7 @@ const CHIP_BG    = ["#e4f6ee", "#fbf1dc", "#efe9fb", "#e6efff"];
 const CHIP_COLOR = ["#177a53", "#a9741a", "#603bb3", "#285fb8"];
 
 // ─── Field: label above, plain read-only input box below ─────────────────────
-function Field({ label, name, value, onChange }) {
+function Field({ label, name, value, onChange, editable = false}) {
   return (
     <Box>
       <Typography
@@ -47,6 +47,7 @@ function Field({ label, name, value, onChange }) {
         name={name}
         value={value}
         onChange={onChange}
+        disabled={!editable}
         fullWidth
         size="small"
         sx={{
@@ -76,6 +77,10 @@ function Field({ label, name, value, onChange }) {
             px: 1.5,
             py: 1,
           },
+          "& .MuiInputBase-input.Mui-disabled": {
+  WebkitTextFillColor: HEAD,
+  cursor: "default",
+},
         }}
       />
     </Box>
@@ -328,36 +333,33 @@ const handleChangePassword = async () => {
           </Typography>
         </Box>
 
-        <Button
-          variant="outlined"
-          onClick={() => {
-            setPasswordData({
-              currentPassword: "",
-              newPassword: "",
-              confirmPassword: "",
-            });
-            setPasswordErrors({ currentPassword: "", newPassword: "", confirmPassword: "" });
-            setPasswordFieldsUnlocked(false);
-            setPasswordDialogOpen(true);
-          }}
-          sx={{
-            fontFamily: FONT,
-            fontSize: 13,
-            fontWeight: 600,
-            px: 2,
-            py: 0.875,
-            borderRadius: "8px",
-            textTransform: "none",
-            borderColor: LINE,
-            color: HEAD,
-            bgcolor: "#fff",
-            boxShadow: "none",
-            flexShrink: 0,
-            "&:hover": { borderColor: "#2f6df0", bgcolor: "#f5f8ff", boxShadow: "none" },
-          }}
-        >
-          Change password
-        </Button>
+                {/* Hides Change password only for Indexer users. */}
+        {user.roleKey !== "indexer" && (
+          <Button
+            variant="outlined"
+            onClick={() => {
+              setPasswordData({
+                currentPassword: "",
+                newPassword: "",
+                confirmPassword: "",
+              });
+
+              setPasswordErrors({
+                currentPassword: "",
+                newPassword: "",
+                confirmPassword: "",
+              });
+
+              setPasswordFieldsUnlocked(false);
+              setPasswordDialogOpen(true);
+            }}
+            sx={{
+              // KEEP YOUR EXISTING sx STYLES HERE EXACTLY AS THEY ARE.
+            }}
+          >
+            Change password
+          </Button>
+        )}
       </Box>
 
       {/* ── TWO COLUMN LAYOUT ─────────────────────────────────────────────── */}
@@ -404,6 +406,7 @@ const handleChangePassword = async () => {
                 label={field.label}
                 value={field.value}
                 onChange={handleChange}
+                editable={user?.roleKey === "administrator"}
               />
             ))}
           </Box>

@@ -22,125 +22,137 @@ export default function Notifications({ user }) {
 
   const toast = useToast();
   const [notifications, setNotifications] =
-  useState([]);
+    useState([]);
 
-useEffect(() => {
-  const loadNotifications = async () => {
-    try {
-      const data = await apiRequest(
-        "/notifications/my"
-      );
+  useEffect(() => {
+    const loadNotifications = async () => {
+      try {
+        const data = await apiRequest(
+          "/notifications/my"
+        );
+        // Marks all notifications as read when the page opens.
+        await apiRequest("/notifications/read-all", {
+          method: "PATCH",
+        });
 
-      const formattedNotifications = (
-        data.notifications || []
-      ).map((notification) => {
-        const type = String(
-          notification.type || ""
-        ).toLowerCase();
-
-        let Icon = ErrorOutlineRoundedIcon;
-        let color = "#dc3545";
-
-        if (type.includes("guide")) {
-          Icon = MenuBookRoundedIcon;
-          color = "#3478ed";
-        } else if (type.includes("approved")) {
-          Icon = CheckCircleRoundedIcon;
-          color = "#20a36b";
-        } else if (type.includes("backlog")) {
-          Icon = TrendingUpRoundedIcon;
-          color = "#8060d9";
-        } else if (type.includes("lock")) {
-          Icon = LockRoundedIcon;
-          color = "#f59e0b";
-        }
-
-        const createdDate = new Date(
-          notification.created_at
+        // Tells the sidebar and header to refresh the unread count.
+        window.dispatchEvent(
+          new Event("prodtrack-notifications-updated")
         );
 
-        const differenceMinutes = Math.max(
-          0,
-          Math.floor(
-            (Date.now() - createdDate.getTime()) /
+        const formattedNotifications = (
+          data.notifications || []
+        ).map((notification) => {
+          const type = String(
+            notification.type || ""
+          ).toLowerCase();
+
+          let Icon = ErrorOutlineRoundedIcon;
+          let color = "#dc3545";
+
+          if (type.includes("guide")) {
+            Icon = MenuBookRoundedIcon;
+            color = "#3478ed";
+            // Shows the green tick for approved corrections and submitted daily entries.
+          } else if (
+            type.includes("approved") ||
+            type.includes("entry_submission_confirmation")
+          ) {
+            Icon = CheckCircleRoundedIcon;
+            color = "#20a36b";
+          } else if (type.includes("backlog")) {
+            Icon = TrendingUpRoundedIcon;
+            color = "#8060d9";
+          } else if (type.includes("lock")) {
+            Icon = LockRoundedIcon;
+            color = "#f59e0b";
+          }
+
+          const createdDate = new Date(
+            notification.created_at
+          );
+
+          const differenceMinutes = Math.max(
+            0,
+            Math.floor(
+              (Date.now() - createdDate.getTime()) /
               60000
-          )
+            )
+          );
+
+          let time = "Just now";
+
+          if (differenceMinutes >= 1440) {
+            time =
+              `${Math.floor(
+                differenceMinutes / 1440
+              )}d ago`;
+          } else if (differenceMinutes >= 60) {
+            time =
+              `${Math.floor(
+                differenceMinutes / 60
+              )}h ago`;
+          } else if (differenceMinutes > 0) {
+            time = `${differenceMinutes}m ago`;
+          }
+
+          return {
+            id:
+              notification.notification_id ||
+              notification.id,
+            icon: Icon,
+            color,
+            title: notification.title,
+            message: notification.message,
+            time,
+            isRead:true,
+          };
+        });
+
+        setNotifications(formattedNotifications);
+      } catch (error) {
+        console.error(
+          "Load Notifications Error:",
+          error
         );
-
-        let time = "Just now";
-
-        if (differenceMinutes >= 1440) {
-          time =
-            `${Math.floor(
-              differenceMinutes / 1440
-            )}d ago`;
-        } else if (differenceMinutes >= 60) {
-          time =
-            `${Math.floor(
-              differenceMinutes / 60
-            )}h ago`;
-        } else if (differenceMinutes > 0) {
-          time = `${differenceMinutes}m ago`;
-        }
-
-        return {
-          id:
-            notification.notification_id ||
-            notification.id,
-          icon: Icon,
-          color,
-          title: notification.title,
-          message: notification.message,
-          time,
-          isRead:
-            Number(notification.is_read) === 1,
-        };
-      });
-
-      setNotifications(formattedNotifications);
-    } catch (error) {
-      console.error(
-        "Load Notifications Error:",
-        error
-      );
-      toast.error(error.message);
-    }
-  };
-
-  loadNotifications();
-}, [toast]);
-
-const handleNotificationClick = async (
-  notificationId,
-  isRead
-) => {
-  if (isRead) return;
-
-  try {
-    await apiRequest(
-      `/notifications/${notificationId}/read`,
-      {
-        method: "PATCH",
+        toast.error(error.message);
       }
-    );
+    };
 
-    setNotifications((currentNotifications) =>
-      currentNotifications.map((notification) =>
-        notification.id === notificationId
-          ? {
+    loadNotifications();
+  }, [toast]);
+
+  const handleNotificationClick = async (
+    notificationId,
+    isRead
+  ) => {
+    if (isRead) return;
+
+    try {
+      await apiRequest(
+        `/notifications/${notificationId}/read`,
+        {
+          method: "PATCH",
+        }
+      );
+
+      setNotifications((currentNotifications) =>
+        currentNotifications.map((notification) =>
+          notification.id === notificationId
+            ? {
               ...notification,
               isRead: true,
             }
-          : notification
-      )
-    );
-    window.dispatchEvent(
-      new Event("prodtrack-notifications-updated")
-    );
-  } catch (error) {
-    toast.error(error.message);
-  }
-};
+            : notification
+        )
+      );
+      window.dispatchEvent(
+        new Event("prodtrack-notifications-updated")
+      );
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
 
   return (
     <Box sx={{ width: "100%" }}>
@@ -194,23 +206,23 @@ const handleNotificationClick = async (
         }}
       >
         {notifications.map(
-            (
-              {
-                id,
-                icon: Icon,
-                color,
-                title,
-                message,
-                time,
-                isRead,
-              },
-              index
-            ) => (
+          (
+            {
+              id,
+              icon: Icon,
+              color,
+              title,
+              message,
+              time,
+              isRead,
+            },
+            index
+          ) => (
             <Box
               key={id}
               onClick={() =>
-                  handleNotificationClick(id, isRead)
-                }
+                handleNotificationClick(id, isRead)
+              }
               sx={{
                 minHeight: 68,
                 px: {

@@ -16,6 +16,7 @@ import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 
 import { DEMO_ACCOUNTS } from "../lib/users.js";
+import { apiRequest } from "../lib/api.js";
 import { useToast } from "../components/ToastProvider.jsx";
 
 export default function SignIn({ onLogin }) {
@@ -73,48 +74,21 @@ const handleSubmit = async (event) => {
     setForgotError("");
 
     try {
-      const response = await fetch(
-        `${
-          import.meta.env.VITE_API_URL
-        }/auth/forgot-password`,
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-
-          body: JSON.stringify({
-            email: enteredUsername,
-          }),
-        }
-      );
-
-      const data =
-        await response.json();
-
-      if (!response.ok) {
-        setForgotError(
-          data.message ||
-            "Failed to send new password."
-        );
-
-        return;
-      }
+      const data = await apiRequest("/auth/forgot-password", {
+        method: "POST",
+        body: JSON.stringify({
+          email: enteredUsername,
+        }),
+      });
 
       setForgotMessage(
         data.message ||
           "A new password has been sent to your email."
       );
     } catch (error) {
-      console.error(
-        "Forgot password error:",
-        error
-      );
-
+      console.error("Forgot password error:", error);
       setForgotError(
-        "Cannot connect to the backend server."
+        error.message || "Failed to send new password."
       );
     } finally {
       setSubmitting(false);
@@ -147,36 +121,13 @@ const handleSubmit = async (event) => {
   setSubmitting(true);
 
   try {
-    const response = await fetch(
-      `${
-        import.meta.env.VITE_API_URL
-      }/auth/login`,
-      {
-        method: "POST",
-
-        headers: {
-          "Content-Type":
-            "application/json",
-        },
-
-        body: JSON.stringify({
-          email: enteredUsername,
-          password,
-        }),
-      }
-    );
-
-    const data =
-      await response.json();
-
-    if (!response.ok) {
-      toast.error(
-        data.message ||
-          "Login failed"
-      );
-
-      return;
-    }
+    const data = await apiRequest("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({
+        email: enteredUsername,
+        password,
+      }),
+    });
 
     const storage = keepSignedIn
       ? localStorage
@@ -220,14 +171,8 @@ const handleSubmit = async (event) => {
       onLogin(data.user);
     }
   } catch (error) {
-    console.error(
-      "Login error:",
-      error
-    );
-
-    toast.error(
-      "Cannot connect to the backend server"
-    );
+    console.error("Login error:", error);
+    toast.error(error.message || "Login failed");
   } finally {
     setSubmitting(false);
   }

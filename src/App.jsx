@@ -8,7 +8,7 @@ import GuideUpdateModal from "./components/GuideUpdateModal.jsx";
 import DashboardLayout from "./Layouts/DashboardLayout.jsx";
 import AppRoutes from "./routes/AppRoutes.jsx";
 import { useToast } from "./components/ToastProvider.jsx";
-import { apiRequest } from "./lib/api.js";
+import { apiRequest, AUTH_EVENT } from "./lib/api.js";
 
 const getStoredUser = () => {
   const storedUser =
@@ -85,6 +85,18 @@ const logout = useCallback(() => {
 }, []);
 
 
+
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      toast.info("Your session expired. Please sign in again.");
+      logout();
+    };
+
+    window.addEventListener(AUTH_EVENT, handleUnauthorized);
+    return () => {
+      window.removeEventListener(AUTH_EVENT, handleUnauthorized);
+    };
+  }, [logout, toast]);
 
   useEffect(() => {
   if (!user) {

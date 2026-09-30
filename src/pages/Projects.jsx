@@ -71,7 +71,7 @@ const [error, setError] = useState("");
         );
 
         return {
-          id: project.project_id,
+          id: project.project_id || project.id,
           name:
             project.project_name ||
             "Unnamed project",

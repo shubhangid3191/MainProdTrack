@@ -636,7 +636,7 @@ const updateStatus = async (rowIndex, newStatus) => {
     const data = await apiRequest(
       `/team-lead/approvals/${requestId}/${action}`,
       {
-        method: "PATCH",
+        method: "POST",
         body: JSON.stringify({
           reviewComment:
             newStatus === "APPROVED"

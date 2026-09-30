@@ -241,16 +241,6 @@ function StatusChipIndexer({ status }) {
         const data = await apiRequest("/projects/my");
         setProjects(data.projects);
 
-          if (data.projects.length > 0) {
-            const firstProject = data.projects[0];
-
-            setFormData((currentData) => ({
-              ...currentData,
-              projectId: firstProject.project_id,
-              reportingCategory:
-                firstProject.reporting_category || "",
-            }));
-          }
       } catch (error) {
         console.error("Projects loading error:", error);
       }
@@ -298,15 +288,15 @@ function StatusChipIndexer({ status }) {
     const projectId = event.target.value;
 
     const selectedProject = projects.find(
-      (project) => project.project_id === Number(projectId)
+      (project) => String(project.project_id || project.id) === String(projectId)
     );
 
-    setFormData((currentData) => ({
-      ...currentData,
-      projectId,
-      reportingCategory:
-        selectedProject?.reporting_category || "",
-    }));
+    // Updates the selected project and resets reporting category for a fresh selection.
+setFormData((currentData) => ({
+  ...currentData,
+  projectId,
+  reportingCategory: "",
+}));
   };
   const handleInputChange = (event) => {
     const { name, value } = event.target;
@@ -349,7 +339,6 @@ function StatusChipIndexer({ status }) {
     }
 
     const numbers = {
-      documentsReceived: Number(formData.documentsReceived || 0),
       documentsCompleted: Number(formData.documentsCompleted || 0),
       batchesProcessed: Number(formData.batchesProcessed || 0),
       errorsFlagged: Number(formData.errorsFlagged || 0),
@@ -924,8 +913,8 @@ const handleCorrectionFieldChange = (event) => {
 
                 {projects.map((project) => (
                   <MenuItem
-                    key={project.project_id}
-                    value={project.project_id}
+                    key={project.project_id || project.id}
+                    value={project.project_id || project.id}
                   >
                     {project.project_name}
                   </MenuItem>
@@ -933,49 +922,31 @@ const handleCorrectionFieldChange = (event) => {
               </TextField>
             </Field>
 
-          {/* Batch / Job ID */}
-
-         <Field label="Batch / Job ID">
-            <TextField
-              name="batchJobId"
-              value={formData.batchJobId}
-              onChange={handleInputChange}
-              placeholder="e.g. ABC-2025-0520-14"
-              fullWidth
-              size="small"
-              sx={inputSx}
-            />
-          </Field>
-
           {/* Reporting Category */}
-
           <Field label="Reporting category">
             <TextField
+              select
+              name="reportingCategory"
               value={formData.reportingCategory}
-              placeholder="Select a project first"
-              slotProps={{
-                input: {
-                  readOnly: true,
-                },
-              }}
-              fullWidth
-              size="small"
-              sx={inputSx}
-            />
-          </Field>
-
-          {/* Documents Received */}
-
-         <Field label="Documents received">
-            <TextField
-              name="documentsReceived"
-              type="number"
-              value={formData.documentsReceived}
               onChange={handleInputChange}
               fullWidth
               size="small"
               sx={inputSx}
-            />
+            >
+              {/* Default option shown before the Indexer selects a category. */}
+              <MenuItem value="">
+                Select reporting category
+              </MenuItem>
+
+              {/* Allowed reporting categories for Indexer Daily Entry. */}
+              <MenuItem value="Implant Indexing">
+                Implant Indexing
+              </MenuItem>
+
+              <MenuItem value="QC Review">
+                QC Review
+              </MenuItem>
+            </TextField>
           </Field>
 
           {/* Documents Completed */}
@@ -1871,12 +1842,10 @@ function TeamPendingEntries() {
                         </Typography>
                       </TableCell>
 
-                      <TableCell>
-                        {entry.project_name}
-                        <Typography variant="caption" display="block">
-                          {entry.reporting_category || "—"}
-                        </Typography>
-                      </TableCell>
+                     <TableCell>
+                      {/* Displays Project / Reporting Category on the same line. */}
+                      {entry.project_name} / {entry.reporting_category || "—"}
+                    </TableCell>
 
                       <TableCell sx={{ whiteSpace: "nowrap" }}>
                         <Typography variant="body2">
@@ -1986,7 +1955,7 @@ function TeamLeadDailyEntryTeamLead() {
 
           setFormData((current) => ({
             ...current,
-            projectId: firstProject.project_id,
+            projectId: firstProject.project_id || firstProject.id,
             reportingCategory: firstProject.reporting_category || "",
           }));
         }
@@ -2001,7 +1970,7 @@ function TeamLeadDailyEntryTeamLead() {
   const handleProjectChange = (event) => {
       const projectId = event.target.value;
       const selectedProject = projects.find(
-        (project) => String(project.project_id) === String(projectId)
+        (project) => String(project.project_id || project.id) === String(projectId)
       );
 
       setFormData((current) => ({
@@ -2136,7 +2105,6 @@ function TeamLeadDailyEntryTeamLead() {
     setFormData((current) => ({
       ...current,
       batchJobId: "",
-      documentsReceived: "",
       documentsCompleted: "",
       batchesProcessed: "",
       errorsFlagged: "",
@@ -2529,8 +2497,8 @@ function TeamLeadDailyEntryTeamLead() {
 
               {projects.map((project) => (
                 <MenuItem
-                  key={project.project_id}
-                  value={project.project_id}
+                  key={project.project_id || project.id}
+                  value={project.project_id || project.id}
                 >
                   {project.project_name}
                 </MenuItem>

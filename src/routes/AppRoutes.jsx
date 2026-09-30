@@ -31,8 +31,10 @@ const dashboards = {
 const rolePages = {
   indexer: {
     "daily-entry": DailyEntry,
-    projects: Projects,
     "indexing-guide": IndexingGuide,
+      // Temporarily disabled for Indexer.
+  // Uncomment if the client wants the Projects page again.
+  // projects: Projects,
     attendance: Attendance,
     corrections: CorrectionApprovals,
   },
@@ -76,7 +78,15 @@ const commonPages = {
 export default function AppRoutes({ user, currentPage, onNavigate, onReviewGuide, searchSelection, }) {
   const roleKey = user.roleKey;
   const Dashboard = dashboards[roleKey] ?? IndexerDashboard;
-  const Page = commonPages[currentPage] ?? rolePages[roleKey]?.[currentPage];
+  // Reports are common for other roles but are not accessible to Indexer.
+const isIndexerRestrictedPage =
+  roleKey === "indexer" &&
+  ["projects", "reports"].includes(currentPage);
+
+// Resolves the page only when the current role is allowed to access it.
+const Page = isIndexerRestrictedPage
+  ? null
+  : commonPages[currentPage] ?? rolePages[roleKey]?.[currentPage];
 
   if (!Page || currentPage === "dashboard") {
     return (

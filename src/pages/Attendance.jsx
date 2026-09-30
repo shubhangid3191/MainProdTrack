@@ -281,8 +281,10 @@ const handleLeaveDecision = async (
     const data = await apiRequest(
       `/team-lead/leave-requests/${requestId}/${decision}`,
       {
-        method: "PATCH",
-        body: JSON.stringify({}),
+        method: "POST",
+        body: JSON.stringify({
+          reviewComment: "",
+        }),
       }
     );
 

@@ -90,12 +90,21 @@ const AVATAR_COLORS = [
 function getRoleLabel(role) {
   const roleMap = {
     indexer: "Indexer",
+    INDEXER: "Indexer",
     lead: "Team Lead",
+    TEAM_LEAD: "Team Lead",
+    team_lead: "Team Lead",
+    teamLead: "Team Lead",
     core: "Core Team",
+    CORE_TEAM: "Core Team",
+    core_team: "Core Team",
+    coreTeam: "Core Team",
     admin: "Administrator",
+    ADMIN: "Administrator",
+    administrator: "Administrator",
   };
 
-  return roleMap[role] || "Indexer";
+  return roleMap[role] || roleMap[String(role || "").toLowerCase()] || "Indexer";
 }
 
 
@@ -611,7 +620,7 @@ function AssignmentMatrixPage({
                       (
                         project
                       ) =>
-                        project.id
+                        project.id || project.project_id
                     ),
               })
             );
@@ -620,7 +629,7 @@ function AssignmentMatrixPage({
         await apiRequest(
           "/core-team/assignment-matrix",
           {
-            method: "PUT",
+            method: "POST",
             body:
               JSON.stringify(
                 {

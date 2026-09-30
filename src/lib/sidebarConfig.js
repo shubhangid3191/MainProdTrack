@@ -14,13 +14,15 @@ export const sidebarConfig = {
   indexer: [
     { label: "Dashboard", icon: "🏠", page: "dashboard" },
     { label: "Daily Entry", icon: "📝", page: "daily-entry" },
-    { label: "Projects", icon: "📁", page: "projects" },
+     // Uncomment if the client wants the Projects page again.
+   // { label: "Projects", icon: "📁", page: "projects" },
 
     // The NEW badge is now injected dynamically from Sidebar.jsx.
     { label: "Indexing Guide", icon: "📘", page: "indexing-guide" },
-
+     // Uncomment if the client wants the Reports page again.
+  //{ label: "Reports", icon: "📊", page: "reports" },
     { label: "Attendance", icon: "🗓️", page: "attendance" },
-    ...common,
+    ...common.filter((item) => item.page !== "reports"),
   ],
 
   teamLead: [

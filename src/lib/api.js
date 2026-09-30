@@ -1,98 +1,160 @@
-// Defines the base URL used for all backend API requests.
-const API_URL =
-  import.meta.env.VITE_API_URL || "https://api.prod.kavyaconsultancy.com/api";
+const API_URL = (
+  import.meta.env.VITE_API_URL || "https://api.prod.kavyaconsultancy.com/api"
+).replace(/\/+$/, "");
+const AUTH_EVENT = "prodtrack:unauthorized";
 
-// Gets the authentication token from local storage or session storage.
 const getToken = () =>
   localStorage.getItem("prodtrackToken") ||
   sessionStorage.getItem("prodtrackToken");
 
-// Sends normal JSON requests as well as FormData/file-upload requests.
-export const apiRequest = async (endpoint, options = {}) => {
-  // Gets the currently stored authentication token.
-  const token = getToken();
+const clearAuthStorage = () => {
+  localStorage.removeItem("prodtrackToken");
+  localStorage.removeItem("prodtrackUser");
+  localStorage.removeItem("prodtrackSessionTimeout");
+  sessionStorage.removeItem("prodtrackToken");
+  sessionStorage.removeItem("prodtrackUser");
+  sessionStorage.removeItem("prodtrackSessionTimeout");
+};
 
-  // Checks whether this request contains FormData such as a PDF upload.
-  const isFormData = options.body instanceof FormData;
+const readResponseBody = async (response) => {
+  const contentType = response.headers.get("content-type") || "";
 
-  // Sends the request to the backend.
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    ...options,
-
-    // Creates the appropriate headers for JSON or FormData requests.
-    headers: {
-      // Adds JSON Content-Type only when the body is NOT FormData.
-      ...(!isFormData
-        ? {
-            "Content-Type": "application/json",
-          }
-        : {}),
-
-      // Adds the Bearer token when the user is logged in.
-      ...(token
-        ? {
-            Authorization: `Bearer ${token}`,
-          }
-        : {}),
-
-      // Preserves any custom headers passed by the calling component.
-      ...options.headers,
-    },
-  });
-
-  // Converts the backend response into JSON.
-  const data = await response.json();
-
-  // Handles unsuccessful API responses.
-  if (!response.ok) {
-    // Clears stored login data when authentication fails.
-    if (response.status === 401) {
-      localStorage.removeItem("prodtrackToken");
-      localStorage.removeItem("prodtrackUser");
-      sessionStorage.removeItem("prodtrackToken");
-      sessionStorage.removeItem("prodtrackUser");
-    }
-
-    // Throws the backend error message.
-    throw new Error(data.message || "API request failed");
+  if (contentType.includes("application/json")) {
+    return response.json().catch(() => ({}));
   }
 
-  // Returns the successful backend response.
+  const text = await response.text().catch(() => "");
+  return { raw: text };
+};
+
+const statusHint = (status) => {
+  if (status === 502) {
+    return "Bad gateway — CWP reverse proxy cannot reach the Node app. Check the Node.js Selector / Passenger app and the proxy port.";
+  }
+
+  if (status === 503) {
+    return "Backend is not running (HTTP 503). In CWP: start the Node app, confirm Passenger/startup file is backend/index.js, and read backend/logs/app-error.log.";
+  }
+
+  if (status === 504) {
+    return "Gateway timeout — the Node app did not answer in time. Check CWP Node logs and MySQL.";
+  }
+
+  return "";
+};
+
+const buildErrorMessage = (response, data) => {
+  if (data?.error?.hint) {
+    return `${data.message || "Request failed"} (${data.error.code}: ${data.error.hint})`;
+  }
+
+  if (data?.message) {
+    return data.message;
+  }
+
+  const hint = statusHint(response.status);
+  if (hint) {
+    return hint;
+  }
+
+  if (data?.raw && /service unavailable/i.test(data.raw)) {
+    return statusHint(503);
+  }
+
+  return `API request failed (HTTP ${response.status})`;
+};
+
+export const apiRequest = async (endpoint, options = {}) => {
+  const token = getToken();
+  const isFormData = options.body instanceof FormData;
+  const { timeoutMs: timeoutOverride, signal, headers, ...fetchOptions } = options;
+  const controller = new AbortController();
+  const timeoutMs = Number(timeoutOverride || 30000);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  const requestedMethod = String(fetchOptions.method || "GET").toUpperCase();
+  const proxyBlockedMethods = new Set(["PUT", "PATCH", "DELETE"]);
+  const sendAsPost = proxyBlockedMethods.has(requestedMethod);
+
+  let response;
+
+  try {
+    response = await fetch(`${API_URL}${endpoint}`, {
+      ...fetchOptions,
+      method: sendAsPost ? "POST" : requestedMethod,
+      signal: signal || controller.signal,
+      headers: {
+        ...(!isFormData ? { "Content-Type": "application/json" } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(sendAsPost ? { "X-HTTP-Method-Override": requestedMethod } : {}),
+        ...headers,
+      },
+    });
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new Error(
+        `API request timed out after ${timeoutMs / 1000}s. The CWP Node app may be down or overloaded.`
+      );
+    }
+
+    throw new Error(
+      `Cannot reach API at ${API_URL}. Check VITE_API_URL, HTTPS/CORS, and that the Node app is running.`
+    );
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
+  const data = await readResponseBody(response);
+
+  if (!response.ok) {
+    if (response.status === 401 && token) {
+      clearAuthStorage();
+      window.dispatchEvent(new Event(AUTH_EVENT));
+    }
+
+    throw new Error(buildErrorMessage(response, data));
+  }
+
   return data;
 };
 
-// Downloads files such as guide PDFs from authenticated backend endpoints.
 export const apiDownload = async (endpoint) => {
-  // Gets the currently stored authentication token.
   const token = getToken();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-  // Sends the authenticated download request.
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    headers: token
-      ? { Authorization: `Bearer ${token}` }
-      : {},
-  });
+  let response;
 
-  // Handles unsuccessful download requests.
-  if (!response.ok) {
-    // Clears stored login data when authentication fails.
-    if (response.status === 401) {
-      localStorage.removeItem("prodtrackToken");
-      localStorage.removeItem("prodtrackUser");
-      sessionStorage.removeItem("prodtrackToken");
-      sessionStorage.removeItem("prodtrackUser");
+  try {
+    response = await fetch(`${API_URL}${endpoint}`, {
+      signal: controller.signal,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new Error("File download timed out. Please try again.");
     }
 
-    // Attempts to read the backend error response.
-    const data = await response.json().catch(() => ({}));
-
-    // Throws the backend download error message.
-    throw new Error(data.message || "Failed to download file");
+    throw new Error(
+      `Cannot reach API at ${API_URL}. Check that the Node app is running.`
+    );
+  } finally {
+    clearTimeout(timeoutId);
   }
 
-  // Converts the downloaded response into a Blob.
+  if (!response.ok) {
+    if (response.status === 401 && token) {
+      clearAuthStorage();
+      window.dispatchEvent(new Event(AUTH_EVENT));
+    }
+
+    const data = await readResponseBody(response);
+    throw new Error(buildErrorMessage(response, data) || "Failed to download file");
+  }
+
   return response.blob();
 };
 
-// Keeps apiRequest available as the default export for existing imports.
+export { API_URL, AUTH_EVENT };
+
 export default apiRequest;

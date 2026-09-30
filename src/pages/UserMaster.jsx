@@ -289,6 +289,17 @@ const loadDepartments = async () => {
   // Builds the same existing form fields but replaces static dropdown data with API data.
   const fields = useMemo(
     () => [
+          // Shows Employee ID only to Administrator while editing an existing user.
+    ...(administrator && selectedUser
+      ? [
+          {
+            name: "employeeId",
+            label: "Employee ID",
+            placeholder: "e.g. EMP-0005",
+            required: true,
+          },
+        ]
+      : []),
       {
         name: "employee",
         label: "Employee name",
@@ -328,18 +339,25 @@ const loadDepartments = async () => {
         ),
         required: true,
       },
-      {
-        name: "lead",
-        label: "Team lead",
-        // Dynamically uses the first real team lead's name as the placeholder.
-        placeholder: teamLeads.length > 0 ? teamLeads[0].name : "e.g. Rohan Mehta",
-        options: [
-          "None",
-          ...teamLeads.map(
-            (lead) => lead.name
-          ),
-        ],
-      },
+        // Shows Team Lead only while adding a new user.
+  ...(!selectedUser
+    ? [
+        {
+          name: "lead",
+          label: "Team lead",
+          placeholder:
+            teamLeads.length > 0
+              ? teamLeads[0].name
+              : "e.g. Rohan Mehta",
+          options: [
+            "None",
+            ...teamLeads.map(
+              (lead) => lead.name
+            ),
+          ],
+        },
+      ]
+    : []),
       {
         name: "status",
         label: "Status",
@@ -363,7 +381,7 @@ const loadDepartments = async () => {
         ],
       },
     ],
-    [teamLeads, projects,departments]
+    [teamLeads, projects,departments,administrator, selectedUser]
   );
 
 
@@ -443,6 +461,7 @@ const loadDepartments = async () => {
     }
 
     return {
+      employeeId: selectedUser.employee_id || "",
       employee: selectedUser.name || "",
       email: selectedUser.email || "",
       department:
@@ -566,11 +585,13 @@ const departmentId =
         const updateBody = {
           name: values.employee,
           email: values.email,
+           ...(administrator
+          ? { employeeId: values.employeeId }
+          : {}),
           departmentId,
           designation:
             values.designation,
           roleId,
-          teamLeadId,
           status,
         };
 
